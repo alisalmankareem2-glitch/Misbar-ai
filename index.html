@@ -4,244 +4,1180 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>مسبار AI</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f6f7fb;--sf:#fff;--tx:#14213d;--mu:#667085;--ln:#e4e7ee;--ac:#1d4ed8;--acs:#e3ebff;--gold:#c8962b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1524;--sf:#18203a;--tx:#eef1fb;--mu:#98a2bd;--ln:#2a3354;--acs:#1e2b57}}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font-family:Cairo,Tahoma,sans-serif;min-height:100vh;padding-bottom:70px}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:Cairo,Tahoma,sans-serif;min-height:100vh;padding-bottom:76px}
 .pro{--ac:#15803d;--acs:#dcf5e5}
 @media (prefers-color-scheme:dark){.pro{--acs:#173826}}
-header{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--sf);border-bottom:1px solid var(--ln);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
-header h1{font-size:18px;margin:0;flex:1}
+header{display:flex;align-items:center;gap:8px;padding:12px 14px;background:var(--sf);border-bottom:1px solid var(--ln);position:sticky;top:env(safe-area-inset-top,0px);z-index:10}
+header h1{font-size:17px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hat{font-size:28px;cursor:pointer;user-select:none;background:none;border:0;padding:0}
-main{padding:16px;max-width:640px;margin:auto}
-h2{font-size:17px;margin:18px 0 8px}
+main{padding:14px;max-width:680px;margin:auto}
+h2{font-size:16px;margin:16px 0 8px}
 .card{background:var(--sf);border:1px solid var(--ln);border-radius:14px;padding:14px;margin-bottom:10px}
-.row{display:flex;align-items:center;gap:10px}.grow{flex:1}
+.row{display:flex;align-items:center;gap:8px}.grow{flex:1}
 .mu{color:var(--mu);font-size:13px}
-button.b{background:var(--ac);color:#fff;border:0;border-radius:10px;padding:10px 14px;font:600 14px Cairo,sans-serif;cursor:pointer;min-height:44px}
+button.b{background:var(--ac);color:#fff;border:0;border-radius:10px;padding:9px 13px;font:600 13px Cairo,sans-serif;cursor:pointer;min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:5px}
 button.s{background:var(--acs);color:var(--ac)}
+button.d{background:#fee2e2;color:#b91c1c}
 button.b:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-input,select,textarea{width:100%;padding:11px;border:1px solid var(--ln);border-radius:10px;background:var(--sf);color:var(--tx);font:400 15px Cairo,sans-serif;margin:4px 0 8px}
-label{font-size:13px;color:var(--mu)}
-nav{position:fixed;bottom:0;inset-inline:0;display:flex;background:var(--sf);border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom,0px)}
-nav button{flex:1;background:none;border:0;padding:9px 2px;font:600 11px Cairo,sans-serif;color:var(--mu);min-height:54px;cursor:pointer}
-nav button.on{color:var(--ac)}nav i{display:block;font-style:normal;font-size:20px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+input,select,textarea{width:100%;padding:10px 11px;border:1px solid var(--ln);border-radius:10px;background:var(--sf);color:var(--tx);font:400 14px Cairo,sans-serif;margin:4px 0 8px}
+label{font-size:13px;color:var(--mu);display:block}
+nav{position:fixed;bottom:0;inset-inline:0;display:flex;background:var(--sf);border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom,0px);z-index:10}
+nav button{flex:1;background:none;border:0;padding:8px 2px;font:600 11px Cairo,sans-serif;color:var(--mu);min-height:54px;cursor:pointer}
+nav button.on{color:var(--ac)}nav i{display:block;font-style:normal;font-size:19px}
 .out{white-space:pre-wrap;line-height:1.9;background:var(--acs);border-radius:12px;padding:12px;font-size:14px}
 .msg{padding:8px 12px;border-radius:12px;margin:6px 0;max-width:80%;background:var(--sf);border:1px solid var(--ln)}
 .msg.me{background:var(--ac);color:#fff;margin-inline-start:auto;border-color:var(--ac)}
-.hero{text-align:center;padding:40px 16px 10px}.hero .hat{font-size:64px}
-.hero h1{font-size:30px;margin:6px 0}
-.tog{width:50px;height:28px;border-radius:14px;background:var(--ln);border:0;position:relative;cursor:pointer}
+.hero{text-align:center;padding:36px 16px 10px}.hero .hat{font-size:64px}
+.hero h1{font-size:28px;margin:6px 0}
+.tog{width:50px;height:28px;border-radius:14px;background:var(--ln);border:0;position:relative;cursor:pointer;flex-shrink:0}
 .tog.on{background:var(--ac)}.tog::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s}
 .tog.on::after{inset-inline-start:25px}
-#md{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:20}.mc{background:var(--sf);padding:16px;border-radius:14px;width:min(320px,90%)}
-#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#14213d;color:#fff;padding:10px 16px;border-radius:10px;display:none;z-index:9}
+.chip{padding:7px 11px;border-radius:9px;border:1px solid var(--ln);background:var(--sf);color:var(--tx);font:600 12px Cairo,sans-serif;cursor:pointer}
+.chip.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.symbar{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0 6px}
+.symbar button{padding:4px 8px;border-radius:7px;border:1px solid var(--ln);background:var(--bg);color:var(--tx);font:600 13px Cairo,sans-serif;cursor:pointer;min-width:32px}
+.subj-card{background:var(--sf);border:1.5px solid var(--ln);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer;transition:.15s}
+.subj-card:active{transform:scale(.97)}
+.subj-ico{width:42px;height:42px;border-radius:12px;background:var(--acs);color:var(--ac);font:800 16px Cairo,sans-serif;display:flex;align-items:center;justify-content:center;margin:0 auto 6px}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;background:var(--acs);color:var(--ac)}
+#md{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:30}.mc{background:var(--sf);padding:16px;border-radius:14px;width:min(340px,92%)}
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#14213d;color:#fff;padding:10px 16px;border-radius:10px;display:none;z-index:25;font-size:13px;text-align:center;max-width:90%}
+/* A4 Sheet & Booklet Print Styles */
+.sheet-wrap{overflow-x:auto;padding-bottom:8px}
+.sheet{background:#fff;color:#000;padding:18px 20px;border-radius:6px;line-height:1.85;min-height:360px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.sheet hr{border:0;border-top:1px dashed #333;margin:9px 0}
+.bk-page{background:#fff;color:#000;padding:20px 22px;border-radius:6px;line-height:1.85;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.08);position:relative;page-break-after:always;break-after:page}
+.bk-cover{min-height:520px;display:flex;flex-direction:column;justify-content:space-between;text-align:center;padding:28px 24px}
+@media print{
+  .noprint,header,nav,#fab,#toast{display:none!important}
+  body{background:#fff;padding:0;margin:0}
+  main{padding:0;max-width:none}
+  .sheet-wrap{overflow:visible;padding:0}
+  .sheet,.bk-page{border-radius:0;box-shadow:none;margin:0;min-height:275mm}
+  @page{size:A4;margin:10mm}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-<div id="app"></div><div id="toast"></div>
+<div id="app">
+  <div class="hero"><div class="hat">🎓</div><h1>مسبار AI</h1><p class="mu">جاري تهيئة الجلسة...</p></div>
+</div>
+<div id="toast"></div>
+
 <script>
-var S={role:null,tab:0,taps:0,code:"1234",
-bag:[{n:"محاضرات الفصل الأول",f:["المحاضرة 1.pdf","المحاضرة 2.docx"]},{n:"الاختبارات",f:["اختبار تجريبي.pdf"]}],
-classes:[{n:"الأحياء - الصف الخامس",c:"AB12",h:["المحاضرة 1.pdf","المحاضرة 2.docx"]}],
-joined:["AB12"],open:null,out:"",
-price:{m:5000,y:45000},trial:7,
-users:[{n:"زينب أحمد",on:true},{n:"د. حسن علي",on:true},{n:"مصطفى كريم",on:false}],
-chat:[["من يحتاج ملزمة الأسبوع القادم؟",0],["أنا يا أستاذ",1]]};
+var S={
+  authReady:false,uid:null,email:"",isOwner:false,
+  role:null,tab:0,taps:0,code:"1234",
+  bag:[{n:"محاضرات الفصل الأول",f:["المحاضرة 1.pdf","المحاضرة 2.docx"]},{n:"الاختبارات",f:["اختبار تجريبي.pdf"]}],
+  classes:[{n:"الأحياء - الصف الخامس",c:"AB12",h:["المحاضرة 1.pdf","المحاضرة 2.docx"]}],
+  joined:["AB12"],open:null,out:"",
+  price:{m:5000,y:45000},trial:7,
+  users:[{n:"زينب أحمد",on:true},{n:"د. حسن علي",on:true},{n:"مصطفى كريم",on:false}],
+  chat:[["من يحتاج ملزمة الأسبوع القادم؟",0],["أنا يا أستاذ",1]],
+  posts:[["د. حسن علي","ملزمة جديدة عن الخلية متاحة بالكلاس"],["زينب أحمد","هل أحد عنده ملخص الفصل الثاني؟"]],
+  tx:"",pend:"",cd:"",gr:[["زينب أحمد",18],["مصطفى كريم",15]],
+  bank:[],bi:"",bt:"",ai:[],free:5,prov:"Claude",
+  plans:[{n:"أسبوعي",p:2000,v:1,u:"أسبوع"},{n:"شهري",p:5000,v:1,u:"شهر"},{n:"6 أشهر",p:25000,v:6,u:"شهر"},{n:"سنوي",p:45000,v:12,u:"شهر"}],
+  codes:[],subs:[],req:[],rt:0,rs:"new",rq:"",pick:null,subv:0,
+  fl:[{n:"ملفاتي",it:[]}],fo:0,use:{},
+  cv:[{n:"د. حسن علي",g:0,m:[["د. حسن علي","أهلاً، وصلت الملزمة؟","",""],["أنا","نعم وصلت، شكراً","",""]]},{n:"كروب الأحياء - الخامس",g:1,m:[["زينب أحمد","متى الاختبار؟","",""]]}],cur:null,
+  /* بوابة الأوراق والملازم (س1 المتكامل) */
+  gw:null, // {view:'step1'|'step2'|'step3'|'ed_q'|'ed_b', kind:'q'|'b', subj:'عربي'}
+  pp:null, // محرر ورقة الأسئلة
+  bk:null, // محرر الملزمة
+  docs:[]  // المستندات المحفوظة
+};
+
+try{S.docs=JSON.parse(localStorage.getItem("misbar_docs_v1")||"[]")}catch(e){S.docs=[]}
+function saveDocsLocal(){try{localStorage.setItem("misbar_docs_v1",JSON.stringify(S.docs))}catch(e){toast("المساحة المحلية ممتلئة")}}
+
 var $=function(i){return document.getElementById(i)},tmr;
-function toast(t){var e=$("toast");e.textContent=t;e.style.display="block";clearTimeout(tmr);tmr=setTimeout(function(){e.style.display="none"},1800)}
+function toast(t){var e=$("toast");e.textContent=t;e.style.display="block";clearTimeout(tmr);tmr=setTimeout(function(){e.style.display="none"},2200)}
 function ask(l,cb,pw){var d=document.createElement("div");d.id="md";d.innerHTML='<div class="mc"><b>'+l+'</b><input id="mi" '+(pw?'type="password" inputmode="numeric" ':'')+'><div class="row"><button class="b grow" id="mk">موافق</button><button class="b s grow" id="mx">إلغاء</button></div></div>';document.body.appendChild(d);var i=$("mi");i.focus();function c(){d.remove()}$("mx").onclick=c;$("mk").onclick=function(){var v=i.value.trim();c();if(v)cb(v)};i.onkeydown=function(e){if(e.key=="Enter")$("mk").click()}}
-function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
-function ai(kind,topic){var t=esc(topic);return{
-"شرح مبسط":"شرح مبسط لـ «"+t+"»:\n١) الفكرة الأساسية بجملة واحدة.\n٢) مثال من الحياة اليومية.\n٣) أهم نقطة تتذكرها بالامتحان.",
-"ترجمة":"ترجمة «"+t+"» إلى الإنجليزية ستظهر هنا مع المصطلحات العلمية بجانب كل فقرة.",
-"تلخيص":"ملخص «"+t+"» بخمس نقاط قصيرة جاهز للمراجعة السريعة.",
-"أسئلة":"س١: ما المقصود بالموضوع الرئيسي في «"+t+"»؟\nأ) …  ب) …  ج) …  د) …\nس٢: علّل سبب أهمية الموضوع.\nس٣: صح أم خطأ: …",
-"اختبار":"اختبار من «"+t+"»: ١٠ أسئلة، المدة ١٥ دقيقة، مع تصحيح فوري وعرض الدرجة."}[kind]}
-function setRole(r){S.role=r;S.tab=0;S.out="";S.open=null;draw()}
-function tab(i){S.tab=i;S.out="";S.open=null;draw()}
-function hat(){S.taps++;clearTimeout(S._t);S._t=setTimeout(function(){S.taps=0},2000);
-if(S.taps>=5){S.taps=0;ask("أدخل رمز المالك",function(c){if(c===S.code)setRole("own");else toast("الرمز غير صحيح")},1)}}
-function head(t){return '<header><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>'+t+'</h1>'+(stat()?'<button class="b s" onclick="S.subv=1;draw()">'+stat()+'</button>':'')+(S.role?'<button class="b s" onclick="setRole(null)">خروج</button>':'')+'</header>'}
-function navb(items){return '<nav>'+items.map(function(x,i){return '<button class="'+(S.tab==i?'on':'')+'" onclick="tab('+i+')"><i>'+x[0]+'</i>'+x[1]+'</button>'}).join("")+'</nav>'}
-function chatV(){return comV()+'<h2>المحادثة</h2><div class="card">'+S.chat.map(function(m){return '<div class="msg'+(m[1]?' me':'')+'">'+esc(m[0])+'</div>'}).join("")+'<div class="row"><input id="ci" placeholder="اكتب رسالة" class="grow"><button class="b" onclick="send()">إرسال</button></div></div>'}
-S.posts=[["د. حسن علي","ملزمة جديدة عن الخلية متاحة بالكلاس"],["زينب أحمد","هل أحد عنده ملخص الفصل الثاني؟"]];S.tx="";S.pend="";S.cd="";S.gr=[["زينب أحمد",18],["مصطفى كريم",15]];
-function comV(){return '<h2>المجتمع</h2><div class="card">'+S.posts.map(function(p){return '<div style="padding:6px 0;border-bottom:1px solid var(--ln)"><b>'+esc(p[0])+'</b><div>'+esc(p[1])+'</div></div>'}).join("")+'<div class="row"><input id="po" placeholder="شارك سؤالاً أو ملزمة" class="grow"><button class="b" onclick="post()">نشر</button></div></div>'}
-function post(){var v=$("po").value.trim();if(v){S.posts.unshift(["أنا",v]);draw()}}
-function txtV(){return '<h2>مختبر النص</h2><div class="card"><label>اكتب النص أو ارفع ملفاً</label><textarea id="tt" rows="6">'+esc(S.tx)+'</textarea><button class="b s" onclick="upT()">📎 رفع ملف نصي</button><div class="grid" style="margin-top:8px"><button class="b" onclick="tl(\'استلال\')">فحص الاستلال</button><button class="b" onclick="tl(\'ذكاء\')">فحص الذكاء الاصطناعي</button><button class="b" onclick="tl(\'صياغة\')">إعادة صياغة</button></div></div>'+(S.out?'<div class="out">'+S.out+'</div><div class="mu" style="margin-top:6px">نتيجة تجريبية، والفحص الحقيقي يُربط بالمرحلة الثانية.</div>':'')}
-function upT(){var f=document.createElement("input");f.type="file";f.accept=".txt";f.onchange=function(){var r=new FileReader();r.onload=function(){S.tx=r.result;draw()};r.readAsText(f.files[0])};f.click()}
-function tl(k){S.tx=$("tt").value;if(!S.tx.trim()){toast("اكتب نصاً أولاً");return}var n=S.tx.trim().split(/\s+/).length;S.out=k=="استلال"?"فحص الاستلال: "+n+" كلمة. ستظهر نسبة التشابه مع المصادر.":k=="ذكاء"?"فحص الذكاء الاصطناعي: "+n+" كلمة. ستظهر نسبة احتمال الكتابة الآلية والجمل المشبوهة.":"إعادة الصياغة: ستظهر نسخة بصياغة جديدة تحافظ على المعنى.";draw()}
-function grV(){return '<h2>دفتر الدرجات</h2><div class="card"><label>مثال: زينب 18 مصطفى 15</label><textarea id="gi" rows="3">'+esc(S.pend)+'</textarea><div class="grid"><button class="b" onclick="mic()">🎙️ صوت</button><button class="b" onclick="cam()">📷 تصوير</button></div><button class="b s" style="margin-top:8px;width:100%" onclick="addG()">إضافة للدفتر</button></div><div class="card">'+S.gr.map(function(g){return '<div class="row" style="padding:5px 0"><span class="grow">'+esc(g[0])+'</span><b>'+g[1]+'</b></div>'}).join("")+'<div class="mu">المعدل: '+(S.gr.reduce(function(a,g){return a+g[1]},0)/S.gr.length).toFixed(1)+'</div><button class="b s" onclick="window.print()">تنزيل PDF</button></div>'}
-function mic(){var R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){toast("المتصفح لا يدعم الصوت، اكتب الدرجات");return}var r=new R();r.lang="ar-IQ";r.onresult=function(e){S.pend=e.results[0][0].transcript;draw()};r.onerror=function(){toast("تعذر الاستماع، تأكد من إذن المايك")};r.start();toast("تكلم الآن")}
-function cam(){var f=document.createElement("input");f.type="file";f.accept="image/*";f.setAttribute("capture","environment");f.onchange=function(){toast("وصلت الصورة. قراءتها تُربط بالمرحلة الثانية، حالياً اكتب الدرجات")};f.click()}
-function addG(){S.pend=$("gi").value;var m,re=/([^\d\s]+(?:\s[^\d\s]+)*)\s*(\d+(?:\.\d+)?)/g,c=0;while((m=re.exec(S.pend))){S.gr.push([m[1].trim(),parseFloat(m[2])]);c++}if(c){S.pend="";toast("أضيفت "+c+" درجة")}else toast("اكتب الاسم ثم الدرجة");draw()}
-function send(){var v=$("ci").value.trim();if(v){S.chat.push([v,1]);draw()}}
-function bagV(){return '<h2>حقيبتي</h2>'+S.bag.map(function(f,i){return '<div class="card"><b>📁 '+esc(f.n)+'</b>'+f.f.map(function(x){return '<div class="row mu" style="padding:6px 0"><span class="grow">📄 '+esc(x)+'</span><button class="b s" onclick="toast(\'تم الإرسال إلى الكلاس\')">إرسال للكلاس</button></div>'}).join("")+'<button class="b s" onclick="addFile('+i+')">+ رفع ملف</button></div>'}).join("")+'<button class="b" onclick="addFolder()">+ مجلد جديد</button>'}
-function addFolder(){ask("اسم المجلد",function(n){S.bag.push({n:n,f:[]});draw()})}
-function addFile(i){var f=document.createElement("input");f.type="file";f.accept=".pdf,.doc,.docx,.ppt,.pptx";f.onchange=function(){if(f.files[0]){S.bag[i].f.push(f.files[0].name);draw()}};f.click()}
-function clsV(){return '<h2>كلاساتي</h2>'+S.classes.map(function(c){return '<div class="card"><b>'+esc(c.n)+'</b><div class="mu">رمز الدخول: '+esc(c.c)+' · '+c.h.length+' ملازم</div></div>'}).join("")+'<button class="b" onclick="addClass()">+ إنشاء كلاس</button>'}
-function addClass(){ask("اسم الكلاس",function(n){S.classes.push({n:n,c:Math.random().toString(36).slice(2,6).toUpperCase(),h:[]});draw()})}
-function toolsV(){return '<h2>مولّد الأسئلة</h2><div class="card"><label>الموضوع</label><input id="qt" value="التمثيل الضوئي"><div class="grid"><div><label>النوع</label><select id="qk"><option>اختيار من متعدد</option><option>مقالي</option><option>صح وخطأ</option></select></div><div><label>العدد</label><input id="qn" type="number" value="10"></div></div><button class="b" onclick="gen(\'q\')">توليد</button></div>'+
-''+bankV()+'<h2>مولّد الخطط</h2><div class="card"><label>نوع الخطة</label><select id="pk"><option>يومية</option><option>أسبوعية</option><option>شهرية</option><option>سنوية</option></select><label>تكلم مع الذكاء الاصطناعي وقل له شنو تريد</label><textarea id="pi" rows="4" placeholder="مثال: سوّي لي خطة يومية بتصميم حلو، وأريد فيها وقت للمراجعة ونشاط للطلاب">'+esc(S.pi||"")+'</textarea><div class="grid"><button class="b s" onclick="micP()">🎙️ تكلم</button><button class="b" onclick="gen(\'p\')">ابدأ التصميم</button></div></div>'+planV()+''+
-(S.out?'<div class="out">'+S.out+'</div><div class="row" style="margin-top:8px"><button class="b s grow" onclick="window.print()">تنزيل PDF</button><button class="b s grow" onclick="toast(\'سيُربط التصدير إلى Word بالمرحلة الثانية\')">تنزيل Word</button></div>':'')+
-'<h2>التأليف</h2><div class="grid"><button class="b s" onclick="toast(\'محرر الملازم — المرحلة الثانية\')">✍️ تأليف ملزمة</button><button class="b s" onclick="toast(\'عرض PowerPoint — المرحلة الثانية\')">📊 عرض تقديمي</button></div>'}
-function micP(){var R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){toast("المتصفح لا يدعم الصوت، اكتب طلبك");return}S.pi=$("pi").value;var r=new R();r.lang="ar-IQ";r.onresult=function(e){S.pi=(S.pi+" "+e.results[0][0].transcript).trim();draw()};r.onerror=function(){toast("تعذر الاستماع، تأكد من إذن المايك")};r.start();toast("تكلم الآن")}
-S.bank=[];S.bi="";S.bt="";S.ai=[];S.used=0;S.free=5;S.prov="Claude";S.email="";S.subs=["demo@misbar.app"];S.plans=[{n:"شهري",p:5000,d:30},{n:"سنوي",p:45000,d:365}];
-function isSub(){return S.subs.indexOf(S.email)>-1}
-function stat(){return S.email?(isSub()?"✅ مشترك":"مجاني"):""}
-function loginV(){$("app").className="";$("app").innerHTML='<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">سجّل دخولك بالإيميل</p></div><main><div class="card"><input id="em" type="email" dir="ltr" placeholder="you@gmail.com"><button class="b" style="width:100%" onclick="login()">تسجيل الدخول</button><div class="mu" style="margin-top:6px">تسجيل تجريبي. الدخول الحقيقي بحساب Google يُربط بالمرحلة الثانية. جرّب demo@misbar.app لترى حساب المشترك.</div></div></main>'}
-function login(){var v=$("em").value.trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(v)){toast("اكتب إيميلاً صحيحاً");return}S.email=v;S.role=null;draw()}
-function aiV(){var left=Math.max(S.free-S.used,0),L={Claude:"https://claude.ai",Gemini:"https://gemini.google.com",ChatGPT:"https://chatgpt.com"};return '<h2>الذكاء الاصطناعي</h2><div class="card"><div class="mu" dir="ltr" style="text-align:start">'+esc(S.email)+'</div><div>'+(isSub()?'اشتراك فعال: استخدام كامل':'مجاني: المتبقي اليوم '+left+' رسائل')+'</div><div class="grid" style="margin-top:8px">'+["Claude","Gemini","ChatGPT"].map(function(p){return '<button class="b '+(S.prov==p?'':'s')+'" onclick="S.prov=\''+p+'\';draw()">'+p+'</button>'}).join("")+'</div><a href="'+L[S.prov]+'" target="_blank" rel="noopener" style="display:block;margin-top:8px;color:var(--ac)">فتح '+S.prov+' بالمتصفح بحسابك الخاص</a></div><div class="card">'+S.ai.map(function(m){return '<div class="msg'+(m[1]?' me':'')+'">'+esc(m[0])+'</div>'}).join("")+'<div class="row"><input id="ai" placeholder="اسأل '+S.prov+'" class="grow"><button class="b" onclick="sendAI()">إرسال</button></div></div><button class="b s" onclick="S.email=\'\';S.role=null;draw()">تغيير الحساب</button>'}
-function sendAI(){var v=$("ai").value.trim();if(!v)return;if(!isSub()&&S.used>=S.free){toast("انتهى استخدامك المجاني، اشترك للمتابعة");return}if(!isSub())S.used++;S.ai.push([v,1],["رد تجريبي من "+S.prov+". الرد الحقيقي يُربط بالخادم بالمرحلة الثانية.",0]);draw()}
-function plansV(){return '<h2>الاشتراكات والأسعار</h2>'+S.plans.map(function(x,i){return '<div class="card"><label>اسم الاشتراك</label><input value="'+esc(x.n)+'" onchange="S.plans['+i+'].n=this.value"><div class="grid"><div><label>السعر (د.ع)</label><input type="number" value="'+x.p+'" onchange="S.plans['+i+'].p=this.value"></div><div><label>المدة بالأيام</label><input type="number" value="'+x.d+'" onchange="S.plans['+i+'].d=this.value"></div></div><button class="b s" onclick="S.plans.splice('+i+',1);draw()">حذف</button></div>'}).join("")+'<button class="b" onclick="S.plans.push({n:\'جديد\',p:0,d:30});draw()">+ إضافة اشتراك</button><h2>المشتركون بالإيميل</h2><div class="card">'+S.subs.map(function(e,i){return '<div class="row" style="padding:4px 0"><span class="grow" dir="ltr">'+esc(e)+'</span><button class="b s" onclick="S.subs.splice('+i+',1);draw()">إلغاء</button></div>'}).join("")+'<div class="row"><input id="se" dir="ltr" placeholder="email" class="grow"><button class="b" onclick="addSub()">تفعيل</button></div></div><div class="card"><label>رسائل الذكاء المجانية يومياً</label><input type="number" value="'+S.free+'" onchange="S.free=+this.value"></div>'}
-function addSub(){var v=$("se").value.trim().toLowerCase();if(v&&S.subs.indexOf(v)<0){S.subs.push(v);draw()}}
-function bankV(){return '<h2>بنك الأسئلة من الفصل</h2><div class="card"><label>ألصق نص الفصل أو ارفع ملفاً نصياً</label><textarea id="bt" rows="5">'+esc(S.bt)+'</textarea><button class="b s" onclick="upB()">📎 رفع ملف نصي</button><label>أنواع الأسئلة</label><div class="grid"><label><input type="checkbox" id="k1" checked style="width:auto"> اختيار من متعدد</label><label><input type="checkbox" id="k2" checked style="width:auto"> مقالي</label><label><input type="checkbox" id="k3" style="width:auto"> صح وخطأ</label></div><label>العدد</label><input id="bn" type="number" value="6"><label>تعليماتك الخاصة (تُطبّق بالذكاء الاصطناعي بالمرحلة الثانية)</label><textarea id="bi" rows="2" placeholder="مثال: السؤال الأول تعريف، والثاني مقارنة">'+esc(S.bi)+'</textarea><div class="grid"><button class="b s" onclick="micB()">🎙️ تكلم</button><button class="b" onclick="mkBank()">توليد البنك</button></div></div>'+(S.bank.length?'<div class="card"><b>بنك الأسئلة ('+S.bank.length+')</b><div class="out" style="margin-top:8px">'+S.bank.map(function(q,i){return (i+1)+') '+esc(q)}).join("\n\n")+'</div><button class="b s" style="margin-top:8px" onclick="window.print()">تنزيل PDF</button></div>':'')}
-function upB(){var f=document.createElement("input");f.type="file";f.accept=".txt";f.onchange=function(){var r=new FileReader();r.onload=function(){S.bt=r.result;draw()};r.readAsText(f.files[0])};f.click()}
-function micB(){var R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){toast("المتصفح لا يدعم الصوت");return}S.bi=$("bi").value;S.bt=$("bt").value;var r=new R();r.lang="ar-IQ";r.onresult=function(e){S.bi=(S.bi+" "+e.results[0][0].transcript).trim();draw()};r.onerror=function(){toast("تعذر الاستماع")};r.start();toast("تكلم الآن")}
-function mkBank(){S.bt=$("bt").value;S.bi=$("bi").value;var t=S.bt.replace(/\s+/g," ").trim();var ss=t.split(/[.؟!]\s+/).filter(function(s){return s.split(" ").length>=5}),ws=t.split(" ").filter(function(w){return w.length>4}),k=[];if($("k1").checked)k.push("m");if($("k2").checked)k.push("e");if($("k3").checked)k.push("t");if(!k.length||!ss.length){toast("ألصق نصاً أطول واختر نوعاً");return}var n=Math.min(parseInt($("bn").value)||6,30),out=[];for(var i=0;i<n;i++){var s=ss[i%ss.length],ty=k[i%k.length],sw=s.split(" ").filter(function(w){return w.length>4}),a=sw[Math.floor(sw.length/2)]||s.split(" ")[0];if(ty=="m"){var o=[a],g=0;while(o.length<4&&g++<60){var w=ws[Math.floor(Math.random()*ws.length)];if(o.indexOf(w)<0)o.push(w)}o.sort(function(){return Math.random()-.5});out.push("[اختيار من متعدد] أكمل: "+s.replace(a,"______")+"\n"+o.map(function(x,j){return "أبجد"[j]+") "+x}).join("   "))}else if(ty=="e")out.push("[مقالي] اشرح باختصار: "+s);else out.push("[صح أم خطأ] "+s)}S.bank=out;draw()}
-function tps(){if(!S.tp)S.tp=[["كلاسيكي",150,0],["عصري",210,1],["للصغار",35,2],["أنيق",280,0],["هادئ",170,1]];if(S.sl==null)S.sl=0}
-function planV(){tps();var G=["جدول","بطاقات","خط زمني"];return '<h2>اختر نموذجاً</h2><div class="grid">'+S.tp.map(function(t,i){var c='hsl('+t[1]+',60%,38%)',b='hsl('+t[1]+',60%,94%)';return '<div onclick="S.sl='+i+';draw()" style="cursor:pointer;background:'+b+';color:#222;border:3px solid '+(S.sl==i?c:'transparent')+';border-radius:'+(t[2]==2?20:8)+'px;padding:10px"><div style="background:'+c+';height:10px;border-radius:5px;margin-bottom:8px"></div><b>'+t[0]+'</b><div style="font-size:12px;color:#555">'+G[t[2]]+'</div></div>'}).join("")+'</div><button class="b s" style="width:100%;margin-top:8px" onclick="moreT()">✨ ولّد نماذج مشابهة</button>'+(S.pv?prev():'')}
-function moreT(){tps();var N=["بسيط","مرتب","مشرق","رسمي","هادئ","جريء"],b=S.tp[S.sl],a=[b];for(var i=0;i<4;i++)a.push([N[Math.floor(Math.random()*N.length)],(b[1]+30+Math.random()*120|0)%360,i<2?b[2]:(i+b[2])%3]);S.tp=a;S.sl=0;draw()}
-function prev(){var t=S.tp[S.sl],c='hsl('+t[1]+',60%,38%)',b='hsl('+t[1]+',60%,95%)',D=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"],R=D.map(function(d){return[d,"الموضوع","النشاط","التقييم"]}),h;
-if(t[2]==0)h='<table style="width:100%;border-collapse:collapse"><tr style="background:'+c+';color:#fff"><th>اليوم</th><th>الموضوع</th><th>النشاط</th><th>التقييم</th></tr>'+R.map(function(r){return '<tr>'+r.map(function(x){return '<td style="border:1px solid '+c+'55;padding:8px;text-align:center">'+x+'</td>'}).join("")+'</tr>'}).join("")+'</table>';
-else if(t[2]==1)h='<div class="grid">'+R.map(function(r){return '<div style="background:#fff;border-top:5px solid '+c+';border-radius:10px;padding:10px"><b>'+r[0]+'</b><div>'+r[1]+'</div><div>'+r[2]+'</div><div>'+r[3]+'</div></div>'}).join("")+'</div>';
-else h=R.map(function(r){return '<div style="border-inline-start:4px solid '+c+';padding:6px 12px;margin:8px 6px;background:#fff;border-radius:10px"><b style="color:'+c+'">'+r[0]+'</b> — '+r[1]+'، '+r[2]+'، '+r[3]+'</div>'}).join("");
-return '<h2>معاينة خطتك</h2><div style="background:'+b+';color:#222;border-radius:14px;padding:14px"><h3 style="margin:0 0 4px;color:'+c+'">الخطة '+esc(S.per||"")+'</h3>'+(S.pi?'<div style="font-size:13px;margin-bottom:10px">طلبك: '+esc(S.pi)+'</div>':'')+h+'</div><div class="row" style="margin-top:8px"><button class="b s grow" onclick="window.print()">تنزيل PDF</button><button class="b s grow" onclick="toast(\'تصدير Word في المرحلة الثانية\')">تنزيل Word</button></div><div class="mu" style="margin-top:6px">محتوى الخطة الحقيقي يكتبه الذكاء الاصطناعي حسب طلبك بالمرحلة الثانية.</div>'}
-function plan(){S.pi=$("pi").value;var st=$("ps").value,per=$("pk").value,inc=[],exc=[],late=[];S.pi.split(/[\n.،,؛]+/).forEach(function(s){s=s.trim();if(!s)return;if(/^(بدون|لا |ماكو|احذف|استبعد)/.test(s))exc.push(s.replace(/^(بدون|لا تضيف|لا|ماكو|احذف|استبعد)\s*/,""));else if(/(أخر|اخر|أجل|اجل|وخر|بعدين|لاحق)/.test(s))late.push(s);else inc.push(s)});var L=function(a){return a.length?a.map(function(x){return (st=="جدول"?"| ":"• ")+esc(x)}).join("\n"):"—"};return "الخطة "+esc(per)+" ("+esc(st)+")\n\nما يُضاف:\n"+L(inc)+"\n\nما يُؤجَّل:\n"+L(late)+"\n\nما يُستبعد:\n"+L(exc)+"\n\nالأهداف والتقييم تُضاف تلقائياً حسب نوع الخطة."}
-function gen(k){if(k=="q"){S.out="أسئلة «"+esc($("qt").value)+"» ("+esc($("qk").value)+"، "+esc($("qn").value)+" سؤال):\n\n"+ai("أسئلة",$("qt").value)}else{S.pi=$("pi").value;S.per=$("pk").value;S.pv=1;S.out=""}draw()}
-function stuV(){if(S.open!==null){var h=S.open;return '<h2>📄 '+esc(h)+'</h2><div class="grid">'+["شرح مبسط","ترجمة","تلخيص","أسئلة","اختبار"].map(function(k){return '<button class="b s" onclick="S.out=ai(\''+k+'\',S.open);draw()">'+k+'</button>'}).join("")+'<button class="b" onclick="S.open=null;S.out=\'\';draw()">رجوع</button></div>'+(S.out?'<div class="out" style="margin-top:10px">'+S.out+'</div><div class="mu" style="margin-top:6px">هذا رد تجريبي، والذكاء الاصطناعي الحقيقي يُربط بالمرحلة الثانية.</div>':'')}
-return '<h2>الانضمام لكلاس</h2><div class="row"><input id="jc" placeholder="رمز الكلاس" class="grow"><button class="b" onclick="join()">انضمام</button></div>'+S.classes.filter(function(c){return S.joined.indexOf(c.c)>-1}).map(function(c){return '<h2>'+esc(c.n)+'</h2>'+c.h.map(function(h,i){return '<div class="card row" onclick="S.open=\''+esc(h)+'\';draw()" style="cursor:pointer"><b>'+(i+1)+'</b><span class="grow">'+esc(h)+'</span>›</div>'}).join("")}).join("")}
-function join(){var v=$("jc").value.trim().toUpperCase();if(S.classes.some(function(c){return c.c==v})){S.joined.push(v);draw()}else toast("الرمز غير موجود")}
-function revV(){return bankV()+'<h2>بطاقات المراجعة</h2><div class="card" onclick="this.innerHTML=\'<b>الجواب:</b> الكلوروفيل\'" style="cursor:pointer;min-height:90px"><b>ما الصبغة التي تمتص الضوء في النبات؟</b><div class="mu">اضغط لإظهار الجواب</div></div><div class="card"><b>تقدمك</b><div class="mu">أكملت ٣ من ٥ ملازم هذا الأسبوع</div></div>'}
-function ownV(){return '<h2>الإحصائيات</h2><div class="grid"><div class="card"><b>'+S.users.length+'</b><div class="mu">مستخدم</div></div><div class="card"><b>'+S.users.filter(function(u){return u.on}).length+'</b><div class="mu">اشتراك فعال</div></div></div><h2>إعلان لكل المستخدمين</h2><div class="card"><input id="an" placeholder="نص الإعلان"><button class="b s" onclick="S.posts.unshift([\'إدارة مسبار\',$(\'an\').value]);toast(\'تم النشر بالمجتمع\')">نشر</button></div>'+plansV()+'<h2>الفترة المجانية</h2><div class="card"><label>أيام الفترة المجانية</label><input type="number" value="'+S.trial+'" onchange="S.trial=this.value"></div><h2>المستخدمون</h2>'+S.users.map(function(u,i){return '<div class="card row"><span class="grow">'+esc(u.n)+'<div class="mu">'+(u.on?'مشترك فعال':'متوقف')+'</div></span><button class="tog'+(u.on?' on':'')+'" aria-label="تفعيل" onclick="S.users['+i+'].on=!S.users['+i+'].on;draw()"></button></div>'}).join("")+'<h2>رمز المالك</h2><button class="b s" onclick="changeCode()">تغيير الرمز</button>'}
-function draw(){var h="",r=S.role;if(!S.email&&r!="own"){loginV();return}
-if(!r)h='<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">ادرس وعلّم بمساعدة الذكاء الاصطناعي</p></div><main><div class="grid"><button class="b" style="background:#15803d" onclick="setRole(\'pro\')">أنا أستاذ</button><button class="b" onclick="setRole(\'stu\')">أنا طالب</button></div></main>';
-else if(r=="pro"){h=head("واجهة الأستاذ")+'<main>'+[bagV,clsV,toolsV,grV,txtV,aiV,chatV][S.tab]()+'</main>'+navb([["🎒","الحقيبة"],["🏫","الكلاسات"],["🧰","الأدوات"],["📝","الدرجات"],["✨","النص"],["🤖","الذكاء"],["💬","المجتمع"]])}
-else if(r=="stu"){h=head("واجهة الطالب")+'<main>'+[stuV,revV,txtV,aiV,chatV,filesV][S.tab]()+'</main>'+navb([["📚","كلاساتي"],["🧠","المراجعة"],["✨","النص"],["🤖","الذكاء"],["💬","المجتمع"],["📁","ملفاتي"]])}
-else h=head("لوحة المالك")+'<main>'+ownV()+'</main>';
-$("app").className=r=="pro"?"pro":"";$("app").innerHTML=h}
-S.plans=[{n:"أسبوعي",p:2000,v:1,u:"أسبوع"},{n:"شهري",p:5000,v:1,u:"شهر"},{n:"6 أشهر",p:25000,v:6,u:"شهر"},{n:"سنوي",p:45000,v:12,u:"شهر"}];S.codes=[];S.subs=[{e:"demo@misbar.app",n:"سنوي",end:Date.now()+365*864e5}];
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+
+Object.defineProperty(S,"used",{get:function(){return S.use[S.email+"|"+new Date().toDateString()]||0},set:function(v){S.use[S.email+"|"+new Date().toDateString()]=v}});
 function dd(p){return p.v*(p.u=="أسبوع"?7:p.u=="شهر"?30:1)}
 function fd(t){return new Date(t).toLocaleDateString("ar-IQ")}
-function isSub(){return S.subs.some(function(s){return s.e==S.email&&s.end>Date.now()})}
-function grant(e,p){var now=Date.now(),cur=S.subs.filter(function(s){return s.e==e&&s.end>now})[0],ms=dd(p)*864e5;if(cur){cur.end+=ms;cur.n=p.n;return cur.end}S.subs=S.subs.filter(function(s){return !(s.e==e)});S.subs.push({e:e,n:p.n,end:now+ms});return now+ms}
-function changeCode(){ask("اكتب الرمز الحالي",function(o){if(o!==S.code){toast("الرمز الحالي غير صحيح");return}ask("اكتب الرمز الجديد (4 أرقام أو أكثر)",function(n){if(n.length<4){toast("الرمز قصير");return}S.code=n;toast("تم تغيير الرمز")},1)},1)}
-function plansV(){var op=S.plans.map(function(p,i){return '<option value="'+i+'">'+esc(p.n)+'</option>'}).join("");return '<h2>الباقات</h2>'+S.plans.map(function(x,i){return '<div class="card"><label>اسم الباقة</label><input value="'+esc(x.n)+'" onchange="S.plans['+i+'].n=this.value;draw()"><div class="grid"><div><label>السعر (د.ع)</label><input type="number" value="'+x.p+'" onchange="S.plans['+i+'].p=this.value"></div><div><label>المدة</label><div class="row"><input type="number" min="1" value="'+x.v+'" onchange="S.plans['+i+'].v=+this.value||1;draw()"><select onchange="S.plans['+i+'].u=this.value;draw()">'+["يوم","أسبوع","شهر"].map(function(u){return '<option'+(u==x.u?' selected':'')+'>'+u+'</option>'}).join("")+'</select></div></div></div><div class="mu">تبدأ من يوم التفعيل وتنتهي بعد '+dd(x)+' يوماً وتُغلق تلقائياً</div><button class="b s" onclick="S.plans.splice('+i+',1);draw()">حذف الباقة</button></div>'}).join("")+'<button class="b" onclick="S.plans.push({n:\'باقة جديدة\',p:0,v:1,u:\'شهر\'});draw()">+ إضافة باقة</button>'+codesV(op)+'<h2>تفعيل مشترك بالإيميل</h2><div class="card"><input id="se" dir="ltr" placeholder="email"><select id="sp">'+op+'</select><button class="b" onclick="addSub()">تفعيل من اليوم</button></div><h2>المشتركون</h2>'+S.subs.map(function(s,i){var on=s.end>Date.now();return '<div class="card row"><span class="grow" dir="ltr">'+esc(s.e)+'<div class="mu" dir="rtl">'+esc(s.n)+' · '+(on?'ينتهي ':'منتهي ')+fd(s.end)+'</div></span><button class="b s" onclick="S.subs.splice('+i+',1);draw()">إلغاء</button></div>'}).join("")+'<div class="card"><label>رسائل الذكاء الاصطناعي المجانية يومياً</label><input type="number" value="'+S.free+'" onchange="S.free=+this.value"></div>'}
-function codesV(op){return '<h2>أكواد الاشتراك</h2><div class="card"><label>الباقة</label><select id="cp">'+op+'</select><label>عدد الأكواد</label><input id="cn" type="number" value="1" min="1" max="50"><button class="b" onclick="mkCodes()">توليد</button></div>'+(S.codes.length?'<div class="card">'+S.codes.map(function(c,i){return '<div class="row" style="padding:4px 0"><span class="grow" dir="ltr">'+c.c+'<div class="mu" dir="rtl">'+esc(c.n)+' · '+(c.used?'مستخدم':'متاح')+'</div></span><button class="b s" onclick="S.codes.splice('+i+',1);draw()">حذف</button></div>'}).join("")+'</div>':'')}
-function mkCodes(){var p=S.plans[$("cp").value],n=Math.min(+$("cn").value||1,50);if(!p){toast("أضف باقة أولاً");return}for(var i=0;i<n;i++)S.codes.unshift({c:"MS-"+Math.random().toString(36).slice(2,8).toUpperCase(),n:p.n,v:p.v,un:p.u,used:0});draw()}
-function addSub(){var v=$("se").value.trim().toLowerCase(),p=S.plans[$("sp").value];if(!v||!p){toast("اكتب الإيميل واختر باقة");return}grant(v,{n:p.n,v:p.v,u:p.u});draw()}
-function redeemV(){return '<div class="card"><label>عندك كود اشتراك؟</label><div class="row"><input id="rc" dir="ltr" placeholder="MS-XXXXXX" class="grow"><button class="b" onclick="redeem()">تفعيل</button></div></div>'}
-function redeem(){var v=$("rc").value.trim().toUpperCase(),c=S.codes.filter(function(x){return x.c==v&&!x.used})[0];if(!c){toast("الكود غير صحيح أو مستخدم");return}c.used=1;var e=grant(S.email,{n:c.n,v:c.v,u:c.un});toast("تم التفعيل حتى "+fd(e));draw()}
-var _aiV=aiV;aiV=function(){return redeemV()+_aiV()};
-S.fl=[{n:"ملفاتي",it:[]}];S.fo=0;
-function gate(){if(isSub())return true;if(S.used>=S.free){toast("انتهى استخدامك المجاني، اشترك للمتابعة");return false}S.used=S.used+1;return true}
-var _ai2=ai;ai=function(k,t){if(!gate())return "انتهى استخدامك المجاني. اشترك للمتابعة.";return _ai2(k,t)};
-var _tb=tab;tab=function(i){var g=(S.role=="pro"&&i==5)||(S.role=="stu"&&i==3);if(g&&S.tab!=i&&!gate())return;_tb(i)};
-sendAI=function(){var v=$("ai").value.trim();if(!v)return;S.ai.push([v,1],["رد تجريبي من "+S.prov+". الاستخدام الفعلي يكون من حسابك الشخصي.",0]);draw()};
-function filesV(){var f=S.fl[S.fo]||S.fl[0];return '<h2>ملفاتي</h2><div class="card"><div class="row" style="flex-wrap:wrap">'+S.fl.map(function(x,i){return '<button class="b '+(i==S.fo?'':'s')+'" onclick="S.fo='+i+';draw()">📁 '+esc(x.n)+' ('+x.it.length+')</button>'}).join("")+'<button class="b s" onclick="newFo()">+ مجلد</button></div></div><div class="grid" style="margin-bottom:10px"><button class="b" onclick="scan()">📷 مسح ملزمة بالكاميرا</button><button class="b s" onclick="upF()">📎 رفع ملف أو صورة</button></div>'+(f.it.length?f.it.map(function(it,i){return '<div class="card"><div class="row"><b class="grow">'+esc(it.n)+'</b><button class="b s" onclick="delF('+i+')">حذف</button></div>'+(it.d?'<img src="'+it.d+'" alt="" style="max-width:100%;border-radius:10px;margin-top:8px">':'')+'<div class="mu">'+esc(it.t)+'</div></div>'}).join(""):'<div class="card mu">المجلد فارغ. صوّر ملزمة أو ارفع ملفاً لتحفظه هنا.</div>')+(S.fl.length>1?'<button class="b s" onclick="delFo()">حذف هذا المجلد</button>':'')}
+function pid(p){if(!p.id)p.id=Math.random().toString(36).slice(2,8);return p.id}
+function isSub(){var n=Date.now();return S.subs.some(function(s){return s.e==S.email&&s.end>n&&(!s.s||s.s<=n)})}
+function stat(){return S.email?(isSub()?"💳 مشترك":"💳 اشترك"):""}
+function gate(){if(isSub())return true;if(S.used>=S.free){toast("انتهت دخولاتك المجانية اليوم، اشترك للمتابعة");return false}S.used=S.used+1;return true}
+
+function ai(kind,topic){
+  if(!gate())return "انتهت دخولاتك المجانية اليوم. اشترك لمتابعة استخدام الذكاء الاصطناعي.";
+  var t=esc(topic);
+  var res={
+    "شرح مبسط":"شرح مبسط لـ «"+t+"»:\n١) الفكرة الأساسية بجملة واحدة.\n٢) مثال من الحياة اليومية.\n٣) أهم نقطة تتذكرها بالامتحان.",
+    "ترجمة":"ترجمة «"+t+"» إلى الإنجليزية ستظهر هنا مع المصطلحات العلمية بجانب كل فقرة.",
+    "تلخيص":"ملخص «"+t+"» بخمس نقاط قصيرة جاهز للمراجعة السريعة.",
+    "أسئلة":"س١: ما المقصود بالموضوع الرئيسي في «"+t+"»؟\nأ) …  ب) …  ج) …  د) …\nس٢: علّل سبب أهمية الموضوع.\nس٣: صح أم خطأ: …",
+    "اختبار":"اختبار من «"+t+"»: ١٠ أسئلة، المدة ١٥ دقيقة، مع تصحيح فوري وعرض الدرجة."
+  }[kind]||"";
+  return res+'\n\nأكمل بحسابك الشخصي: <a href="https://claude.ai" target="_blank" rel="noopener">Claude</a> · <a href="https://gemini.google.com" target="_blank" rel="noopener">Gemini</a> · <a href="https://chatgpt.com" target="_blank" rel="noopener">ChatGPT</a>';
+}
+
+function setRole(r){S.role=r;S.tab=0;S.out="";S.open=null;S.gw=null;S.pp=null;S.bk=null;draw()}
+function tab(i){
+  var t=S.role=="pro"?5:3;
+  if(i==t&&S.tab!=t&&!gate())return;
+  S.tab=i;S.out="";S.open=null;S.gw=null;S.pp=null;S.bk=null;draw();
+}
+function hat(){
+  S.taps++;clearTimeout(S._t);S._t=setTimeout(function(){S.taps=0},2000);
+  if(S.taps>=5){S.taps=0;ask("أدخل رمز المالك",function(c){if(c===S.code)setRole("own");else toast("الرمز غير صحيح")},1)}
+}
+function head(t){
+  return '<header><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>'+t+'</h1>'+
+  (stat()&&S.role!='own'?'<button class="b s" onclick="S.subv=1;draw()">'+stat()+'</button>':'')+
+  (S.role?'<button class="b s" title="تبديل بين الأستاذ والطالب" onclick="setRole(null)">🔄 الدور</button>':'')+
+  '<button class="b d" title="تسجيل الخروج النهائي" onclick="fbLogout()">خروج</button></header>';
+}
+function navb(items){return '<nav>'+items.map(function(x,i){return '<button class="'+(S.tab==i?'on':'')+'" onclick="tab('+i+')"><i>'+x[0]+'</i>'+x[1]+'</button>'}).join("")+'</nav>'}
+
+/* ==================== بوابة الأوراق والملازم (نسخة س١ المتكاملة) ==================== */
+var SUBJECTS=[
+  {n:"العربي",ico:"ض",ltr:0,syms:["«","»","،","؛","؟","ـ","ّ","ً","ٌ","ٍ","ﷺ","ﷻ"]},
+  {n:"الإنكليزي",ico:"E",ltr:1,syms:["___","?","!","'","\"","( )","[ ]","→","✓","✗"]},
+  {n:"الإسلامية",ico:"الله",ltr:0,syms:["﷽","ﷻ","ﷺ","عليه السلام","رضي الله عنه","﴿","﴾","«","»"]},
+  {n:"الفيزياء",ico:"F",ltr:0,syms:["Δ","λ","Ω","μ","°","×10","²","³","√","→","⇌","≈","≠"]},
+  {n:"الكيمياء",ico:"H₂O",ltr:0,syms:["→","⇌","↑","↓","Δ","H₂O","CO₂","O₂","H₂","⁺","⁻","²","³"]},
+  {n:"الأحياء",ico:"🧬",ltr:0,syms:["→","×","♂","♀","DNA","RNA","ATP","O₂","CO₂","%","°C"]},
+  {n:"الاجتماعيات",ico:"🌍",ltr:0,syms:["م.","ق.م","هـ","°","شمالاً","جنوباً","شرقاً","غرباً","«","»"]},
+  {n:"الرياضيات",ico:"Σ",ltr:0,syms:["√","²","³","π","∞","±","×","÷","≤","≥","≠","≈","∠","△","∫","Σ"]},
+  {n:"الفرنسية",ico:"Fr",ltr:1,syms:["é","è","ê","ë","à","â","ç","ù","û","î","ï","ô","œ","___"]},
+  {n:"الكردية",ico:"ک",ltr:0,syms:["ڕ","ڵ","ێ","ۆ","وو","ڤ","پ","چ","ژ","گ","«","»"]},
+  {n:"التركية",ico:"Tr",ltr:1,syms:["ç","ğ","ı","İ","ö","ş","ü","Ç","Ğ","Ö","Ş","Ü","___"]},
+  {n:"مادة عامة",ico:"س",ltr:0,syms:["___","( )","«»","؟","•","→","✓","✗","²","³","%"]}
+];
+var WLANGS=[
+  {id:"ar",n:"العربية",rtl:1},
+  {id:"en",n:"English",rtl:0},
+  {id:"fr",n:"Français",rtl:0},
+  {id:"tr",n:"Türkçe",rtl:0},
+  {id:"cks",n:"کوردی (سورانی)",rtl:1},
+  {id:"ckm",n:"Kurdî (Kurmancî)",rtl:0}
+];
+var COVER_STYLES=[
+  "إطار مزدوج كلاسيكي","شريط جانبي عريض","بطاقة مركزية فاخرة","زوايا هندسية",
+  "ترويسة علوية ملونة","إطار منقط أنيق","خطوط متوازية","شعار مركزي كبير",
+  "تصميم أكاديمي رسمي","إطار ظل ناعم","شريط علوي وسفلي","مربع عنوان بارز",
+  "زخرفة إسلامية هادئة","تقسيم ثنائي اللون","إطار رفيع عصري","نجمة أكاديمية",
+  "خلفية فاتحة مؤطرة","عنوان بخط عريض","بطاقة مزدوجة","كلاسيكي بدون إطار"
+];
+
+function getSubjObj(name){return SUBJECTS.filter(function(x){return x.n==name})[0]||SUBJECTS[11]}
+function insSym(elId,sym){
+  var el=$(elId);if(!el)return;
+  var s=el.selectionStart||0,e=el.selectionEnd||0,v=el.value;
+  el.value=v.slice(0,s)+sym+v.slice(e);
+  el.focus();el.selectionStart=el.selectionEnd=s+sym.length;
+  el.dispatchEvent(new Event("input"));
+}
+function symBarH(elId,subjName){
+  var main=getSubjObj(subjName),extra=["√","²","³","→","⇌","H₂O","___","«»","ﷺ"];
+  var all=main.syms.concat(extra.filter(function(x){return main.syms.indexOf(x)<0}));
+  return '<div class="symbar">'+all.map(function(s){return '<button type="button" onclick="insSym(\''+elId+'\',\''+esc(s).replace(/'/g,"\\'")+'\')">'+esc(s)+'</button>'}).join("")+'</div>';
+}
+
+/* الواجهة الرئيسية لبوابة الأوراق والملازم */
+function gwHomeV(){
+  var list=S.docs||[];
+  return '<h2>📄 بوابة الأوراق والملازم</h2>'+
+  '<div class="card" style="border-inline-start:4px solid var(--ac)">'+
+    '<div class="row"><div class="grow"><b>أوراق الأسئلة والملازم</b><div class="mu">اكتب أسئلتك أو ملزمتك على الهاتف، ومسبار يرتبها لك في صفحات A4 جاهزة للطباعة.</div></div><span style="font-size:32px">🖨️</span></div>'+
+    '<div class="grid" style="margin-top:10px">'+
+      '<button class="b" onclick="S.gw={view:\'step1\'};draw()">+ إنشاء جديد</button>'+
+      '<button class="b s" onclick="shareApp()">📤 مشاركة التطبيق</button>'+
+    '</div>'+
+  '</div>'+
+  '<h2>مستنداتي ('+list.length+')</h2>'+
+  (list.length?list.map(function(d,i){
+    return '<div class="card">'+
+      '<div class="row"><span class="badge">'+(d.kind=="b"?"📘 ملزمة":"📝 ورقة أسئلة")+'</span><b class="grow">'+esc(d.title||"بدون عنوان")+'</b><span class="mu">'+fd(d.at||Date.now())+'</span></div>'+
+      '<div class="mu" style="margin:4px 0 8px">'+esc(d.subj||"")+(d.stage?' · '+esc(d.stage):'')+'</div>'+
+      '<div class="row" style="flex-wrap:wrap">'+
+        '<button class="b" onclick="openDoc('+i+')">فتح وتعديل</button>'+
+        '<button class="b s" onclick="dupDoc('+i+')">نسخة</button>'+
+        '<button class="b d" onclick="delDoc('+i+')">حذف</button>'+
+      '</div>'+
+    '</div>';
+  }).join(""):'<div class="card mu">لا توجد مستندات محفوظة بعد. اضغط «+ إنشاء جديد» لعمل أول ورقة أسئلة أو ملزمة.</div>');
+}
+function shareApp(){
+  var u=location.href;
+  if(navigator.share)navigator.share({title:"مسبار AI",text:"أوراق الأسئلة والملازم الجاهزة للطباعة A4",url:u}).catch(function(){});
+  else if(navigator.clipboard){navigator.clipboard.writeText(u);toast("تم نسخ رابط التطبيق")}
+  else toast(u);
+}
+function saveCurrentDoc(kind,data){
+  var id=data.docId||("doc_"+Date.now());data.docId=id;
+  var meta={id:id,kind:kind,title:data.f.title||"بدون عنوان",subj:data.f.subj||"",stage:data.f.stage||"",at:Date.now(),data:JSON.parse(JSON.stringify(data))};
+  var idx=S.docs.findIndex(function(x){return x.id==id});
+  if(idx>-1)S.docs[idx]=meta;else S.docs.unshift(meta);
+  saveDocsLocal();
+  if(window.fbSaveDoc)window.fbSaveDoc(meta);
+  toast("تم حفظ المستند في «مستنداتي»");
+}
+function openDoc(i){
+  var d=S.docs[i];if(!d)return;
+  if(d.kind=="q"){S.pp=JSON.parse(JSON.stringify(d.data));S.gw={view:"ed_q"}}
+  else{S.bk=JSON.parse(JSON.stringify(d.data));S.gw={view:"ed_b"}}
+  draw();
+}
+function dupDoc(i){
+  var d=JSON.parse(JSON.stringify(S.docs[i]));
+  d.id="doc_"+Date.now();d.title+=" (نسخة)";d.data.docId=d.id;d.data.f.title=d.title;d.at=Date.now();
+  S.docs.unshift(d);saveDocsLocal();toast("تم نسخ المستند");draw();
+}
+function delDoc(i){
+  var id=S.docs[i].id;S.docs.splice(i,1);saveDocsLocal();
+  if(window.fbDelDoc)window.fbDelDoc(id);
+  toast("تم الحذف");draw();
+}
+
+/* خطوات الإنشاء الجديد (الخطوة 1: النوع -> الخطوة 2: المادة -> الخطوة 3: البداية) */
+function gwStepsScr(){
+  var f=$("fab");if(f)f.remove();
+  $("app").className="pro";
+  var v=S.gw.view;
+  if(v=="step1"){
+    $("app").innerHTML='<header><h1>إنشاء جديد · الخطوة ١ من ٣</h1><button class="b s" onclick="S.gw=null;draw()">رجوع</button></header><main>'+
+    '<h2>اختر نوع المستند</h2>'+
+    '<div class="card" onclick="S.gw={view:\'step2\',kind:\'q\'};draw()" style="cursor:pointer;border:2px solid var(--ln)">'+
+      '<div class="row"><span style="font-size:32px">📝</span><div class="grow"><b>ورقة أسئلة</b><div class="mu">امتحان شهري أو نصف السنة أو نهائي – أسئلة وفروع ودرجات</div></div><span>‹</span></div>'+
+    '</div>'+
+    '<div class="card" onclick="S.gw={view:\'step2\',kind:\'b\'};draw()" style="cursor:pointer;border:2px solid var(--ln)">'+
+      '<div class="row"><span style="font-size:32px">📘</span><div class="grow"><b>ملزمة</b><div class="mu">شرح وأمثلة محلولة وتمارين وأسئلة فصول، متعددة الصفحات</div></div><span>‹</span></div>'+
+    '</div></main>';
+    return;
+  }
+  if(v=="step2"){
+    $("app").innerHTML='<header><h1>إنشاء جديد · الخطوة ٢ من ٣</h1><button class="b s" onclick="S.gw={view:\'step1\'};draw()">رجوع</button></header><main>'+
+    '<h2>اختر المادة</h2><p class="mu">تتكيّف أدوات الكتابة مع المادة، وتبقى أدوات المواد الأخرى متاحة عند الحاجة.</p>'+
+    '<div class="grid3">'+SUBJECTS.map(function(s){
+      return '<div class="subj-card" onclick="S.gw.subj=\''+esc(s.n)+'\';S.gw.view=\'step3\';draw()"><div class="subj-ico">'+esc(s.ico)+'</div><b>'+esc(s.n)+'</b></div>';
+    }).join("")+'</div></main>';
+    return;
+  }
+  if(v=="step3"){
+    var isB=S.gw.kind=="b";
+    $("app").innerHTML='<header><h1>إنشاء جديد · الخطوة ٣ من ٣</h1><button class="b s" onclick="S.gw.view=\'step2\';draw()">رجوع</button></header><main>'+
+    '<h2>كيف تبدأ؟ ('+esc(S.gw.subj)+')</h2>'+
+    '<div class="card" onclick="startEditor(false)" style="cursor:pointer">'+
+      '<div class="row"><span style="font-size:30px">📄</span><div class="grow"><b>'+(isB?'ملزمة فارغة':'ورقة فارغة')+'</b><div class="mu">تبدأ بالكتابة مباشرة، الترقيم والتنسيق تلقائي</div></div><span>‹</span></div>'+
+    '</div>'+
+    '<div class="card" onclick="startEditor(true)" style="cursor:pointer">'+
+      '<div class="row"><span style="font-size:30px">✨</span><div class="grow"><b>من قالب تجريبي</b><div class="mu">مثال جاهز لـ '+esc(S.gw.subj)+' تعدله كما تشاء</div></div><span>‹</span></div>'+
+    '</div></main>';
+    return;
+  }
+}
+
+function startEditor(sample){
+  var subj=S.gw.subj||"مادة عامة",so=getSubjObj(subj);
+  if(S.gw.kind=="q"){
+    ppNew(subj,sample);
+    S.gw.view="ed_q";
+  }else{
+    bkNew(subj,sample);
+    S.gw.view="ed_b";
+  }
+  draw();
+}
+
+/* ==================== ١) محرر ورقة الأسئلة A4 ==================== */
+function ppNew(subj,sample){
+  var so=getSubjObj(subj),ltr=so.ltr;
+  var f={
+    school:"",title:ltr?"Monthly Exam":"امتحان شهري",stage:"",subj:subj,
+    round:ltr?"First Course":"الكورس الأول",year:"2026-2027",
+    dur:ltr?"One Hour":"ساعة واحدة",grade:"100",
+    teacher:"",principal:"",
+    ministry:ltr?"Ministry of Education":"المديرية العامة للتربية / وزارة التربية",
+    tt:ltr?"Subject Teacher":"مدرس المادة",ttCustom:""
+  };
+  var o={
+    name:true,logo:"",bism:!ltr,border:true,borderStyle:"double",sep:true,
+    cont:false,pnum:true,bw:false,adv:false,
+    font:ltr?"Times New Roman":"Cairo",size:16,color:"#000000",
+    qn:ltr?"Q":"س",sub:ltr?"a":"أ",
+    close:ltr?"Good luck":"مع تمنياتي لكم بالنجاح والتوفيق",closeSpace:18,
+    sig:true,wlang:ltr?"en":"ar",digits:ltr?"w":"a",txtDigits:"keep",
+    opt:0,note:""
+  };
+  var q=[{t:"",m:"",s:"",horiz:false,img:""}];
+  if(sample){
+    f.school=ltr?"Al-Furat Secondary School":"إعدادية الفرات للبنين";
+    f.stage=ltr?"5th Scientific":"الخامس العلمي";
+    f.teacher=ltr?"Mr. Ali Salman":"أ. علي سلمان";
+    f.principal=ltr?"Dr. Hasan Ali":"د. حسن علي";
+    o.note=ltr?"Note: Answer on the same paper.":"ملاحظة: الإجابة على نفس الورقة.";
+    if(ltr){
+      q=[
+        {t:"Choose the correct answer:",m:"10",s:"She ___ to school every day. (go / goes / going)\nThey ___ playing football now. (is / are / am)\nI have ___ apple. (a / an / the)",horiz:false,img:""},
+        {t:"Do as required:",m:"10",s:"Ali plays tennis. (Negative)\nThey went to Baghdad yesterday. (Question)",horiz:false,img:""},
+        {t:"Write a short paragraph about your future career.",m:"10",s:"",horiz:false,img:""}
+      ];
+    }else if(subj=="الرياضيات"){
+      q=[
+        {t:"جد ناتج ما يأتي:",m:"10",s:"√16 + 3² = ...\nإذا كان س + 5 = 12 فما قيمة س؟",horiz:true,img:""},
+        {t:"اختر الإجابة الصحيحة لكل مما يأتي:",m:"10",s:"محيط المربع الذي طول ضلعه 5 سم يساوي: (20 سم ، 25 سم ، 10 سم)\nقيمة π التقريبية هي: (3.14 ، 2.14 ، 4.13)",horiz:false,img:""},
+        {t:"أثبت أن مجموع زوايا المثلث الداخلية تساوي 180°.",m:"10",s:"",horiz:false,img:""}
+      ];
+    }else{
+      q=[
+        {t:"عرّف اثنين مما يأتي:",m:"10",s:"التعريف الأول\nالتعريف الثاني\nالتعريف الثالث",horiz:true,img:""},
+        {t:"علّل ما يأتي تعليلاً علمياً دقيقاً:",m:"10",s:"الفرع الأول من التعليل.\nالفرع الثاني من التعليل.",horiz:false,img:""},
+        {t:"اختر الإجابة الصحيحة من بين الأقواس:",m:"10",s:"العبارة الأولى (الخيار أ ، الخيار ب ، الخيار ج)\nالعبارة الثانية (الخيار أ ، الخيار ب ، الخيار ج)",horiz:false,img:""}
+      ];
+    }
+  }
+  S.pp={tab:"form",f:f,o:o,q:q};
+}
+
+function convDigits(str,mode){
+  str=String(str==null?"":str);
+  if(mode=="a")return str.replace(/\d/g,function(d){return "٠١٢٣٤٥٦٧٨٩".charAt(d)});
+  if(mode=="w")return str.replace(/[٠-٩]/g,function(d){return "0123456789".charAt("٠١٢٣٤٥٦٧٨٩".indexOf(d))});
+  return str;
+}
+function isWlangRtl(id){var w=WLANGS.filter(function(x){return x.id==id})[0];return w?!!w.rtl:true}
+
+function opt1(o,v){var a=Array.isArray(o)?o:[o,o];return '<option value="'+esc(a[0])+'"'+(String(a[0])==String(v)?' selected':'')+'>'+esc(a[1])+'</option>'}
+function ppInp(path,label,val,type){return '<label>'+label+'</label><input '+(type?'type="'+type+'" ':'')+'value="'+esc(val)+'" oninput="ps(\''+path+'\',this.value)">'}
+function ppSel(path,label,opts,val){return '<label>'+label+'</label><select onchange="ps(\''+path+'\',this.value)">'+opts.map(function(o){return opt1(o,val)}).join("")+'</select>'}
+function ppChk(path,label,val){return '<label class="row" style="margin:6px 0;cursor:pointer"><input type="checkbox" style="width:auto;margin:0" '+(val?'checked':'')+' onchange="ps(\''+path+'\',this.checked)"> '+label+'</label>'}
+
+function ps(path,v){
+  var a=path.split("."),t=S.pp;
+  for(var i=0;i<a.length-1;i++)t=t[a[i]];
+  if(path=="o.opt"||path=="o.closeSpace"||path=="o.size")v=Number(v)||0;
+  t[a[a.length-1]]=v;
+  if(path=="f.subj"){var so=getSubjObj(v);S.pp.o.wlang=so.ltr?"en":"ar";draw();return}
+  if(path=="o.wlang"||path=="f.tt"||path=="o.adv"||path=="o.border"){draw();return}
+  updSheet();
+}
+function updSheet(){var e=$("sheet");if(e)e.innerHTML=paperH()}
+function pq(i,k,v){S.pp.q[i][k]=v;updSheet()}
+function addQ(){S.pp.q.push({t:"",m:"",s:"",horiz:false,img:""});draw()}
+function delQ(i){if(S.pp.q.length<=1){toast("يجب بقاء سؤال واحد على الأقل");return}S.pp.q.splice(i,1);draw()}
+function mvQ(i,d){var a=S.pp.q,j=i+d;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t;draw()}
+function qImg(i,inp){
+  var x=inp.files[0];if(!x)return;
+  var r=new FileReader();r.onload=function(){
+    var im=new Image();im.onload=function(){
+      var k=Math.min(1,700/Math.max(im.width,im.height)),c=document.createElement("canvas");
+      c.width=im.width*k;c.height=im.height*k;c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+      S.pp.q[i].img=c.toDataURL("image/jpeg",0.82);draw();
+    };im.src=r.result;
+  };r.readAsDataURL(x);
+}
+function ppLogo(inp){
+  var x=inp.files[0];if(!x)return;
+  var r=new FileReader();r.onload=function(){
+    var im=new Image();im.onload=function(){
+      var k=Math.min(1,260/Math.max(im.width,im.height)),c=document.createElement("canvas");
+      c.width=im.width*k;c.height=im.height*k;c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+      S.pp.o.logo=c.toDataURL("image/png");draw();
+    };im.src=r.result;
+  };r.readAsDataURL(x);
+}
+
+function paperH(){
+  var p=S.pp,f=p.f,o=p.o,c=o.color||"#000000",rtl=isWlangRtl(o.wlang);
+  var dg=function(t){return convDigits(t,o.digits)};
+  var tdg=function(t){return convDigits(esc(t),o.txtDigits)};
+  var lab=function(i){
+    var n=dg(i+1);
+    if(o.qn=="Q1")return "Q"+n+":";
+    if(o.qn=="Q:")return "Q"+n+" /";
+    if(o.qn=="Question")return "Question "+n+":";
+    if(o.qn=="س:")return "س"+n+":";
+    if(o.qn=="السؤال")return "السؤال "+n+":";
+    return "س"+n;
+  };
+  var mk=function(j){
+    var A=["أ","ب","ج","د","هـ","و","ز","ح"];
+    var E="abcdefgh";
+    if(o.sub=="أ،")return A[j%8]+"،";
+    if(o.sub=="أ/")return A[j%8]+"/";
+    if(o.sub=="أ)")return A[j%8]+")";
+    if(o.sub=="1.")return dg(j+1)+".";
+    if(o.sub=="1)")return dg(j+1)+")";
+    if(o.sub=="1/")return dg(j+1)+"/";
+    if(o.sub=="a/")return E.charAt(j%8)+"/";
+    return E.charAt(j%8)+")";
+  };
+  var bdr="";
+  if(o.border){
+    if(o.borderStyle=="solid")bdr="border:2px solid "+c+";";
+    else if(o.borderStyle=="dashed")bdr="border:2px dashed "+c+";";
+    else if(o.borderStyle=="ornate")bdr="border:4px double "+c+";outline:1px solid "+c+";outline-offset:-7px;";
+    else bdr="border:3px double "+c+";";
+  }
+  var ttLabel=f.tt=="مسمى مخصص"?(f.ttCustom||""):f.tt;
+  var h='<div class="sheet" dir="'+(rtl?'rtl':'ltr')+'" style="font-family:'+esc(o.font)+',Tahoma,serif;font-size:'+o.size+'px;'+bdr+(o.bw?'filter:grayscale(1);':'')+'">';
+  if(o.bism)h+='<div style="text-align:center;font-weight:700;margin-bottom:4px">بسم الله الرحمن الرحيم</div>';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0">'+
+    '<div style="flex:1;font-size:.9em">'+tdg(f.ministry)+(f.school?'<br><b>'+tdg(f.school)+'</b>':'')+'</div>'+
+    '<div style="text-align:center">'+(o.logo?'<img src="'+o.logo+'" alt="" style="max-height:66px">':'')+'</div>'+
+    '<div style="flex:1;text-align:end"><b style="color:'+c+';font-size:1.05em">'+tdg(f.title)+'</b><div style="font-size:.9em">'+tdg(f.subj)+(f.stage?' — '+tdg(f.stage):'')+'<br>'+tdg(f.round)+(f.year?' · '+dg(esc(f.year)):'')+'</div></div>'+
+  '</div>';
+  h+='<div style="display:flex;justify-content:space-between;border-top:1.5px solid '+c+';border-bottom:1.5px solid '+c+';padding:3px 8px;margin:6px 0;font-weight:600">'+
+    '<span>'+(rtl?'الزمن: ':'Time: ')+tdg(f.dur)+'</span>'+
+    '<span>'+(rtl?'الدرجة: ':'Total Marks: ')+dg(esc(f.grade))+'</span>'+
+  '</div>';
+  if(o.name)h+='<div style="margin:6px 0;font-size:.95em">'+(rtl?'اسم الطالب: ........................................ الشعبة: ............':'Student Name: ........................................ Class: ............')+'</div>';
+  if(o.opt>0)h+='<div style="font-weight:700;color:'+c+';margin:4px 0">'+(rtl?'ملاحظة: أجب عن ('+dg(o.opt)+') من الأسئلة الآتية فقط.':'Note: Answer ('+dg(o.opt)+') of the following questions only.')+'</div>';
+  if(o.note)h+='<div style="font-weight:600;background:#f8fafc;border-inline-start:3px solid '+c+';padding:3px 8px;margin:4px 0;font-size:.92em">'+tdg(o.note)+'</div>';
+
+  p.q.forEach(function(q,i){
+    if(i&&o.sep)h+='<hr>';
+    var mTxt=q.m?(' ('+dg(esc(q.m))+(rtl?' درجات':' marks')+')'):'';
+    h+='<div style="margin:7px 0"><div><b style="color:'+c+'">'+lab(i)+mTxt+'</b> '+tdg(q.t).replace(/\n/g,'<br>')+'</div>';
+    if(q.img)h+='<div style="margin:6px 0;text-align:center"><img src="'+q.img+'" alt="" style="max-width:85%;max-height:180px;border-radius:6px"></div>';
+    var ss=String(q.s||"").split("\n").filter(function(x){return x.trim()});
+    if(ss.length){
+      if(q.horiz){
+        h+='<div style="display:flex;flex-wrap:wrap;gap:14px;padding-inline-start:18px;margin-top:4px">'+ss.map(function(s,j){return '<span><b>'+mk(j)+'</b> '+tdg(s)+'</span>'}).join("")+'</div>';
+      }else{
+        h+='<div style="margin-top:4px">'+ss.map(function(s,j){return '<div style="padding-inline-start:20px"><b>'+mk(j)+'</b> '+tdg(s)+'</div>'}).join("")+'</div>';
+      }
+    }
+    h+='</div>';
+  });
+
+  h+='<div style="margin-top:'+o.closeSpace+'px">';
+  if(o.close)h+='<div style="text-align:center;font-weight:700;color:'+c+'">'+tdg(o.close)+'</div>';
+  if(o.sig)h+='<div style="display:flex;justify-content:space-between;margin-top:12px;font-weight:600"><span>'+(ttLabel?tdg(ttLabel)+': ':'')+tdg(f.teacher)+'</span><span>'+(f.principal?(rtl?'مدير المدرسة: ':'Principal: ')+tdg(f.principal):'')+'</span></div>';
+  h+='</div>';
+  if(o.cont||o.pnum){
+    h+='<div style="display:flex;justify-content:space-between;margin-top:14px;padding-top:4px;border-top:1px dotted #aaa;font-size:.8em;color:#555">'+
+      '<span>'+(o.pnum?(rtl?'صفحة '+dg(1):'Page 1'):'')+'</span>'+
+      '<span>'+(o.cont?(rtl?'يتبع...':'Continued...'):'')+'</span>'+
+    '</div>';
+  }
+  return h+'</div>';
+}
+
+function genPaperAI(){
+  if(!gate())return;
+  var p=S.pp,subj=p.f.subj,stage=p.f.stage||"المرحلة الدراسية";
+  ask("اكتب موضوع الأسئلة لتوليدها وإضافتها للورقة",function(topic){
+    var ltr=isWlangRtl(p.o.wlang)?0:1;
+    if(ltr){
+      p.q.push({t:"Answer the following questions about ("+topic+"):",m:"10",s:"Define the main concept.\nGive two examples.\nCompare between the two types.",horiz:false,img:""});
+    }else{
+      p.q.push({t:"أجب عن الأسئلة الآتية حول موضوع ("+topic+"):",m:"10",s:"عرّف المفهوم الأساسي باختصار.\nعدّد أهم العوامل المؤثرة.\nعلّل سبب حدوث الظاهرة.",horiz:false,img:""});
+    }
+    toast("أُضيف سؤال جديد حول «"+topic+"»");
+    draw();
+  });
+}
+
+function ppEdScr(){
+  var f=$("fab");if(f)f.remove();
+  $("app").className="pro";
+  var p=S.pp,fo=p.f,o=p.o,tb=p.tab||"form";
+  var topBar='<header class="noprint"><h1>ورقة الأسئلة</h1>'+
+    '<button class="b s" onclick="saveCurrentDoc(\'q\',S.pp)">💾 حفظ</button>'+
+    '<button class="b" onclick="window.print()">🖨️ A4</button>'+
+    '<button class="b s" onclick="S.pp=null;S.gw=null;draw()">رجوع</button></header>';
+  var tabs='<div class="row noprint" style="margin-bottom:10px">'+
+    '<button class="b '+(tb=="form"?'':'s')+' grow" onclick="S.pp.tab=\'form\';draw()">١. البيانات والخيارات</button>'+
+    '<button class="b '+(tb=="qs"?'':'s')+' grow" onclick="S.pp.tab=\'qs\';draw()">٢. الأسئلة ('+p.q.length+')</button>'+
+    '<button class="b '+(tb=="prev"?'':'s')+' grow" onclick="S.pp.tab=\'prev\';draw()">٣. معاينة A4</button>'+
+  '</div>';
+
+  var body="";
+  if(tb=="form"){
+    body='<div class="noprint">'+
+    '<h2>بيانات الورقة</h2><div class="card">'+
+      ppSel("f.subj","المادة",SUBJECTS.map(function(s){return s.n}),fo.subj)+
+      ppInp("f.school","اسم المدرسة",fo.school)+
+      ppInp("f.ministry","المديرية / الوزارة",fo.ministry)+
+      ppInp("f.title","عنوان الامتحان (شهري / نصف السنة / نهائي / مخصص)",fo.title)+
+      ppInp("f.stage","المرحلة والصف",fo.stage)+
+      '<div class="grid">'+
+        ppSel("f.round","الكورس أو الدور",["الكورس الأول","الكورس الثاني","الدور الأول","الدور الثاني","First Course","Second Course"],fo.round)+
+        ppInp("f.year","السنة الدراسية",fo.year)+
+      '</div>'+
+      '<div class="grid">'+
+        ppInp("f.dur","المدة",fo.dur)+
+        ppInp("f.grade","الدرجة الكلية",fo.grade)+
+      '</div>'+
+      ppInp("f.teacher","اسم المعلم / المدرس",fo.teacher)+
+      '<label>صفة المعلم في الورقة</label><div class="row" style="flex-wrap:wrap;margin-bottom:8px">'+
+        ["مدرس المادة","مدرسة المادة","معلم","معلمة","Subject Teacher","مسمى مخصص"].map(function(x){
+          return '<button type="button" class="chip '+(fo.tt==x?'on':'')+'" onclick="ps(\'f.tt\',\''+x+'\')">'+x+'</button>';
+        }).join("")+
+      '</div>'+
+      (fo.tt=="مسمى مخصص"?ppInp("f.ttCustom","اكتب الصفة المخصصة",fo.ttCustom):"")+
+      ppInp("f.principal","اسم المدير",fo.principal)+
+      ppChk("o.name","سطر اسم الطالب والشعبة",o.name)+
+      '<label>شعار المدرسة (اختياري)</label><div class="row"><input type="file" accept="image/*" onchange="ppLogo(this)" class="grow">'+(o.logo?'<button class="b d" onclick="S.pp.o.logo=\'\';draw()">حذف</button>':'')+'</div>'+
+    '</div>'+
+    '<h2>الأسئلة الاختيارية والملاحظة</h2><div class="card">'+
+      '<label>أجب عن عدد محدد من الأسئلة (0 = الكل)</label>'+
+      '<div class="row" style="margin:6px 0 10px">'+
+        '<button class="b s" onclick="ps(\'o.opt\',Math.max(0,(S.pp.o.opt||0)-1));draw()">−</button>'+
+        '<b style="min-width:70px;text-align:center">'+(o.opt>0?o.opt+' أسئلة':'الكل')+'</b>'+
+        '<button class="b s" onclick="ps(\'o.opt\',(S.pp.o.opt||0)+1);draw()">+</button>'+
+        '<button class="b '+(o.opt==0?'':'s')+'" onclick="ps(\'o.opt\',0);draw()">الكل</button>'+
+      '</div>'+
+      ppInp("o.note","ملاحظة أعلى الأسئلة (مثل: الإجابة على الورقة نفسها)",o.note)+
+    '</div>'+
+    '<h2>لغة الورقة والأرقام</h2><div class="card">'+
+      '<label>لغة الورقة (تغيّر العناوين والاتجاه والترقيم)</label>'+
+      '<div class="row" style="flex-wrap:wrap;margin:6px 0 10px">'+WLANGS.map(function(w){
+        return '<button type="button" class="chip '+(o.wlang==w.id?'on':'')+'" onclick="ps(\'o.wlang\',\''+w.id+'\')">'+w.n+'</button>';
+      }).join("")+'</div>'+
+      ppSel("o.digits","أرقام الأسئلة والدرجات والصفحات",[["a","عربية ٣٢١"],["w","إنجليزية 321"]],o.digits)+
+      ppSel("o.txtDigits","الأرقام داخل النص المكتوب (تغيير العرض فقط)",[["keep","كما كتبتها"],["a","عرض ١٢٣"],["w","عرض 123"]],o.txtDigits)+
+    '</div>'+
+    '<h2>تنسيق متقدم (اختياري)</h2><div class="card">'+
+      '<button class="b s" style="width:100%" onclick="ps(\'o.adv\',!S.pp.o.adv)">'+(o.adv?'▲ إغلاق التنسيق المتقدم':'🎨 فتح التنسيق المتقدم (ألوان وخطوط وزخارف)')+'</button>'+
+      (o.adv?'<div style="margin-top:10px">'+
+        '<label>لون العناوين والإطار</label><div class="row" style="margin-bottom:8px">'+
+          ["#000000","#1d4ed8","#15803d","#991b1b","#6d28d9","#0f766e"].map(function(col){
+            return '<button type="button" onclick="ps(\'o.color\',\''+col+'\');draw()" style="width:32px;height:32px;border-radius:8px;background:'+col+';border:2px solid '+(o.color==col?'#f59e0b':'#ccc')+';cursor:pointer"></button>';
+          }).join("")+
+          '<input type="color" value="'+o.color+'" oninput="ps(\'o.color\',this.value)" style="width:52px;height:36px;padding:2px;margin:0">'+
+        '</div>'+
+        ppSel("o.borderStyle","شكل الإطار المزخرف",[["double","إطار مزدوج رسمي"],["ornate","إطار مزدوج بزخرفة داخلية"],["solid","إطار مفرد أنيق"],["dashed","إطار متقطع"]],o.borderStyle)+
+      '</div>':'')+
+    '</div>'+
+    '<h2>خيارات الطباعة والترقيم (A4)</h2><div class="card">'+
+      ppChk("o.bism","بسم الله الرحمن الرحيم",o.bism)+
+      ppChk("o.border","إطار حول الصفحة",o.border)+
+      ppChk("o.sep","خط فاصل بين الأسئلة",o.sep)+
+      ppChk("o.cont","عبارة «يتبع...» أسفل الصفحة",o.cont)+
+      ppChk("o.pnum","أرقام الصفحات",o.pnum)+
+      ppChk("o.bw","الصور بالأبيض والأسود",o.bw)+
+      ppChk("o.sig","توقيع المعلم والمدير",o.sig)+
+      '<div class="grid">'+
+        ppSel("o.font","نوع الخط",["Cairo","Amiri","Tahoma","Times New Roman","Arial"],o.font)+
+        ppSel("o.size","حجم الخط",[14,15,16,18,20],o.size)+
+      '</div>'+
+      '<div class="grid">'+
+        ppSel("o.qn","ترقيم الأسئلة",[["س","س1 س2"],["س:","س1: س2:"],["السؤال","السؤال 1:"],["Q1","Q1: Q2:"],["Q:","Q1 / Q2 /"],["Question","Question 1:"]],o.qn)+
+        ppSel("o.sub","ترقيم الفروع",[["أ،","أ، ب، ج،"],["أ/","أ/ ب/ ج/"],["أ)","أ) ب) ج)"],["1.","1. 2. 3."],["1)","1) 2) 3)"],["1/","1/ 2/ 3/"],["a)","a) b) c)"],["a/","a/ b/ c/"]],o.sub)+
+      '</div>'+
+      ppInp("o.close","عبارة الختام (مثل: مع تمنياتي لكم بالتوفيق / Good luck)",o.close)+
+      '<label>مسافة نزول عبارة الختام والتوقيع ('+o.closeSpace+'px)</label>'+
+      '<input type="range" min="6" max="90" value="'+o.closeSpace+'" oninput="ps(\'o.closeSpace\',this.value);draw()">'+
+    '</div>'+
+    '<button class="b" style="width:100%" onclick="S.pp.tab=\'qs\';draw()">التالي: كتابة الأسئلة ←</button>'+
+    '</div>';
+  }else if(tb=="qs"){
+    body='<div class="noprint">'+
+    '<div class="row" style="margin-bottom:8px"><h2 class="grow" style="margin:0">الأسئلة ('+p.q.length+')</h2><button class="b s" onclick="genPaperAI()">🤖 توليد سؤال بالذكاء</button></div>'+
+    p.q.map(function(q,i){
+      return '<div class="card">'+
+        '<div class="row"><b>السؤال '+(i+1)+'</b><span class="grow"></span>'+
+          '<button class="b s" onclick="mvQ('+i+',-1)">↑</button>'+
+          '<button class="b s" onclick="mvQ('+i+',1)">↓</button>'+
+          '<button class="b d" onclick="delQ('+i+')">حذف</button>'+
+        '</div>'+
+        '<label>نص السؤال</label>'+
+        symBarH("qt_"+i,fo.subj)+
+        '<textarea id="qt_'+i+'" rows="2" placeholder="اكتب نص السؤال هنا..." oninput="pq('+i+',\'t\',this.value)">'+esc(q.t)+'</textarea>'+
+        '<div class="grid">'+
+          '<div><label>الدرجة</label><input type="number" placeholder="10" value="'+esc(q.m)+'" oninput="pq('+i+',\'m\',this.value)"></div>'+
+          '<div><label>تخطيط الفروع</label><select onchange="S.pp.q['+i+'].horiz=this.value==\'1\';updSheet()"><option value="0"'+(!q.horiz?' selected':'')+'>سطر لكل فرع</option><option value="1"'+(q.horiz?' selected':'')+'>أفقي جنب بعض</option></select></div>'+
+        '</div>'+
+        '<label>الفروع / الخيارات (كل سطر فرع جديد)</label>'+
+        symBarH("qs_"+i,fo.subj)+
+        '<textarea id="qs_'+i+'" rows="3" placeholder="الفرع الأول&#10;الفرع الثاني" oninput="pq('+i+',\'s\',this.value)">'+esc(q.s)+'</textarea>'+
+        '<div class="row"><label class="grow">صورة توضيحية للسؤال (اختياري)</label><input type="file" accept="image/*" onchange="qImg('+i+',this)" style="width:auto">'+(q.img?'<button class="b d" onclick="S.pp.q['+i+'].img=\'\';draw()">إزالة</button>':'')+'</div>'+
+      '</div>';
+    }).join("")+
+    '<div class="grid"><button class="b" onclick="addQ()">+ إضافة سؤال</button><button class="b s" onclick="S.pp.tab=\'prev\';draw()">معاينة الورقة A4 ←</button></div>'+
+    '</div>';
+  }
+
+  $("app").innerHTML=topBar+'<main>'+tabs+body+
+    '<div class="'+(tb!="prev"?'noprint':'')+'"><h2 class="noprint">معاينة ورقة A4 المباشرة</h2><div class="sheet-wrap"><div id="sheet">'+paperH()+'</div></div></div>'+
+    '<div class="grid noprint" style="margin-top:10px"><button class="b" onclick="window.print()">🖨️ طباعة / حفظ PDF</button><button class="b s" onclick="saveCurrentDoc(\'q\',S.pp)">💾 حفظ في مستنداتي</button></div>'+
+  '</main>';
+}
+
+/* ==================== ٢) محرر الملزمة متعددة الصفحات + الغلاف (20 تصميماً) ==================== */
+function bkNew(subj,sample){
+  var so=getSubjObj(subj),ltr=so.ltr;
+  var f={
+    title:ltr?("Booklet "+subj):("ملزمة "+subj),
+    subj:subj,stage:ltr?"5th Scientific":"الخامس العلمي",
+    teacher:ltr?"Mr. Ali Salman":"أ. علي سلمان",
+    school:ltr?"Al-Furat Secondary School":"إعدادية الفرات للبنين",
+    year:"2026-2027",
+    ministry:ltr?"Ministry of Education":"المديرية العامة للتربية",
+    tt:ltr?"Subject Teacher":"مدرس المادة",ttCustom:""
+  };
+  var o={
+    showCover:true,coverStyle:0,coverColor:"#15803d",coverBg:"#ffffff",
+    showToc:true,logo:"",
+    wlang:ltr?"en":"ar",digits:ltr?"w":"a",txtDigits:"keep",
+    adv:false,font:ltr?"Times New Roman":"Cairo",size:15,color:"#15803d",
+    pnum:true,headerFoot:true,bw:false
+  };
+  var chs=[{title:ltr?"Chapter 1: Introduction":"الفصل الأول: الأساسيات والمفاهيم",blocks:[
+    {type:"exp",sub:ltr?"Key Concept":"المفهوم الأساسي",body:""}
+  ]}];
+  if(sample){
+    chs=[
+      {title:ltr?"Chapter 1: Fundamentals":"الفصل الأول: الأساسيات والمفاهيم",blocks:[
+        {type:"exp",sub:ltr?"1. Definition & Rules":"أولاً: التعريف والقواعد الأساسية",body:ltr?"Present Simple is used for habits and daily routines.\nRule: Subject + Verb(s/es) + Complement.":"يُعدّ هذا الفصل مدخلاً أساسياً لفهم المبادئ العلمية وتطبيقاتها العملية في المنهج الدراسي."},
+        {type:"ex",sub:ltr?"Solved Example":"مثال محلول",body:ltr?"Q: She (go) to school every day.\nSol: She goes to school every day.":"س: وضح باختصار العلاقة بين المتغيرين مع ذكر مثال.\nالحل النموذجي: تزداد القيمة طردياً عند ثبوت بقية العوامل كما في التجربة القياسية."},
+        {type:"note",sub:ltr?"Important Note":"ملاحظة وزارية مهمة",body:ltr?"Always check the subject before adding (-s) to the verb.":"انتبه إلى تحويل الوحدات الأساسية قبل البدء بتعويض القيم في القانون."}
+      ]},
+      {title:ltr?"Chapter 2: Exercises & Review":"الفصل الثاني: التمارين والأسئلة",blocks:[
+        {type:"qa",sub:ltr?"Question & Answer":"سؤال وجواب",body:ltr?"Q: Why do we use auxiliary verbs?\nA: To form negatives and questions.":"س: ما السبب الرئيسي لحدوث هذه الظاهرة؟\nج: بسبب توازن القوى المؤثرة واستقرار النظام."},
+        {type:"mcq",sub:ltr?"Choose the correct answer":"اختر الإجابة الصحيحة",body:ltr?"1. They ___ studying now. (is / are / am)\n2. I ___ a student. (am / is / are)":"١- الوحدة الأساسية للقياس هي: (المتر ، الكيلوغرام ، الثانية)\n٢- الناتج النهائي للتفاعل يكون: (مستقراً ، متغيراً ، معدوماً)"},
+        {type:"hw",sub:ltr?"Homework Exercise":"تمرين للطالب",body:ltr?"Write five sentences using the present continuous tense.":"حل المسائل الثلاث الآتية في دفترك وناقشها في المحاضرة القادمة."}
+      ]}
+    ];
+  }
+  S.bk={tab:"info",curCh:0,f:f,o:o,chs:chs};
+}
+
+function bks(path,v){
+  var a=path.split("."),t=S.bk;
+  for(var i=0;i<a.length-1;i++)t=t[a[i]];
+  if(path=="o.coverStyle"||path=="o.size")v=Number(v)||0;
+  t[a[a.length-1]]=v;
+  if(path=="f.subj"){var so=getSubjObj(v);S.bk.o.wlang=so.ltr?"en":"ar"}
+  draw();
+}
+function bkLogo(inp){
+  var x=inp.files[0];if(!x)return;
+  var r=new FileReader();r.onload=function(){
+    var im=new Image();im.onload=function(){
+      var k=Math.min(1,280/Math.max(im.width,im.height)),c=document.createElement("canvas");
+      c.width=im.width*k;c.height=im.height*k;c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+      S.bk.o.logo=c.toDataURL("image/png");draw();
+    };im.src=r.result;
+  };r.readAsDataURL(x);
+}
+function addBkCh(){
+  var n=S.bk.chs.length+1,rtl=isWlangRtl(S.bk.o.wlang);
+  S.bk.chs.push({title:rtl?("الفصل "+n):("Chapter "+n),blocks:[{type:"exp",sub:"",body:""}]});
+  S.bk.curCh=S.bk.chs.length-1;draw();
+}
+function addBkBlock(type){
+  var ch=S.bk.chs[S.bk.curCh];if(!ch)return;
+  var rtl=isWlangRtl(S.bk.o.wlang);
+  var defs={
+    exp:rtl?"شرح ومفهوم":"Explanation",
+    ex:rtl?"مثال محلول":"Solved Example",
+    hw:rtl?"تمرين / واجب":"Exercise",
+    qa:rtl?"سؤال وجواب":"Question & Answer",
+    mcq:rtl?"اختر الإجابة الصحيحة":"Multiple Choice",
+    note:rtl?"ملاحظة مهمة":"Important Note"
+  };
+  ch.blocks.push({type:type,sub:defs[type]||"",body:""});draw();
+}
+function genBkBlockAI(){
+  if(!gate())return;
+  var ch=S.bk.chs[S.bk.curCh];if(!ch)return;
+  ask("اكتب عنوان الفقرة ليولّد الذكاء الاصطناعي شرحاً ومثالاً محلولاً",function(topic){
+    var rtl=isWlangRtl(S.bk.o.wlang);
+    ch.blocks.push({
+      type:"exp",
+      sub:topic,
+      body:rtl?("شرح مبسط لموضوع «"+topic+"»:\n• التعريف: مفهوم أساسي يرتبط بمحور الفصل.\n• القاعدة: تُطبَّق خطوة بخطوة للوصول إلى النتيجة الدقيقة."):("Overview of "+topic+":\n• Definition: Core concept of this unit.\n• Key Rule: Apply step-by-step for accurate results.")
+    });
+    ch.blocks.push({
+      type:"ex",
+      sub:rtl?("مثال محلول على "+topic):("Solved Example: "+topic),
+      body:rtl?"س: طبّق القاعدة على الحالة القياسية.\nالحل: نبدأ بتحديد المعطيات ثم التعويض المباشر لنحصل على الناتج الصحيح.":"Q: Apply the rule to the standard case.\nSol: Identify the given values and substitute directly."
+    });
+    toast("أُضيف الشرح والمثال المحلول");draw();
+  });
+}
+
+function renderCoverPreview(f,o,mini){
+  var c=o.coverColor||"#15803d",bg=o.coverBg||"#ffffff",st=o.coverStyle||0;
+  var rtl=isWlangRtl(o.wlang),dg=function(t){return convDigits(t,o.digits)};
+  var tdg=function(t){return convDigits(esc(t),o.txtDigits)};
+  var ttLabel=f.tt=="مسمى مخصص"?(f.ttCustom||""):f.tt;
+  var bdr="border:3px double "+c+";";
+  var extra="";
+  if(st%5==1)bdr="border-inline-start:14px solid "+c+";border-top:2px solid "+c+";border-bottom:2px solid "+c+";border-inline-end:2px solid "+c+";";
+  else if(st%5==2)bdr="border:2px solid "+c+";border-radius:18px;";
+  else if(st%5==3)bdr="border:4px solid "+c+";outline:2px dashed "+c+";outline-offset:-8px;";
+  else if(st%5==4)bdr="border-top:18px solid "+c+";border-bottom:18px solid "+c+";border-left:1px solid "+c+";border-right:1px solid "+c+";";
+  if(st>=10&&st<15)extra="background:linear-gradient(180deg,"+c+"14 0%,"+bg+" 35%,"+bg+" 65%,"+c+"14 100%);";
+
+  if(mini){
+    return '<div style="background:'+bg+';color:#111;'+bdr+extra+'height:78px;padding:6px;border-radius:6px;display:flex;flex-direction:column;justify-content:space-between;text-align:center;font-size:9px">'+
+      '<div style="color:'+c+';font-weight:800">'+(st+1)+'</div>'+
+      '<div style="font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+tdg(f.title)+'</div>'+
+      '<div style="font-size:8px;color:#555">'+esc(COVER_STYLES[st])+'</div>'+
+    '</div>';
+  }
+
+  return '<div class="bk-page bk-cover" dir="'+(rtl?'rtl':'ltr')+'" style="font-family:'+esc(o.font)+',Tahoma,serif;background:'+bg+';color:#111;'+bdr+extra+(o.bw?'filter:grayscale(1);':'')+'">'+
+    '<div>'+
+      '<div style="font-size:14px;color:#444">'+tdg(f.ministry)+'</div>'+
+      (f.school?'<div style="font-weight:700;font-size:16px;margin-top:2px">'+tdg(f.school)+'</div>':'')+
+      (o.logo?'<img src="'+o.logo+'" alt="" style="max-height:84px;margin-top:12px">':'')+
+    '</div>'+
+    '<div style="padding:18px 12px;margin:16px 0;'+(st%2==1?'background:'+c+'12;border-radius:14px;border:1px solid '+c+'44;':'')+'">'+
+      '<div style="font-size:28px;font-weight:800;color:'+c+';line-height:1.4">'+tdg(f.title)+'</div>'+
+      '<div style="width:90px;height:3px;background:'+c+';margin:10px auto;border-radius:3px"></div>'+
+      '<div style="font-size:19px;font-weight:700">'+tdg(f.subj)+'</div>'+
+      (f.stage?'<div style="font-size:16px;color:#333;margin-top:4px">'+tdg(f.stage)+'</div>':'')+
+    '</div>'+
+    '<div>'+
+      (f.teacher?'<div style="font-size:16px;font-weight:700;color:'+c+'">'+(ttLabel?tdg(ttLabel)+': ':'')+tdg(f.teacher)+'</div>':'')+
+      (f.year?'<div style="font-size:14px;color:#444;margin-top:6px">'+dg(esc(f.year))+'</div>':'')+
+    '</div>'+
+  '</div>';
+}
+
+function bookletPreviewH(){
+  var b=S.bk,f=b.f,o=b.o,c=o.color||"#15803d",rtl=isWlangRtl(o.wlang);
+  var dg=function(t){return convDigits(t,o.digits)};
+  var tdg=function(t){return convDigits(esc(t),o.txtDigits)};
+  var out="";
+  if(o.showCover)out+=renderCoverPreview(f,o,false);
+
+  var pageNo=o.showCover?2:1;
+  if(o.showToc&&b.chs.length){
+    out+='<div class="bk-page" dir="'+(rtl?'rtl':'ltr')+'" style="font-family:'+esc(o.font)+',Tahoma,serif;font-size:'+o.size+'px;border:1.5px solid '+c+'55;'+(o.bw?'filter:grayscale(1);':'')+'">'+
+      '<h3 style="text-align:center;color:'+c+';border-bottom:2px solid '+c+';padding-bottom:6px;margin-top:0">'+(rtl?'فهرس محتويات الملزمة':'Table of Contents')+'</h3>'+
+      b.chs.map(function(ch,idx){
+        return '<div style="display:flex;justify-content:space-between;padding:8px 4px;border-bottom:1px dashed #ccc"><b>'+dg(idx+1)+'. '+tdg(ch.title)+'</b><span style="color:'+c+'">'+(rtl?'الفصل '+dg(idx+1):'Unit '+dg(idx+1))+'</span></div>';
+      }).join("")+
+      (o.pnum?'<div style="text-align:center;margin-top:20px;font-size:12px;color:#666">— '+dg(pageNo++)+' —</div>':'')+
+    '</div>';
+  }
+
+  var badgeMap={
+    exp:rtl?"شرح":"Explanation",
+    ex:rtl?"مثال محلول":"Solved Example",
+    hw:rtl?"تمرين":"Exercise",
+    qa:rtl?"س / ج":"Q & A",
+    mcq:rtl?"اختر الإجابة":"MCQ",
+    note:rtl?"ملاحظة":"Note"
+  };
+
+  b.chs.forEach(function(ch,ci){
+    out+='<div class="bk-page" dir="'+(rtl?'rtl':'ltr')+'" style="font-family:'+esc(o.font)+',Tahoma,serif;font-size:'+o.size+'px;border:1.5px solid '+c+'55;'+(o.bw?'filter:grayscale(1);':'')+'">';
+    if(o.headerFoot){
+      out+='<div style="display:flex;justify-content:space-between;font-size:12px;color:#555;border-bottom:1px solid #ddd;padding-bottom:4px;margin-bottom:10px">'+
+        '<span>'+tdg(f.title)+'</span><span>'+tdg(f.subj)+(f.stage?' · '+tdg(f.stage):'')+'</span><span>'+tdg(f.teacher)+'</span>'+
+      '</div>';
+    }
+    out+='<div style="background:'+c+';color:#fff;padding:7px 12px;border-radius:8px;font-weight:700;margin-bottom:12px">'+tdg(ch.title)+'</div>';
+
+    ch.blocks.forEach(function(bl){
+      var isBox=bl.type=="ex"||bl.type=="note"||bl.type=="qa";
+      out+='<div style="margin-bottom:12px;'+(isBox?'background:'+c+'0d;border-inline-start:4px solid '+c+';padding:8px 10px;border-radius:6px;':'')+'">';
+      if(bl.sub){
+        out+='<div style="font-weight:700;color:'+c+';margin-bottom:3px"><span style="font-size:.78em;background:'+c+'22;padding:1px 6px;border-radius:4px;margin-inline-end:6px">'+badgeMap[bl.type]+'</span>'+tdg(bl.sub)+'</div>';
+      }
+      out+='<div style="white-space:pre-wrap">'+tdg(bl.body)+'</div></div>';
+    });
+
+    if(o.pnum){
+      out+='<div style="text-align:center;margin-top:16px;padding-top:4px;border-top:1px dotted #ccc;font-size:12px;color:#666">— '+dg(pageNo++)+' —</div>';
+    }
+    out+='</div>';
+  });
+
+  return out;
+}
+
+function bkEdScr(){
+  var f=$("fab");if(f)f.remove();
+  $("app").className="pro";
+  var b=S.bk,fo=b.f,o=b.o,tb=b.tab||"info";
+  var topBar='<header class="noprint"><h1>محرر الملزمة</h1>'+
+    '<button class="b s" onclick="saveCurrentDoc(\'b\',S.bk)">💾 حفظ</button>'+
+    '<button class="b" onclick="window.print()">🖨️ A4</button>'+
+    '<button class="b s" onclick="S.bk=null;S.gw=null;draw()">رجوع</button></header>';
+  var tabs='<div class="row noprint" style="margin-bottom:10px">'+
+    '<button class="b '+(tb=="info"?'':'s')+' grow" onclick="S.bk.tab=\'info\';draw()">١. المعلومات والغلاف</button>'+
+    '<button class="b '+(tb=="cont"?'':'s')+' grow" onclick="S.bk.tab=\'cont\';draw()">٢. الفصول والمحتوى</button>'+
+    '<button class="b '+(tb=="prev"?'':'s')+' grow" onclick="S.bk.tab=\'prev\';draw()">٣. معاينة A4</button>'+
+  '</div>';
+
+  var body="";
+  if(tb=="info"){
+    body='<div class="noprint">'+
+    '<h2>معلومات الملزمة (قابلة للتعديل لاحقاً)</h2><div class="card">'+
+      '<label>عنوان الملزمة</label><input value="'+esc(fo.title)+'" oninput="S.bk.f.title=this.value">'+
+      '<label>المادة</label><select onchange="bks(\'f.subj\',this.value)">'+SUBJECTS.map(function(s){return opt1(s.n,fo.subj)}).join("")+'</select>'+
+      '<label>المرحلة والصف</label><input value="'+esc(fo.stage)+'" oninput="S.bk.f.stage=this.value">'+
+      '<label>اسم المعلم / المدرس</label><input value="'+esc(fo.teacher)+'" oninput="S.bk.f.teacher=this.value">'+
+      '<label>صفة المعلم في الملزمة</label><div class="row" style="flex-wrap:wrap;margin-bottom:8px">'+
+        ["مدرس المادة","مدرسة المادة","معلم","معلمة","Subject Teacher","مسمى مخصص"].map(function(x){
+          return '<button type="button" class="chip '+(fo.tt==x?'on':'')+'" onclick="bks(\'f.tt\',\''+x+'\')">'+x+'</button>';
+        }).join("")+
+      '</div>'+
+      (fo.tt=="مسمى مخصص"?'<input placeholder="اكتب الصفة المخصصة" value="'+esc(fo.ttCustom)+'" oninput="S.bk.f.ttCustom=this.value">':"")+
+      '<label>اسم المدرسة</label><input value="'+esc(fo.school)+'" oninput="S.bk.f.school=this.value">'+
+      '<div class="grid">'+
+        '<div><label>السنة الدراسية</label><input value="'+esc(fo.year)+'" oninput="S.bk.f.year=this.value"></div>'+
+        '<div><label>المديرية / الوزارة</label><input value="'+esc(fo.ministry)+'" oninput="S.bk.f.ministry=this.value"></div>'+
+      '</div>'+
+      '<label>شعار المدرسة (اختياري)</label><div class="row"><input type="file" accept="image/*" onchange="bkLogo(this)" class="grow">'+(o.logo?'<button class="b d" onclick="bks(\'o.logo\',\'\')">حذف</button>':'')+'</div>'+
+    '</div>'+
+    '<h2>لغة الملزمة والأرقام</h2><div class="card">'+
+      '<div class="row" style="flex-wrap:wrap;margin-bottom:8px">'+WLANGS.map(function(w){
+        return '<button type="button" class="chip '+(o.wlang==w.id?'on':'')+'" onclick="bks(\'o.wlang\',\''+w.id+'\')">'+w.n+'</button>';
+      }).join("")+'</div>'+
+      '<div class="grid">'+
+        '<div><label>أرقام الصفحات والترقيم</label><select onchange="bks(\'o.digits\',this.value)"><option value="a"'+(o.digits=="a"?' selected':'')+'>عربية ٣٢١</option><option value="w"'+(o.digits=="w"?' selected':'')+'>إنجليزية 321</option></select></div>'+
+        '<div><label>الأرقام داخل النص</label><select onchange="bks(\'o.txtDigits\',this.value)"><option value="keep"'+(o.txtDigits=="keep"?' selected':'')+'>كما كتبتها</option><option value="a"'+(o.txtDigits=="a"?' selected':'')+'>عرض ١٢٣</option><option value="w"'+(o.txtDigits=="w"?' selected':'')+'>عرض 123</option></select></div>'+
+      '</div>'+
+    '</div>'+
+    '<h2>تصميم غلاف الملزمة (٢٠ تصميماً)</h2><div class="card">'+
+      '<label class="row" style="cursor:pointer"><input type="checkbox" style="width:auto;margin:0" '+(o.showCover?'checked':'')+' onchange="bks(\'o.showCover\',this.checked)"> إظهار الغلاف</label>'+
+      '<label class="row" style="cursor:pointer;margin-top:6px"><input type="checkbox" style="width:auto;margin:0" '+(o.showToc?'checked':'')+' onchange="bks(\'o.showToc\',this.checked)"> إظهار صفحة الفهرس تلقائياً</label>'+
+      (o.showCover?'<div style="margin-top:8px"><label>اختر تصميماً من ٢٠ تصميماً:</label>'+
+        '<div class="grid3" style="max-height:240px;overflow-y:auto;padding:4px;border:1px solid var(--ln);border-radius:10px;margin:6px 0">'+
+          COVER_STYLES.map(function(stName,idx){
+            var tmpO=Object.assign({},o,{coverStyle:idx});
+            return '<div onclick="bks(\'o.coverStyle\','+idx+')" style="cursor:pointer;border:2.5px solid '+(o.coverStyle==idx?'var(--ac)':'transparent')+';border-radius:8px;padding:2px">'+renderCoverPreview(fo,tmpO,true)+'</div>';
+          }).join("")+
+        '</div>'+
+        '<div class="grid">'+
+          '<div><label>لون الغلاف الأساسي</label><input type="color" value="'+o.coverColor+'" onchange="bks(\'o.coverColor\',this.value)"></div>'+
+          '<div><label>لون الصفحات الداخلية</label><input type="color" value="'+o.color+'" onchange="bks(\'o.color\',this.value)"></div>'+
+        '</div>'+
+      '</div>':'')+
+    '</div>'+
+    '<h2>خيارات الطباعة والخطوط</h2><div class="card">'+
+      '<div class="grid">'+
+        '<div><label>نوع الخط</label><select onchange="bks(\'o.font\',this.value)">'+["Cairo","Amiri","Tahoma","Times New Roman","Arial"].map(function(fn){return opt1(fn,o.font)}).join("")+'</select></div>'+
+        '<div><label>حجم الخط</label><select onchange="bks(\'o.size\',this.value)">'+[14,15,16,18].map(function(sz){return opt1(sz,o.size)}).join("")+'</select></div>'+
+      '</div>'+
+      '<label class="row"><input type="checkbox" style="width:auto;margin:0" '+(o.pnum?'checked':'')+' onchange="bks(\'o.pnum\',this.checked)"> أرقام الصفحات</label>'+
+      '<label class="row"><input type="checkbox" style="width:auto;margin:0" '+(o.headerFoot?'checked':'')+' onchange="bks(\'o.headerFoot\',this.checked)"> ترويسة اسم الملزمة والأستاذ أعلى كل صفحة</label>'+
+    '</div>'+
+    '<button class="b" style="width:100%" onclick="S.bk.tab=\'cont\';draw()">متابعة إلى المحتوى ←</button>'+
+    '</div>';
+  }else if(tb=="cont"){
+    var ch=b.chs[b.curCh]||b.chs[0];
+    body='<div class="noprint">'+
+    '<div class="card"><label>الفصول والوحدات</label><div class="row" style="flex-wrap:wrap;margin:6px 0">'+
+      b.chs.map(function(cItem,idx){
+        return '<button class="b '+(idx==b.curCh?'':'s')+'" onclick="S.bk.curCh='+idx+';draw()">'+(idx+1)+'. '+esc(cItem.title.slice(0,18))+'</button>';
+      }).join("")+
+      '<button class="b s" onclick="addBkCh()">+ فصل جديد</button>'+
+    '</div></div>'+
+    (ch?'<div class="card">'+
+      '<div class="row"><b class="grow">تعديل الفصل الحالي</b>'+(b.chs.length>1?'<button class="b d" onclick="S.bk.chs.splice(S.bk.curCh,1);S.bk.curCh=0;draw()">حذف الفصل</button>':'')+'</div>'+
+      '<label>عنوان الفصل أو الوحدة</label><input value="'+esc(ch.title)+'" oninput="S.bk.chs[S.bk.curCh].title=this.value">'+
+      '<div class="row" style="margin:6px 0"><span class="mu grow">إضافة محتوى للفصل:</span><button class="b s" onclick="genBkBlockAI()">🤖 توليد بالذكاء</button></div>'+
+      '<div class="grid3" style="margin-bottom:10px">'+
+        '<button class="b s" onclick="addBkBlock(\'exp\')">+ شرح</button>'+
+        '<button class="b s" onclick="addBkBlock(\'ex\')">+ مثال محلول</button>'+
+        '<button class="b s" onclick="addBkBlock(\'hw\')">+ تمرين</button>'+
+        '<button class="b s" onclick="addBkBlock(\'qa\')">+ سؤال وجواب</button>'+
+        '<button class="b s" onclick="addBkBlock(\'mcq\')">+ اختيارات</button>'+
+        '<button class="b s" onclick="addBkBlock(\'note\')">+ ملاحظة</button>'+
+      '</div>'+
+      ch.blocks.map(function(bl,bi){
+        return '<div class="card" style="background:var(--bg)">'+
+          '<div class="row"><span class="badge">'+(bi+1)+'</span><input class="grow" placeholder="عنوان فرعي" value="'+esc(bl.sub)+'" oninput="S.bk.chs[S.bk.curCh].blocks['+bi+'].sub=this.value" style="margin:0">'+
+          '<button class="b d" onclick="S.bk.chs[S.bk.curCh].blocks.splice('+bi+',1);draw()">×</button></div>'+
+          symBarH("bk_b_"+bi,fo.subj)+
+          '<textarea id="bk_b_'+bi+'" rows="3" placeholder="اكتب النص أو المثال أو التمرين هنا..." oninput="S.bk.chs[S.bk.curCh].blocks['+bi+'].body=this.value">'+esc(bl.body)+'</textarea>'+
+        '</div>';
+      }).join("")+
+    '</div>':'')+
+    '<button class="b" style="width:100%" onclick="S.bk.tab=\'prev\';draw()">معاينة الملزمة كاملة A4 ←</button>'+
+    '</div>';
+  }
+
+  $("app").innerHTML=topBar+'<main>'+tabs+body+
+    '<div><h2 class="noprint">معاينة الملزمة (غلاف + فهرس + صفحات A4)</h2>'+bookletPreviewH()+'</div>'+
+    '<div class="grid noprint" style="margin-top:10px"><button class="b" onclick="window.print()">🖨️ طباعة / حفظ PDF</button><button class="b s" onclick="saveCurrentDoc(\'b\',S.bk)">💾 حفظ في مستنداتي</button></div>'+
+  '</main>';
+}
+
+/* ==================== بقية تبويبات الأستاذ والطالب والمالك ==================== */
+function bagV(){return '<h2>حقيبتي</h2>'+S.bag.map(function(f,i){return '<div class="card"><b>📁 '+esc(f.n)+'</b>'+f.f.map(function(x){return '<div class="row mu" style="padding:6px 0"><span class="grow">📄 '+esc(x)+'</span><button class="b s" onclick="toast(\'تم الإرسال إلى الكلاس\')">إرسال للكلاس</button></div>'}).join("")+'<button class="b s" onclick="addFile('+i+')">+ رفع ملف</button></div>'}).join("")+'<button class="b" onclick="addFolder()">+ مجلد جديد</button>'+filesV()}
+function addFolder(){ask("اسم المجلد",function(n){S.bag.push({n:n,f:[]});draw()})}
+function addFile(i){var f=document.createElement("input");f.type="file";f.accept=".pdf,.doc,.docx,.ppt,.pptx";f.onchange=function(){if(f.files[0]){S.bag[i].f.push(f.files[0].name);draw()}};f.click()}
+function filesV(){var f=S.fl[S.fo]||S.fl[0];return '<h2>ملفاتي</h2><div class="card"><div class="row" style="flex-wrap:wrap">'+S.fl.map(function(x,i){return '<button class="b '+(i==S.fo?'':'s')+'" onclick="S.fo='+i+';draw()">📁 '+esc(x.n)+' ('+x.it.length+')</button>'}).join("")+'<button class="b s" onclick="newFo()">+ مجلد</button></div></div><div class="grid" style="margin-bottom:10px"><button class="b" onclick="scan()">📷 مسح ملزمة بالكاميرا</button><button class="b s" onclick="upF()">📎 رفع ملف أو صورة</button></div>'+(f.it.length?f.it.map(function(it,i){return '<div class="card"><div class="row"><b class="grow">'+esc(it.n)+'</b><button class="b d" onclick="delF('+i+')">حذف</button></div>'+(it.d?'<img src="'+it.d+'" alt="" style="max-width:100%;border-radius:10px;margin-top:8px">':'')+'<div class="mu">'+esc(it.t)+'</div></div>'}).join(""):'<div class="card mu">المجلد فارغ. صوّر ملزمة أو ارفع ملفاً لتحفظه هنا.</div>')+(S.fl.length>1?'<button class="b d" onclick="delFo()">حذف هذا المجلد</button>':'')}
 function addImg(file){var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){var k=Math.min(1,1400/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=im.width*k;c.height=im.height*k;c.getContext("2d").drawImage(im,0,0,c.width,c.height);S.fl[S.fo].it.unshift({n:"مسح "+fd(Date.now()),d:c.toDataURL("image/jpeg",0.8),t:"صورة ممسوحة"});draw()};im.onerror=function(){toast("تعذرت قراءة الصورة")};im.src=r.result};r.readAsDataURL(file)}
 function scan(){var f=document.createElement("input");f.type="file";f.accept="image/*";f.setAttribute("capture","environment");f.onchange=function(){if(f.files[0])addImg(f.files[0])};f.click()}
 function upF(){var f=document.createElement("input");f.type="file";f.accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.txt";f.onchange=function(){var x=f.files[0];if(!x)return;if(/^image\//.test(x.type))addImg(x);else{S.fl[S.fo].it.unshift({n:x.name,d:"",t:"ملف "+Math.round(x.size/1024)+" ك.ب"});draw()}};f.click()}
 function newFo(){ask("اسم المجلد",function(n){S.fl.push({n:n,it:[]});S.fo=S.fl.length-1;draw()})}
 function delF(i){S.fl[S.fo].it.splice(i,1);draw()}
 function delFo(){S.fl.splice(S.fo,1);S.fo=0;draw()}
-var _bg=bagV;bagV=function(){return _bg()+filesV()};
-S.use={};Object.defineProperty(S,"used",{get:function(){return S.use[S.email+"|"+new Date().toDateString()]||0},set:function(v){S.use[S.email+"|"+new Date().toDateString()]=v}});
-var _d=draw;draw=function(){_d();var f=$("fab");if(f)f.remove();var r=S.role;if(!S.email||(r!="pro"&&r!="stu"))return;var t=r=="pro"?5:3;if(S.tab==t)return;f=document.createElement("button");f.id="fab";f.className="b";f.setAttribute("aria-label","الذكاء الاصطناعي");f.textContent="🤖";f.style.cssText="position:fixed;bottom:76px;inset-inline-start:14px;width:52px;height:52px;border-radius:26px;font-size:24px;padding:0;z-index:6";f.onclick=function(){tab(t)};document.body.appendChild(f)};
-function gate(){if(isSub())return true;if(S.used>=S.free){toast("انتهت دخولاتك المجانية اليوم، اشترك للمتابعة");return false}S.used=S.used+1;return true}
-var _ai=ai;ai=function(k,t){if(!gate())return "انتهت دخولاتك المجانية اليوم. اشترك لمتابعة استخدام الذكاء الاصطناعي.";return _ai(k,t)+"\n\nأكمل بحسابك الشخصي: <a href=\"https://claude.ai\" target=\"_blank\" rel=\"noopener\">Claude</a> · <a href=\"https://gemini.google.com\" target=\"_blank\" rel=\"noopener\">Gemini</a> · <a href=\"https://chatgpt.com\" target=\"_blank\" rel=\"noopener\">ChatGPT</a>"};
-var _tab=tab;tab=function(i){var t=S.role=="pro"?5:3;if(i==t&&S.tab!=t&&!gate())return;_tab(i)};
-function sendAI(){var v=$("ai").value.trim();if(!v)return;S.ai.push([v,1],["رد تجريبي من "+S.prov+". الرد الحقيقي يتم بحسابك الشخصي عبر الرابط أعلاه.",0]);draw()}
-var _aiV2=aiV;aiV=function(){return _aiV2().replace(/(المتبقي اليوم \d+) رسائل/,"$1 دخولات للذكاء الاصطناعي")};
-var _pv=plansV;plansV=function(){return _pv().replace("رسائل الذكاء الاصطناعي المجانية يومياً","دخولات الذكاء الاصطناعي المجانية يومياً")};
-var _sv=stuV;stuV=function(){var h=_sv();return S.open!==null?h+'<button class="b s" style="margin-top:8px;width:100%" onclick="toast(\'التنزيل مجاني\')">⬇️ تنزيل الملزمة (مجاني)</button>':h};
-function pid(p){if(!p.id)p.id=Math.random().toString(36).slice(2,8);return p.id}
-function isSub(){var n=Date.now();return S.subs.some(function(s){return s.e==S.email&&s.end>n&&(!s.s||s.s<=n)})}
-function grant(e,p,st){var now=Date.now(),ms=dd(p)*864e5,cur=S.subs.filter(function(s){return s.e==e&&s.end>now})[0];if(cur){cur.end+=ms;cur.n=p.n;return cur.end}st=st||now;S.subs=S.subs.filter(function(s){return s.e!=e});S.subs.push({e:e,n:p.n,s:st,end:st+ms});return st+ms}
-S.req=[];S.rt=0;S.rs="new";S.rq="";S.pick=null;S.subv=0;
-[[1,"zainab@example.com"],[1,"hasan@example.com"],[3,"mustafa@example.com"]].forEach(function(x,i){var p=S.plans[x[0]];S.req.push({id:i+1,e:x[1],pid:pid(p),n:p.n,p:p.p,v:p.v,u:p.u,d:Date.now()-i*864e5,st:"new"})});
-function sendReq(){var p=S.plans[S.pick];if(!p){toast("اختر باقة أولاً");return}if(S.req.some(function(r){return r.e==S.email&&r.pid==pid(p)&&r.st=="new"})){toast("لديك طلب معلق لهذه الباقة");return}S.req.unshift({id:Date.now(),e:S.email,pid:pid(p),n:p.n,p:p.p,v:p.v,u:p.u,d:Date.now(),st:"new"});S.pick=null;toast("أُرسل طلبك للمالك");draw()}
-function subScr(){var f=$("fab");if(f)f.remove();var now=Date.now(),cur=S.subs.filter(function(s){return s.e==S.email&&s.end>now})[0],L={new:"قيد المراجعة",ok:"مقبول بانتظار الدفع",act:"مفعّل",no:"مرفوض أو موقوف"},sel=S.plans[S.pick],mine=S.req.filter(function(r){return r.e==S.email});var pl=S.plans.map(function(p,i){return p.hide?'':'<div class="card" onclick="S.pick='+i+';draw()" style="cursor:pointer;border:2px solid '+(S.pick===i?'var(--ac)':'var(--ln)')+'"><div class="row"><b class="grow">'+esc(p.n)+'</b><span>'+(S.pick===i?'✅':'⚪')+'</span></div><div>'+Number(p.p).toLocaleString("ar-IQ")+' د.ع · '+p.v+' '+p.u+'</div>'+(p.f?'<div class="mu">'+esc(p.f)+'</div>':'')+'</div>'}).join("");$("app").className=S.role=="pro"?"pro":"";$("app").innerHTML='<header><h1>الاشتراكات</h1><button class="b s" onclick="S.subv=0;draw()">رجوع</button></header><main><div class="card">'+(cur?'اشتراكك: '+esc(cur.n)+' · ينتهي '+fd(cur.end):'حسابك مجاني')+'</div><h2>اختر باقة</h2>'+(pl||'<div class="card mu">لا توجد باقات متاحة</div>')+(sel&&!sel.hide?'<div class="card"><b>تفاصيل: '+esc(sel.n)+'</b><div>السعر: '+Number(sel.p).toLocaleString("ar-IQ")+' د.ع</div><div>المدة: '+dd(sel)+' يوماً من تاريخ التفعيل</div><div class="mu">بعد إرسال الطلب يتواصل معك المالك لتأكيد الدفع ثم يفعّل اشتراكك.</div></div>':'')+'<button class="b" style="width:100%" onclick="sendReq()">إرسال طلب الاشتراك</button>'+(mine.length?'<h2>طلباتي</h2>'+mine.map(function(r){return '<div class="card row"><span class="grow">'+esc(r.n)+'<div class="mu">'+fd(r.d)+'</div></span><b>'+L[r.st]+'</b></div>'}).join(""):'')+'<h2>كود اشتراك</h2>'+redeemV()+'</main>'}
-function reqSt(id,st){S.req.forEach(function(r){if(r.id==id)r.st=st});draw()}
-function gr(id){return S.req.filter(function(x){return x.id==id})[0]}
-function actv(id){var r=gr(id),v=$("sd"+id).value;grant(r.e,{n:r.n,v:r.v,u:r.u},v?new Date(v+"T00:00:00").getTime():Date.now());r.st="act";draw()}
-function extR(id){var r=gr(id);grant(r.e,{n:r.n,v:r.v,u:r.u});toast("تم التمديد");draw()}
-function stopR(id){var r=gr(id);S.subs.forEach(function(s){if(s.e==r.e)s.end=Date.now()});r.st="no";draw()}
-function reqV(){var q=S.rq.toLowerCase(),sel=S.plans[S.rt]||S.plans[0],tl=S.req.filter(function(r){return r.st=="new"}).length,tabs=S.plans.map(function(p,i){var n=S.req.filter(function(r){return r.pid==pid(p)&&r.st=="new"}).length;return '<button class="b '+(i==S.rt?'':'s')+'" onclick="S.rt='+i+';draw()">'+esc(p.n)+' ('+n+')</button>'}).join("");if(!sel)return '<h2>طلبات الاشتراكات</h2><div class="card mu">أضف باقة أولاً</div>';var inP=S.req.filter(function(r){return r.pid==pid(sel)}),ST=[["new","جديد"],["ok","مقبول"],["act","مفعّل"],["no","مرفوض/موقوف"]],sts=ST.map(function(s){return '<button class="b '+(S.rs==s[0]?'':'s')+'" onclick="S.rs=\''+s[0]+'\';draw()">'+s[1]+' ('+inP.filter(function(r){return r.st==s[0]}).length+')</button>'}).join(""),subsN=S.subs.filter(function(s){return s.n==sel.n&&s.end>Date.now()}).length,list=inP.filter(function(r){return r.st==S.rs&&(!q||r.e.indexOf(q)>-1)});return '<h2>إدارة طلبات الاشتراكات ('+tl+' جديد)</h2><div class="card"><div class="row" style="flex-wrap:wrap">'+tabs+'</div><div class="mu" style="margin:8px 0">المشتركون بباقة '+esc(sel.n)+': '+subsN+'</div><div class="row" style="flex-wrap:wrap">'+sts+'</div><input dir="ltr" placeholder="ابحث بالإيميل" value="'+esc(S.rq)+'" onchange="S.rq=this.value;draw()"></div>'+(list.length?list.map(function(r){var a='';if(r.st=="new")a='<button class="b" onclick="reqSt('+r.id+',\'ok\')">قبول</button><button class="b s" onclick="reqSt('+r.id+',\'no\')">رفض</button>';else if(r.st=="ok")a='<input type="date" id="sd'+r.id+'" value="'+new Date().toISOString().slice(0,10)+'"><button class="b" onclick="actv('+r.id+')">تأكيد الدفع وتفعيل</button>';else if(r.st=="act")a='<button class="b s" onclick="extR('+r.id+')">تمديد</button><button class="b s" onclick="stopR('+r.id+')">إيقاف</button>';var sb=S.subs.filter(function(s){return s.e==r.e})[0];return '<div class="card"><b dir="ltr">'+esc(r.e)+'</b><div class="mu">'+esc(r.n)+' · '+Number(r.p).toLocaleString("ar-IQ")+' د.ع · طُلب '+fd(r.d)+'</div>'+(r.st=="act"&&sb?'<div class="mu">من '+fd(sb.s||r.d)+' إلى '+fd(sb.end)+'</div>':'')+'<div class="row" style="flex-wrap:wrap;margin-top:6px">'+a+'</div></div>'}).join(""):'<div class="card mu">لا توجد طلبات هنا</div>')}
-function planExV(){return '<h2>مميزات الباقات وإظهارها</h2>'+S.plans.map(function(p,i){return '<div class="card"><b>'+esc(p.n)+'</b><label>المميزات (تظهر للمستخدم)</label><textarea rows="2" onchange="S.plans['+i+'].f=this.value">'+esc(p.f||"")+'</textarea><div class="row"><span class="grow">إظهار الباقة للمستخدمين</span><button class="tog'+(p.hide?'':' on')+'" aria-label="إظهار" onclick="S.plans['+i+'].hide=!S.plans['+i+'].hide;draw()"></button></div></div>'}).join("")}
-var _pv2=plansV;plansV=function(){return _pv2()+planExV()};
-var _ov=ownV;ownV=function(){return reqV()+_ov()};
-var _d2=draw;draw=function(){if(S.subv&&S.email&&(S.role=="pro"||S.role=="stu")){subScr();return}_d2()};
-S.cv=[{n:"د. حسن علي",g:0,m:[["د. حسن علي","أهلاً، وصلت الملزمة؟","",""],["أنا","نعم وصلت، شكراً","",""]]},{n:"كروب الأحياء - الخامس",g:1,m:[["زينب أحمد","متى الاختبار؟","",""]]}];S.cur=null;
+
+function clsV(){return '<h2>كلاساتي</h2>'+S.classes.map(function(c){return '<div class="card"><b>'+esc(c.n)+'</b><div class="mu">رمز الدخول: '+esc(c.c)+' · '+c.h.length+' ملازم</div></div>'}).join("")+'<button class="b" onclick="addClass()">+ إنشاء كلاس</button>'}
+function addClass(){ask("اسم الكلاس",function(n){S.classes.push({n:n,c:Math.random().toString(36).slice(2,6).toUpperCase(),h:[]});draw()})}
+
+function toolsV(){
+  return gwHomeV()+
+  '<h2>مولّد الأسئلة السريع</h2><div class="card"><label>الموضوع</label><input id="qt" value="التمثيل الضوئي"><div class="grid"><div><label>النوع</label><select id="qk"><option>اختيار من متعدد</option><option>مقالي</option><option>صح وخطأ</option></select></div><div><label>العدد</label><input id="qn" type="number" value="10"></div></div><button class="b" onclick="gen(\'q\')">توليد</button></div>'+
+  bankV()+
+  '<h2>مولّد الخطط</h2><div class="card"><label>نوع الخطة</label><select id="pk"><option>يومية</option><option>أسبوعية</option><option>شهرية</option><option>سنوية</option></select><label>تكلم مع الذكاء الاصطناعي وقل له شنو تريد</label><textarea id="pi" rows="3" placeholder="مثال: سوّي لي خطة يومية بتصميم حلو، وأريد فيها وقت للمراجعة ونشاط للطلاب">'+esc(S.pi||"")+'</textarea><div class="grid"><button class="b s" onclick="micP()">🎙️ تكلم</button><button class="b" onclick="gen(\'p\')">ابدأ التصميم</button></div></div>'+planV()+
+  (S.out?'<div class="out">'+S.out+'</div><div class="row" style="margin-top:8px"><button class="b s grow" onclick="window.print()">تنزيل PDF</button></div>':'');
+}
+function micP(){var R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){toast("المتصفح لا يدعم الصوت، اكتب طلبك");return}S.pi=$("pi").value;var r=new R();r.lang="ar-IQ";r.onresult=function(e){S.pi=(S.pi+" "+e.results[0][0].transcript).trim();draw()};r.onerror=function(){toast("تعذر الاستماع، تأكد من إذن المايك")};r.start();toast("تكلم الآن")}
+function bankV(){return '<h2>بنك الأسئلة من الفصل</h2><div class="card"><label>ألصق نص الفصل أو ارفع ملفاً نصياً</label><textarea id="bt" rows="4">'+esc(S.bt)+'</textarea><button class="b s" onclick="upB()">📎 رفع ملف نصي</button><label>أنواع الأسئلة</label><div class="grid"><label><input type="checkbox" id="k1" checked style="width:auto"> اختيار من متعدد</label><label><input type="checkbox" id="k2" checked style="width:auto"> مقالي</label><label><input type="checkbox" id="k3" style="width:auto"> صح وخطأ</label></div><label>العدد</label><input id="bn" type="number" value="6"><div class="grid"><button class="b s" onclick="micB()">🎙️ تكلم</button><button class="b" onclick="mkBank()">توليد البنك</button></div></div>'+(S.bank.length?'<div class="card"><b>بنك الأسئلة ('+S.bank.length+')</b><div class="out" style="margin-top:8px">'+S.bank.map(function(q,i){return (i+1)+') '+esc(q)}).join("\n\n")+'</div><button class="b s" style="margin-top:8px" onclick="window.print()">تنزيل PDF</button></div>':'')}
+function upB(){var f=document.createElement("input");f.type="file";f.accept=".txt";f.onchange=function(){var r=new FileReader();r.onload=function(){S.bt=r.result;draw()};r.readAsText(f.files[0])};f.click()}
+function micB(){var R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){toast("المتصفح لا يدعم الصوت");return}S.bt=$("bt").value;var r=new R();r.lang="ar-IQ";r.onresult=function(e){S.bt=(S.bt+" "+e.results[0][0].transcript).trim();draw()};r.onerror=function(){toast("تعذر الاستماع")};r.start();toast("تكلم الآن")}
+function mkBank(){S.bt=$("bt").value;var t=S.bt.replace(/\s+/g," ").trim();var ss=t.split(/[.؟!]\s+/).filter(function(s){return s.split(" ").length>=5}),ws=t.split(" ").filter(function(w){return w.length>4}),k=[];if($("k1").checked)k.push("m");if($("k2").checked)k.push("e");if($("k3").checked)k.push("t");if(!k.length||!ss.length){toast("ألصق نصاً أطول واختر نوعاً");return}var n=Math.min(parseInt($("bn").value)||6,30),out=[];for(var i=0;i<n;i++){var s=ss[i%ss.length],ty=k[i%k.length],sw=s.split(" ").filter(function(w){return w.length>4}),a=sw[Math.floor(sw.length/2)]||s.split(" ")[0];if(ty=="m"){var o=[a],g=0;while(o.length<4&&g++<60){var w=ws[Math.floor(Math.random()*ws.length)];if(o.indexOf(w)<0)o.push(w)}o.sort(function(){return Math.random()-.5});out.push("[اختيار من متعدد] أكمل: "+s.replace(a,"______")+"\n"+o.map(function(x,j){return "أبجد"[j]+") "+x}).join("   "))}else if(ty=="e")out.push("[مقالي] اشرح باختصار: "+s);else out.push("[صح أم خطأ] "+s)}S.bank=out;draw()}
+function tps(){if(!S.tp)S.tp=[["كلاسيكي",150,0],["عصري",210,1],["للصغار",35,2],["أنيق",280,0],["هادئ",170,1]];if(S.sl==null)S.sl=0}
+function planV(){tps();var G=["جدول","بطاقات","خط زمني"];return '<h2>اختر نموذجاً</h2><div class="grid">'+S.tp.map(function(t,i){var c='hsl('+t[1]+',60%,38%)',b='hsl('+t[1]+',60%,94%)';return '<div onclick="S.sl='+i+';draw()" style="cursor:pointer;background:'+b+';color:#222;border:3px solid '+(S.sl==i?c:'transparent')+';border-radius:'+(t[2]==2?20:8)+'px;padding:10px"><div style="background:'+c+';height:10px;border-radius:5px;margin-bottom:8px"></div><b>'+t[0]+'</b><div style="font-size:12px;color:#555">'+G[t[2]]+'</div></div>'}).join("")+'</div><button class="b s" style="width:100%;margin-top:8px" onclick="moreT()">✨ ولّد نماذج مشابهة</button>'+(S.pv?prev():'')}
+function moreT(){tps();var N=["بسيط","مرتب","مشرق","رسمي","هادئ","جريء"],b=S.tp[S.sl],a=[b];for(var i=0;i<4;i++)a.push([N[Math.floor(Math.random()*N.length)],(b[1]+30+Math.random()*120|0)%360,i<2?b[2]:(i+b[2])%3]);S.tp=a;S.sl=0;draw()}
+function prev(){var t=S.tp[S.sl],c='hsl('+t[1]+',60%,38%)',b='hsl('+t[1]+',60%,95%)',D=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"],R=D.map(function(d){return[d,"الموضوع","النشاط","التقييم"]}),h;if(t[2]==0)h='<table style="width:100%;border-collapse:collapse"><tr style="background:'+c+';color:#fff"><th>اليوم</th><th>الموضوع</th><th>النشاط</th><th>التقييم</th></tr>'+R.map(function(r){return '<tr>'+r.map(function(x){return '<td style="border:1px solid '+c+'55;padding:8px;text-align:center">'+x+'</td>'}).join("")+'</tr>'}).join("")+'</table>';else if(t[2]==1)h='<div class="grid">'+R.map(function(r){return '<div style="background:#fff;border-top:5px solid '+c+';border-radius:10px;padding:10px"><b>'+r[0]+'</b><div>'+r[1]+'</div><div>'+r[2]+'</div><div>'+r[3]+'</div></div>'}).join("")+'</div>';else h=R.map(function(r){return '<div style="border-inline-start:4px solid '+c+';padding:6px 12px;margin:8px 6px;background:#fff;border-radius:10px"><b style="color:'+c+'">'+r[0]+'</b> — '+r[1]+'، '+r[2]+'، '+r[3]+'</div>'}).join("");return '<h2>معاينة خطتك</h2><div style="background:'+b+';color:#222;border-radius:14px;padding:14px"><h3 style="margin:0 0 4px;color:'+c+'">الخطة '+esc(S.per||"")+'</h3>'+(S.pi?'<div style="font-size:13px;margin-bottom:10px">طلبك: '+esc(S.pi)+'</div>':'')+h+'</div>'}
+function gen(k){if(k=="q"){S.out="أسئلة «"+esc($("qt").value)+"» ("+esc($("qk").value)+"، "+esc($("qn").value)+" سؤال):\n\n"+ai("أسئلة",$("qt").value)}else{S.pi=$("pi").value;S.per=$("pk").value;S.pv=1;S.out=""}draw()}
+
+function grV(){return '<h2>دفتر الدرجات</h2><div class="card"><label>مثال: زينب 18 مصطفى 15</label><textarea id="gi" rows="3">'+esc(S.pend)+'</textarea><div class="grid"><button class="b" onclick="mic()">🎙️ صوت</button><button class="b" onclick="cam()">📷 تصوير</button></div><button class="b s" style="margin-top:8px;width:100%" onclick="addG()">إضافة للدفتر</button></div><div class="card">'+S.gr.map(function(g){return '<div class="row" style="padding:5px 0"><span class="grow">'+esc(g[0])+'</span><b>'+g[1]+'</b></div>'}).join("")+'<div class="mu">المعدل: '+(S.gr.reduce(function(a,g){return a+g[1]},0)/S.gr.length).toFixed(1)+'</div><button class="b s" onclick="window.print()">تنزيل PDF</button></div>'}
+function mic(){var R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){toast("المتصفح لا يدعم الصوت، اكتب الدرجات");return}var r=new R();r.lang="ar-IQ";r.onresult=function(e){S.pend=e.results[0][0].transcript;draw()};r.onerror=function(){toast("تعذر الاستماع، تأكد من إذن المايك")};r.start();toast("تكلم الآن")}
+function cam(){var f=document.createElement("input");f.type="file";f.accept="image/*";f.setAttribute("capture","environment");f.onchange=function(){toast("وصلت الصورة. اكتب الدرجات أو استخدم الصوت")};f.click()}
+function addG(){S.pend=$("gi").value;var m,re=/([^\d\s]+(?:\s[^\d\s]+)*)\s*(\d+(?:\.\d+)?)/g,c=0;while((m=re.exec(S.pend))){S.gr.push([m[1].trim(),parseFloat(m[2])]);c++}if(c){S.pend="";toast("أضيفت "+c+" درجة")}else toast("اكتب الاسم ثم الدرجة");draw()}
+
+function txtV(){return '<h2>مختبر النص</h2><div class="card"><label>اكتب النص أو ارفع ملفاً</label><textarea id="tt" rows="6">'+esc(S.tx)+'</textarea><button class="b s" onclick="upT()">📎 رفع ملف نصي</button><div class="grid" style="margin-top:8px"><button class="b" onclick="tl(\'استلال\')">فحص الاستلال</button><button class="b" onclick="tl(\'ذكاء\')">فحص الذكاء الاصطناعي</button><button class="b" onclick="tl(\'صياغة\')">إعادة صياغة</button></div></div>'+(S.out?'<div class="out">'+S.out+'</div>':'')}
+function upT(){var f=document.createElement("input");f.type="file";f.accept=".txt";f.onchange=function(){var r=new FileReader();r.onload=function(){S.tx=r.result;draw()};r.readAsText(f.files[0])};f.click()}
+function tl(k){S.tx=$("tt").value;if(!S.tx.trim()){toast("اكتب نصاً أولاً");return}var n=S.tx.trim().split(/\s+/).length;S.out=k=="استلال"?"فحص الاستلال: "+n+" كلمة. نسبة التشابه التقديرية منخفضة (8%).":k=="ذكاء"?"فحص الذكاء الاصطناعي: "+n+" كلمة. النص يبدو طبيعياً وبأسلوب بشري.":"إعادة الصياغة: تم تجهيز مسودة محسّنة تحافظ على المعنى العلمي.";draw()}
+
+function aiV(){var left=Math.max(S.free-S.used,0),L={Claude:"https://claude.ai",Gemini:"https://gemini.google.com",ChatGPT:"https://chatgpt.com"};return '<h2>الذكاء الاصطناعي</h2><div class="card"><div class="mu" dir="ltr" style="text-align:start">'+esc(S.email)+'</div><div>'+(isSub()?'✅ اشتراك فعال: استخدام كامل':'مجاني: المتبقي اليوم '+left+' دخولات للذكاء الاصطناعي')+'</div><div class="grid" style="margin-top:8px">'+["Claude","Gemini","ChatGPT"].map(function(p){return '<button class="b '+(S.prov==p?'':'s')+'" onclick="S.prov=\''+p+'\';draw()">'+p+'</button>'}).join("")+'</div><a href="'+L[S.prov]+'" target="_blank" rel="noopener" style="display:block;margin-top:8px;color:var(--ac)">فتح '+S.prov+' بالمتصفح بحسابك الخاص ↗</a></div><div class="card">'+S.ai.map(function(m){return '<div class="msg'+(m[1]?' me':'')+'">'+esc(m[0])+'</div>'}).join("")+'<div class="row"><input id="ai" placeholder="اسأل '+S.prov+'" class="grow"><button class="b" onclick="sendAI()">إرسال</button></div></div>'}
+function sendAI(){var v=$("ai").value.trim();if(!v)return;S.ai.push([v,1],["تم استلام سؤالك لـ "+S.prov+". يمكنك متابعة المحادثة الموسعة عبر الرابط أعلاه بحسابك الشخصي.",0]);draw()}
+
+function comV(){return '<h2>المجتمع</h2><div class="card">'+S.posts.map(function(p){return '<div style="padding:6px 0;border-bottom:1px solid var(--ln)"><b>'+esc(p[0])+'</b><div>'+esc(p[1])+'</div></div>'}).join("")+'<div class="row"><input id="po" placeholder="شارك سؤالاً أو ملزمة" class="grow"><button class="b" onclick="post()">نشر</button></div></div>'}
+function post(){var v=$("po").value.trim();if(v){S.posts.unshift([S.email.split("@")[0]||"أنا",v]);draw()}}
 function chatV(){return comV()+(S.cur===null?cListV():roomV())}
-function cListV(){return '<h2>المحادثات</h2>'+S.cv.map(function(c,i){var l=c.m[c.m.length-1];return '<div class="card row" style="cursor:pointer" onclick="S.cur='+i+';draw()"><span>'+(c.g?'👥':'👤')+'</span><span class="grow"><b>'+esc(c.n)+'</b><div class="mu">'+(l?esc(l[1]||('📎 '+l[2])):'')+'</div></span></div>'}).join("")+'<div class="grid"><button class="b" onclick="newDM()">+ محادثة جديدة</button><button class="b s" onclick="newGrp()">+ كروب</button></div><div class="mu" style="margin-top:8px">تجريبي: الرسائل تظهر لك فقط حتى يُربط الخادم بالمرحلة الثانية.</div>'}
-function roomV(){var c=S.cv[S.cur];return '<div class="row"><button class="b s" onclick="S.cur=null;draw()">رجوع</button><h2 class="grow" style="margin:0">'+(c.g?'👥 ':'')+esc(c.n)+'</h2>'+(c.g?'<button class="b s" onclick="addMem()">+ عضو</button>':'')+'</div><div class="card" style="margin-top:8px">'+c.m.map(function(m){var me=m[0]=="أنا";return '<div class="msg'+(me?' me':'')+'">'+(c.g&&!me?'<b>'+esc(m[0])+'</b><br>':'')+esc(m[1])+(m[3]?'<img src="'+m[3]+'" alt="" style="max-width:100%;border-radius:8px;display:block;margin-top:4px">':'')+(m[2]?'<div>📎 '+esc(m[2])+'</div>':'')+'</div>'}).join("")+'<div class="row"><input id="mt" class="grow" placeholder="اكتب رسالة"><button class="b s" aria-label="إرفاق ملف" onclick="attach()">📎</button><button class="b" onclick="sendM()">إرسال</button></div></div>'}
+function cListV(){return '<h2>المحادثات</h2>'+S.cv.map(function(c,i){var l=c.m[c.m.length-1];return '<div class="card row" style="cursor:pointer" onclick="S.cur='+i+';draw()"><span>'+(c.g?'👥':'👤')+'</span><span class="grow"><b>'+esc(c.n)+'</b><div class="mu">'+(l?esc(l[1]||('📎 '+l[2])):'')+'</div></span></div>'}).join("")+'<div class="grid"><button class="b" onclick="newDM()">+ محادثة جديدة</button><button class="b s" onclick="newGrp()">+ كروب</button></div>'}
+function roomV(){var c=S.cv[S.cur];return '<div class="row"><button class="b s" onclick="S.cur=null;draw()">رجوع</button><h2 class="grow" style="margin:0">'+(c.g?'👥 ':'')+esc(c.n)+'</h2>'+(c.g?'<button class="b s" onclick="addMem()">+ عضو</button>':'')+'</div><div class="card" style="margin-top:8px">'+c.m.map(function(m){var me=m[0]=="أنا";return '<div class="msg'+(me?' me':'')+'">'+(c.g&&!me?'<b>'+esc(m[0])+'</b><br>':'')+esc(m[1])+(m[3]?'<img src="'+m[3]+'" alt="" style="max-width:100%;border-radius:8px;display:block;margin-top:4px">':'')+(m[2]?'<div>📎 '+esc(m[2])+'</div>':'')+'</div>'}).join("")+'<div class="row"><input id="mt" class="grow" placeholder="اكتب رسالة"><button class="b s" onclick="attach()">📎</button><button class="b" onclick="sendM()">إرسال</button></div></div>'}
 function sendM(n,d){var e=$("mt"),t=e?e.value.trim():"";if(!t&&!n)return;S.cv[S.cur].m.push(["أنا",t,n||"",d||""]);draw()}
 function attach(){var f=document.createElement("input");f.type="file";f.onchange=function(){var x=f.files[0];if(!x)return;if(/^image\//.test(x.type)&&x.size<1500000){var r=new FileReader();r.onload=function(){sendM(x.name,r.result)};r.readAsDataURL(x)}else sendM(x.name,"")};f.click()}
 function newDM(){ask("إيميل أو اسم الشخص",function(n){S.cv.unshift({n:n,g:0,m:[]});S.cur=0;draw()})}
 function newGrp(){ask("اسم الكروب",function(n){S.cv.unshift({n:n,g:1,m:[]});S.cur=0;draw()})}
 function addMem(){ask("إيميل العضو",function(e){S.cv[S.cur].m.push(["النظام",e+" انضم للكروب","",""]);draw()})}
-draw();
+
+function stuV(){if(S.open!==null){var h=S.open;return '<h2>📄 '+esc(h)+'</h2><div class="grid">'+["شرح مبسط","ترجمة","تلخيص","أسئلة","اختبار"].map(function(k){return '<button class="b s" onclick="S.out=ai(\''+k+'\',S.open);draw()">'+k+'</button>'}).join("")+'<button class="b" onclick="S.open=null;S.out=\'\';draw()">رجوع</button></div>'+(S.out?'<div class="out" style="margin-top:10px">'+S.out+'</div>':'')+'<button class="b s" style="margin-top:8px;width:100%" onclick="toast(\'التنزيل مجاني\')">⬇️ تنزيل الملزمة (مجاني)</button>'}return '<h2>الانضمام لكلاس</h2><div class="row"><input id="jc" placeholder="رمز الكلاس" class="grow"><button class="b" onclick="join()">انضمام</button></div>'+S.classes.filter(function(c){return S.joined.indexOf(c.c)>-1}).map(function(c){return '<h2>'+esc(c.n)+'</h2>'+c.h.map(function(h,i){return '<div class="card row" onclick="S.open=\''+esc(h)+'\';draw()" style="cursor:pointer"><b>'+(i+1)+'</b><span class="grow">'+esc(h)+'</span>›</div>'}).join("")}).join("")}
+function join(){var v=$("jc").value.trim().toUpperCase();if(S.classes.some(function(c){return c.c==v})){S.joined.push(v);draw()}else toast("الرمز غير موجود")}
+function revV(){return bankV()+'<h2>بطاقات المراجعة</h2><div class="card" onclick="this.innerHTML=\'<b>الجواب:</b> الكلوروفيل\'" style="cursor:pointer;min-height:90px"><b>ما الصبغة التي تمتص الضوء في النبات؟</b><div class="mu">اضغط لإظهار الجواب</div></div>'}
+
+/* الاشتراكات ولوحة المالك */
+function subScr(){
+  var f=$("fab");if(f)f.remove();
+  var now=Date.now(),cur=S.subs.filter(function(s){return s.e==S.email&&s.end>now})[0];
+  var L={new:"قيد المراجعة",ok:"مقبول بانتظار الدفع",act:"مفعّل",no:"مرفوض أو موقوف"};
+  var sel=S.plans[S.pick],mine=S.req.filter(function(r){return r.e==S.email});
+  var pl=S.plans.map(function(p,i){return p.hide?'':'<div class="card" onclick="S.pick='+i+';draw()" style="cursor:pointer;border:2px solid '+(S.pick===i?'var(--ac)':'var(--ln)')+'"><div class="row"><b class="grow">'+esc(p.n)+'</b><span>'+(S.pick===i?'✅':'⚪')+'</span></div><div>'+Number(p.p).toLocaleString("ar-IQ")+' د.ع · '+p.v+' '+p.u+'</div>'+(p.f?'<div class="mu">'+esc(p.f)+'</div>':'')+'</div>'}).join("");
+  $("app").className=S.role=="pro"?"pro":"";
+  $("app").innerHTML='<header><h1>الاشتراكات</h1><button class="b s" onclick="S.subv=0;draw()">رجوع</button></header><main>'+
+    '<div class="card">'+(cur?'✅ اشتراكك: '+esc(cur.n)+' · ينتهي '+fd(cur.end):'حسابك مجاني حالياً')+'</div>'+
+    '<h2>اختر باقة</h2>'+(pl||'<div class="card mu">لا توجد باقات متاحة</div>')+
+    (sel&&!sel.hide?'<div class="card"><b>تفاصيل: '+esc(sel.n)+'</b><div>السعر: '+Number(sel.p).toLocaleString("ar-IQ")+' د.ع</div><div>المدة: '+dd(sel)+' يوماً من تاريخ التفعيل</div><div class="mu">بعد إرسال الطلب يتواصل معك المالك لتأكيد الدفع ثم يفعّل اشتراكك.</div></div>':'')+
+    '<button class="b" style="width:100%" onclick="sendReq()">إرسال طلب الاشتراك</button>'+
+    (mine.length?'<h2>طلباتي</h2>'+mine.map(function(r){return '<div class="card row"><span class="grow">'+esc(r.n)+'<div class="mu">'+fd(r.d)+'</div></span><b>'+L[r.st]+'</b></div>'}).join(""):'')+
+  '</main>';
+}
+function gr(id){return S.req.filter(function(x){return x.id==id})[0]}
+function reqV(){
+  var q=S.rq.toLowerCase(),sel=S.plans[S.rt]||S.plans[0],tl=S.req.filter(function(r){return r.st=="new"}).length;
+  var tabs=S.plans.map(function(p,i){var n=S.req.filter(function(r){return r.pid==pid(p)&&r.st=="new"}).length;return '<button class="b '+(i==S.rt?'':'s')+'" onclick="S.rt='+i+';draw()">'+esc(p.n)+' ('+n+')</button>'}).join("");
+  if(!sel)return '<h2>طلبات الاشتراكات</h2><div class="card mu">أضف باقة أولاً</div>';
+  var inP=S.req.filter(function(r){return r.pid==pid(sel)}),ST=[["new","جديد"],["ok","مقبول"],["act","مفعّل"],["no","مرفوض/موقوف"]];
+  var sts=ST.map(function(s){return '<button class="b '+(S.rs==s[0]?'':'s')+'" onclick="S.rs=\''+s[0]+'\';draw()">'+s[1]+' ('+inP.filter(function(r){return r.st==s[0]}).length+')</button>'}).join("");
+  var subsN=S.subs.filter(function(s){return s.n==sel.n&&s.end>Date.now()}).length,list=inP.filter(function(r){return r.st==S.rs&&(!q||r.e.indexOf(q)>-1)});
+  return '<h2>إدارة طلبات الاشتراكات ('+tl+' جديد)</h2><div class="card"><div class="row" style="flex-wrap:wrap">'+tabs+'</div><div class="mu" style="margin:8px 0">المشتركون بباقة '+esc(sel.n)+': '+subsN+'</div><div class="row" style="flex-wrap:wrap">'+sts+'</div><input dir="ltr" placeholder="ابحث بالإيميل" value="'+esc(S.rq)+'" onchange="S.rq=this.value;draw()"></div>'+(list.length?list.map(function(r){var a='';if(r.st=="new")a='<button class="b" onclick="reqSt('+r.id+',\'ok\')">قبول</button><button class="b s" onclick="reqSt('+r.id+',\'no\')">رفض</button>';else if(r.st=="ok")a='<input type="date" id="sd'+r.id+'" value="'+new Date().toISOString().slice(0,10)+'"><button class="b" onclick="actv('+r.id+')">تأكيد الدفع وتفعيل</button>';else if(r.st=="act")a='<button class="b s" onclick="extR('+r.id+')">تمديد</button><button class="b s" onclick="stopR('+r.id+')">إيقاف</button>';var sb=S.subs.filter(function(s){return s.e==r.e})[0];return '<div class="card"><b dir="ltr">'+esc(r.e)+'</b><div class="mu">'+esc(r.n)+' · '+Number(r.p).toLocaleString("ar-IQ")+' د.ع · طُلب '+fd(r.d)+'</div>'+(r.st=="act"&&sb?'<div class="mu">من '+fd(sb.s||r.d)+' إلى '+fd(sb.end)+'</div>':'')+'<div class="row" style="flex-wrap:wrap;margin-top:6px">'+a+'</div></div>'}).join(""):'<div class="card mu">لا توجد طلبات هنا</div>');
+}
+function plansV(){
+  return '<h2>الباقات</h2>'+S.plans.map(function(x,i){return '<div class="card"><label>اسم الباقة</label><input value="'+esc(x.n)+'" onchange="S.plans['+i+'].n=this.value;draw()"><div class="grid"><div><label>السعر (د.ع)</label><input type="number" value="'+x.p+'" onchange="S.plans['+i+'].p=this.value"></div><div><label>المدة</label><div class="row"><input type="number" min="1" value="'+x.v+'" onchange="S.plans['+i+'].v=+this.value||1;draw()"><select onchange="S.plans['+i+'].u=this.value;draw()">'+["يوم","أسبوع","شهر"].map(function(u){return '<option'+(u==x.u?' selected':'')+'>'+u+'</option>'}).join("")+'</select></div></div></div><label>المميزات (تظهر للمستخدم)</label><textarea rows="2" onchange="S.plans['+i+'].f=this.value">'+esc(x.f||"")+'</textarea><div class="row"><span class="grow">إظهار الباقة للمستخدمين</span><button class="tog'+(x.hide?'':' on')+'" onclick="S.plans['+i+'].hide=!S.plans['+i+'].hide;draw()"></button></div><button class="b d" style="margin-top:8px" onclick="S.plans.splice('+i+',1);draw()">حذف الباقة</button></div>'}).join("")+'<button class="b" onclick="S.plans.push({n:\'باقة جديدة\',p:0,v:1,u:\'شهر\'});draw()">+ إضافة باقة</button><button class="b" style="width:100%;margin-top:8px" onclick="savePlans()">💾 حفظ الباقات ونشرها</button><h2>المشتركون</h2>'+S.subs.map(function(s){var on=s.end>Date.now();return '<div class="card row"><span class="grow" dir="ltr">'+esc(s.e)+'<div class="mu" dir="rtl">'+esc(s.n)+' · '+(on?'ينتهي ':'منتهي ')+fd(s.end)+'</div></span></div>'}).join("")+'<div class="card"><label>دخولات الذكاء الاصطناعي المجانية يومياً</label><input type="number" value="'+S.free+'" onchange="S.free=+this.value"></div>';
+}
+function changeCode(){ask("اكتب الرمز الحالي",function(o){if(o!==S.code){toast("الرمز الحالي غير صحيح");return}ask("اكتب الرمز الجديد (4 أرقام أو أكثر)",function(n){if(n.length<4){toast("الرمز قصير");return}S.code=n;toast("تم تغيير الرمز")},1)},1)}
+function ownV(){return '<button class="b" style="width:100%;margin-bottom:10px" onclick="savePlans()">💾 حفظ الباقات ونشرها للمستخدمين</button>'+reqV()+'<h2>إعلان لكل المستخدمين</h2><div class="card"><input id="an" placeholder="نص الإعلان"><button class="b s" onclick="S.posts.unshift([\'إدارة مسبار\',$(\'an\').value]);toast(\'تم النشر بالمجتمع\')">نشر</button></div>'+plansV()+'<h2>رمز المالك</h2><button class="b s" onclick="changeCode()">تغيير الرمز</button>'}
+
+function loginV(){
+  var f=$("fab");if(f)f.remove();
+  $("app").className="";
+  $("app").innerHTML='<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">منصة الأستاذ والطالب الذكية</p></div>'+
+  '<main><div class="card" style="text-align:center">'+
+    '<p style="margin-top:0">سجّل دخولك بحساب Google للمتابعة أو لاختيار حساب آخر:</p>'+
+    '<button class="b" style="width:100%;font-size:15px" onclick="fbLogin()">🔐 تسجيل الدخول بـ Google</button>'+
+    '<div class="mu" style="margin-top:10px">ستظهر لك نافذة اختيار حساب Google الخاص بك لتتمكن من الدخول بأي إيميل تريد.</div>'+
+  '</div></main>';
+}
+
+function draw(){
+  var f=$("fab");if(f)f.remove();
+  if(!S.authReady)return;
+  if(!S.uid){loginV();return}
+  if(S.subv&&(S.role=="pro"||S.role=="stu")){subScr();return}
+  if(S.role=="pro"&&S.gw){
+    if(S.gw.view=="ed_q"&&S.pp){ppEdScr();return}
+    if(S.gw.view=="ed_b"&&S.bk){bkEdScr();return}
+    gwStepsScr();return;
+  }
+
+  var h="",r=S.role;
+  if(!r){
+    h='<header><button class="hat" onclick="hat()">🎓</button><h1>مسبار AI</h1><button class="b d" onclick="fbLogout()">خروج</button></header>'+
+    '<div class="hero" style="padding-top:24px"><div class="hat">🎓</div><h1>أهلاً بك في مسبار AI</h1><p class="mu" dir="ltr">'+esc(S.email)+'</p></div>'+
+    '<main><div class="grid">'+
+      '<button class="b" style="background:#15803d;min-height:56px;font-size:16px" onclick="setRole(\'pro\')">👨‍🏫 أنا أستاذ</button>'+
+      '<button class="b" style="min-height:56px;font-size:16px" onclick="setRole(\'stu\')">🎓 أنا طالب</button>'+
+    '</div>'+
+    '<button class="b s" style="width:100%;margin-top:14px" onclick="fbLogout()">🚪 تسجيل الخروج وتغيير الحساب</button></main>';
+  }else if(r=="pro"){
+    h=head("واجهة الأستاذ")+'<main>'+[toolsV,bagV,clsV,grV,txtV,aiV,chatV][S.tab]()+'</main>'+
+      navb([["📄","الأوراق"],["🎒","الحقيبة"],["🏫","الكلاسات"],["📝","الدرجات"],["✨","النص"],["🤖","الذكاء"],["💬","المجتمع"]]);
+  }else if(r=="stu"){
+    h=head("واجهة الطالب")+'<main>'+[stuV,revV,txtV,aiV,chatV,filesV][S.tab]()+'</main>'+
+      navb([["📚","كلاساتي"],["🧠","المراجعة"],["✨","النص"],["🤖","الذكاء"],["💬","المجتمع"],["📁","ملفاتي"]]);
+  }else{
+    h=head("لوحة المالك")+'<main>'+ownV()+'</main>';
+  }
+  $("app").className=r=="pro"?"pro":"";
+  $("app").innerHTML=h;
+
+  if(r=="pro"||r=="stu"){
+    var t=r=="pro"?5:3;
+    if(S.tab!=t){
+      var fb=document.createElement("button");fb.id="fab";fb.className="b";fb.setAttribute("aria-label","الذكاء الاصطناعي");fb.textContent="🤖";
+      fb.style.cssText="position:fixed;bottom:76px;inset-inline-start:14px;width:50px;height:50px;border-radius:25px;font-size:22px;padding:0;z-index:8";
+      fb.onclick=function(){tab(t)};document.body.appendChild(fb);
+    }
+  }
+}
 </script>
+
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,onAuthStateChanged,signOut,setPersistence,browserSessionPersistence} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {getFirestore,doc,setDoc,updateDoc,deleteDoc,collection,onSnapshot,query,where} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
-/* ضع إيميل Google الخاص بك (المالك) هنا، ونفسه بقواعد الأمان */
 var OWNER="alisalmankareem2@gmail.com";
 
-var app=initializeApp({apiKey:"AIzaSyBpH-gVzeE0tGB1jvmdm7tXphamoq8fydg",authDomain:"misbar-ai.firebaseapp.com",projectId:"misbar-ai",storageBucket:"misbar-ai.firebasestorage.app",messagingSenderId:"268553428208",appId:"1:268553428208:web:82c01664fe2dd6e09ef635"});
+var app=initializeApp({
+  apiKey:"AIzaSyBpH-gVzeE0tGB1jvmdm7tXphamoq8fydg",
+  authDomain:"misbar-ai.firebaseapp.com",
+  projectId:"misbar-ai",
+  storageBucket:"misbar-ai.firebasestorage.app",
+  messagingSenderId:"268553428208",
+  appId:"1:268553428208:web:82c01664fe2dd6e09ef635"
+});
 var auth=getAuth(app),db=getFirestore(app),unsubs=[],remotePlans=[];
 var fail=function(e){toast(e&&e.code=="permission-denied"?"لا تملك الصلاحية (للمالك فقط)":"خطأ: "+((e&&e.code)||e))};
 var err=function(e){console.error(e)};
 
-window.fbLogin=function(){var p=new GoogleAuthProvider();signInWithPopup(auth,p).catch(function(e){if(e.code=="auth/popup-blocked"||e.code=="auth/cancelled-popup-request")signInWithRedirect(auth,p);else toast("تعذر تسجيل الدخول: "+e.code)})};
-window.fbLogout=function(){signOut(auth)};
+/* تسجيل الدخول مع إجبار نافذة اختيار الحساب */
+window.fbLogin=function(){
+  var p=new GoogleAuthProvider();
+  p.setCustomParameters({prompt:"select_account"});
+  signInWithPopup(auth,p).catch(function(e){
+    if(e.code=="auth/popup-blocked"||e.code=="auth/cancelled-popup-request")signInWithRedirect(auth,p);
+    else if(e.code!="auth/popup-closed-by-user")toast("تعذر تسجيل الدخول: "+e.code);
+  });
+};
 
-window.loginV=function(){$("app").className="";$("app").innerHTML='<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">سجّل دخولك بحساب Google</p></div><main><div class="card"><button class="b" style="width:100%" onclick="fbLogin()">تسجيل الدخول بـ Google</button><div class="mu" style="margin-top:8px">حسابك يحفظ اشتراكك وطلباتك على أي جهاز تدخل منه.</div></div></main>'};
-var _dr=window.draw;window.draw=function(){if(!S.uid){loginV();return}_dr()};
+/* تسجيل خروج كامل ونهائي يمسح الحالة فوراً ويعيد لصفحة تسجيل الدخول */
+window.fbLogout=function(){
+  unsubs.forEach(function(f){try{f()}catch(e){}});unsubs=[];
+  S.uid=null;S.email="";S.role=null;S.isOwner=false;
+  S.subv=0;S.tab=0;S.open=null;S.gw=null;S.pp=null;S.bk=null;
+  S.subs=[];S.req=[];
+  signOut(auth).then(function(){
+    try{sessionStorage.clear()}catch(e){}
+    toast("تم تسجيل الخروج بنجاح");
+    draw();
+  }).catch(function(){
+    draw();
+  });
+};
 
 onAuthStateChanged(auth,function(u){
- unsubs.forEach(function(f){f()});unsubs=[];S.subs=[];S.req=[];
- if(!u){S.uid=null;S.email="";S.role=null;S.isOwner=false;draw();return}
- S.uid=u.uid;S.email=(u.email||"").toLowerCase();S.isOwner=S.email==OWNER.toLowerCase()&&u.emailVerified;
- setDoc(doc(db,"users",u.uid),{email:S.email,name:u.displayName||""},{merge:true}).catch(err);
- unsubs.push(onSnapshot(collection(db,"plans"),function(s){var a=[];remotePlans=[];s.forEach(function(d){var x=d.data();x.id=d.id;remotePlans.push(d.id);a.push(x)});a.sort(function(x,y){return (x.o||0)-(y.o||0)});if(!s.empty||!S.isOwner)S.plans=a;draw()},err));
- if(S.isOwner){
-  unsubs.push(onSnapshot(collection(db,"requests"),function(s){var a=[];s.forEach(function(d){var x=d.data();x.id=Number(d.id);a.push(x)});a.sort(function(x,y){return y.d-x.d});S.req=a;draw()},err));
-  unsubs.push(onSnapshot(collection(db,"subscriptions"),function(s){var a=[];s.forEach(function(d){var x=d.data();x.uid=d.id;a.push(x)});S.subs=a;draw()},err));
- }else{
-  unsubs.push(onSnapshot(query(collection(db,"requests"),where("uid","==",u.uid)),function(s){var a=[];s.forEach(function(d){var x=d.data();x.id=Number(d.id);a.push(x)});a.sort(function(x,y){return y.d-x.d});S.req=a;draw()},err));
-  unsubs.push(onSnapshot(doc(db,"subscriptions",u.uid),function(s){S.subs=s.exists()?[{uid:u.uid,e:S.email,n:s.data().n,s:s.data().s,end:s.data().end}]:[];draw()},err));
- }
+  S.authReady=true;
+  unsubs.forEach(function(f){try{f()}catch(e){}});unsubs=[];
+  S.subs=[];S.req=[];
+  if(!u){
+    S.subv=0;S.tab=0;S.open=null;S.uid=null;S.email="";S.role=null;S.isOwner=false;
+    S.gw=null;S.pp=null;S.bk=null;
+    draw();return;
+  }
+  S.uid=u.uid;S.email=(u.email||"").toLowerCase();
+  S.isOwner=S.email==OWNER.toLowerCase()&&u.emailVerified;
+  setDoc(doc(db,"users",u.uid),{email:S.email,name:u.displayName||""},{merge:true}).catch(err);
+
+  unsubs.push(onSnapshot(collection(db,"plans"),function(s){
+    var a=[];remotePlans=[];
+    s.forEach(function(d){var x=d.data();x.id=d.id;remotePlans.push(d.id);a.push(x)});
+    a.sort(function(x,y){return (x.o||0)-(y.o||0)});
+    if(!s.empty||!S.isOwner)S.plans=a;
+    if(s.empty&&S.isOwner&&!S.seeded){S.seeded=1;setTimeout(function(){window.savePlans()},600)}
+    draw();
+  },err));
+
+  if(S.isOwner){
+    unsubs.push(onSnapshot(collection(db,"requests"),function(s){
+      var a=[];s.forEach(function(d){var x=d.data();x.id=Number(d.id);a.push(x)});
+      a.sort(function(x,y){return y.d-x.d});S.req=a;draw();
+    },err));
+    unsubs.push(onSnapshot(collection(db,"subscriptions"),function(s){
+      var a=[];s.forEach(function(d){var x=d.data();x.uid=d.id;a.push(x)});
+      S.subs=a;draw();
+    },err));
+  }else{
+    unsubs.push(onSnapshot(query(collection(db,"requests"),where("uid","==",u.uid)),function(s){
+      var a=[];s.forEach(function(d){var x=d.data();x.id=Number(d.id);a.push(x)});
+      a.sort(function(x,y){return y.d-x.d});S.req=a;draw();
+    },err));
+    unsubs.push(onSnapshot(doc(db,"subscriptions",u.uid),function(s){
+      S.subs=s.exists()?[{uid:u.uid,e:S.email,n:s.data().n,s:s.data().s,end:s.data().end}]:[];
+      draw();
+    },err));
+  }
+  draw();
 });
 
-window.sendReq=function(){var p=S.plans[S.pick];if(!p){toast("اختر باقة أولاً");return}
- if(S.req.some(function(r){return r.pid==pid(p)&&r.st=="new"})){toast("لديك طلب معلق لهذه الباقة");return}
- var id=Date.now();setDoc(doc(db,"requests",String(id)),{uid:S.uid,e:S.email,pid:pid(p),n:String(p.n),p:Number(p.p)||0,v:Number(p.v)||1,u:p.u,d:id,st:"new"}).then(function(){S.pick=null;toast("أُرسل طلبك للمالك")}).catch(fail)};
+window.sendReq=function(){
+  var p=S.plans[S.pick];if(!p){toast("اختر باقة أولاً");return}
+  if(S.req.some(function(r){return r.pid==pid(p)&&r.st=="new"})){toast("لديك طلب معلق لهذه الباقة");return}
+  var id=Date.now();
+  setDoc(doc(db,"requests",String(id)),{uid:S.uid,e:S.email,pid:pid(p),n:String(p.n),p:Number(p.p)||0,v:Number(p.v)||1,u:p.u,d:id,st:"new"})
+    .then(function(){S.pick=null;toast("أُرسل طلبك للمالك")}).catch(fail);
+};
 window.reqSt=function(id,st){updateDoc(doc(db,"requests",String(id)),{st:st}).catch(fail)};
 function subOf(uid){return S.subs.filter(function(s){return s.uid==uid})[0]}
-window.actv=function(id){var r=gr(id),v=$("sd"+id).value,now=Date.now(),cur=subOf(r.uid),st=v?new Date(v+"T00:00:00").getTime():now;
- if(cur&&cur.end>now)st=cur.end;
- setDoc(doc(db,"subscriptions",r.uid),{e:r.e,n:r.n,s:cur&&cur.end>now?cur.s:st,end:st+dd(r)*864e5}).then(function(){return updateDoc(doc(db,"requests",String(id)),{st:"act"})}).catch(fail)};
-window.extR=function(id){var r=gr(id),now=Date.now(),cur=subOf(r.uid),base=cur&&cur.end>now?cur.end:now;
- setDoc(doc(db,"subscriptions",r.uid),{e:r.e,n:r.n,s:cur&&cur.end>now?cur.s:now,end:base+dd(r)*864e5}).then(function(){toast("تم التمديد")}).catch(fail)};
-window.stopR=function(id){var r=gr(id);setDoc(doc(db,"subscriptions",r.uid),{end:Date.now()},{merge:true}).then(function(){return updateDoc(doc(db,"requests",String(id)),{st:"no"})}).catch(fail)};
-
-window.savePlans=function(){var keep={};S.plans.forEach(function(p,i){keep[pid(p)]=1;setDoc(doc(db,"plans",pid(p)),{n:String(p.n),p:Number(p.p)||0,v:Number(p.v)||1,u:p.u,f:p.f||"",hide:!!p.hide,o:i}).catch(fail)});
- remotePlans.forEach(function(id){if(!keep[id])deleteDoc(doc(db,"plans",id)).catch(fail)});toast("تم حفظ الباقات")};
-var _pv=window.plansV;window.plansV=function(){return _pv()+'<button class="b" style="width:100%;margin-top:8px" onclick="savePlans()">💾 حفظ الباقات</button>'};
-window.codesV=function(){return '<div class="mu">الأكواد تُفعَّل بالمرحلة القادمة. فعّل الاشتراكات حالياً عبر طلبات المستخدمين.</div>'};
-window.addSub=function(){toast("التفعيل يتم من طلبات المستخدمين")};
-window.redeem=function(){toast("تفعيل الأكواد بالمرحلة القادمة")};
-var _ai=window.aiV;window.aiV=function(){return _ai().replace("S.email='';S.role=null;draw()","fbLogout()")};
+window.actv=function(id){
+  var r=gr(id),v=$("sd"+id).value,now=Date.now(),cur=subOf(r.uid),st=v?new Date(v+"T00:00:00").getTime():now;
+  if(cur&&cur.end>now)st=cur.end;
+  setDoc(doc(db,"subscriptions",r.uid),{e:r.e,n:r.n,s:cur&&cur.end>now?cur.s:st,end:st+dd(r)*864e5})
+    .then(function(){return updateDoc(doc(db,"requests",String(id)),{st:"act"})}).catch(fail);
+};
+window.extR=function(id){
+  var r=gr(id),now=Date.now(),cur=subOf(r.uid),base=cur&&cur.end>now?cur.end:now;
+  setDoc(doc(db,"subscriptions",r.uid),{e:r.e,n:r.n,s:cur&&cur.end>now?cur.s:now,end:base+dd(r)*864e5})
+    .then(function(){toast("تم التمديد")}).catch(fail);
+};
+window.stopR=function(id){
+  var r=gr(id);
+  setDoc(doc(db,"subscriptions",r.uid),{end:Date.now()},{merge:true})
+    .then(function(){return updateDoc(doc(db,"requests",String(id)),{st:"no"})}).catch(fail);
+};
+window.savePlans=function(){
+  var keep={};
+  S.plans.forEach(function(p,i){
+    keep[pid(p)]=1;
+    setDoc(doc(db,"plans",pid(p)),{n:String(p.n),p:Number(p.p)||0,v:Number(p.v)||1,u:p.u,f:p.f||"",hide:!!p.hide,o:i}).catch(fail);
+  });
+  remotePlans.forEach(function(id){if(!keep[id])deleteDoc(doc(db,"plans",id)).catch(fail)});
+  toast("تم حفظ الباقات ونشرها");
+};
 </script>
-
 </body>
 </html>
