@@ -119,7 +119,7 @@ nav button.on{color:var(--ac)}nav i{display:block;font-style:normal;font-size:19
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.8.0";
+var APP_VERSION = "2.9.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -511,6 +511,38 @@ function ask(l,cb,pw,defVal){
 }
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 
+function openProfileModal(){
+  var d=document.createElement("div");d.id="md";
+  d.innerHTML='<div class="mc" style="width:min(340px,90%)">'+
+    '<div style="text-align:center;margin-bottom:12px;font-size:40px">👤</div>'+
+    '<h2 style="text-align:center;margin-top:0">إدارة حسابي</h2>'+
+    '<label>الاسم أو اليوزر نيم (يظهر للآخرين)</label>'+
+    '<input id="prfName" value="'+esc(S.dispName)+'" placeholder="اكتب اسمك هنا">'+
+    '<div class="mu" style="font-size:11px;margin-bottom:14px;background:var(--bg);padding:8px;border-radius:8px;border:1px solid var(--ln)">الإيميل الخاص بك (مخفي ومحمي تماماً عن بقية المستخدمين):<br><b dir="ltr" style="display:block;margin-top:4px;color:var(--tx)">'+esc(S.email)+'</b></div>'+
+    '<button class="b" style="width:100%;margin-bottom:8px;background:#15803d" onclick="saveProfile()">💾 حفظ التغييرات</button>'+
+    '<button class="b s" style="width:100%" onclick="document.getElementById(\'md\').remove()">إلغاء</button>'+
+  '</div>';
+  document.body.appendChild(d);
+}
+
+function saveProfile(){
+  var n = document.getElementById("prfName").value.trim();
+  if(!n){ toast("الرجاء كتابة الاسم أو اليوزر نيم"); return; }
+  S.dispName = n;
+  if(window.fbSyncUserProfile) window.fbSyncUserProfile();
+  saveAllUserStorage();
+  toast("✅ تم تحديث اسمك بنجاح");
+  var md = document.getElementById("md"); if(md) md.remove();
+  draw();
+}
+
+function getUserDispName(em){
+  if(em === S.email) return S.dispName || "أنا";
+  var u = (S.allUsers||[]).find(function(x){ return x.email === em; });
+  return u && u.name ? u.name : "عضو";
+}
+
+
 Object.defineProperty(S,"used",{
   get:function(){return S.use[S.email+"|"+new Date().toDateString()]||0},
   set:function(v){S.use[S.email+"|"+new Date().toDateString()]=v;try{localStorage.setItem("misbar_use_v1",JSON.stringify(S.use))}catch(e){}}
@@ -622,6 +654,7 @@ function head(t){
     ? '<button class="b s" title="مزامنة Google Drive" onclick="handleDriveSyncClick()">'+(S.driveSyncing?'⏳':(S.driveToken?'☁️ Drive':'☁️ ربط'))+'</button>'
     : '';
   return '<header><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>'+t+'</h1>'+
+  (S.role!='own' ? '<button class="b s" style="min-width:38px;padding:4px 0;font-size:16px" onclick="openProfileModal()" title="حسابي">👤</button>' : '') +
   drvBtn+
   (stat()&&S.role!='own'?'<button class="b s" onclick="S.subv=1;draw()">'+stat()+'</button>':'')+
   (S.role?'<button class="b s" title="تبديل بين الأستاذ والطالب" onclick="setRole(null)">🔄</button>':'')+
@@ -3254,13 +3287,14 @@ function renderChatPickerModal(){
     '<div style="flex:1;overflow-y:auto;max-height:260px;border:1px solid var(--ln);border-radius:10px;padding:4px">' +
       (users.length ? users.map(function(u){
         var isSel = !!S.chatPickEmails[u.email];
-        return '<div class="row" style="padding:7px;border-bottom:1px solid var(--ln);cursor:pointer;background:'+(isSel?'var(--acs)':'transparent')+';border-radius:8px" onclick="selectChatUser(\''+esc(u.email)+'\',\''+esc(u.name||u.email)+'\',\''+esc(u.photo||'')+'\')">' +
-          avatarHtml(u.name || u.email, u.photo) +
-          '<div class="grow" style="overflow:hidden"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(u.name || u.email.split("@")[0])+'</b><div class="mu" dir="ltr" style="font-size:12px;text-align:start">'+esc(u.email)+'</div></div>' +
+        var disp = u.name || "مستخدم";
+        return '<div class="row" style="padding:7px;border-bottom:1px solid var(--ln);cursor:pointer;background:'+(isSel?'var(--acs)':'transparent')+';border-radius:8px" onclick="selectChatUser(\''+esc(u.email)+'\',\''+esc(disp)+'\',\''+esc(u.photo||'')+'\')">' +
+          avatarHtml(disp, u.photo) +
+          '<div class="grow" style="overflow:hidden"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(disp)+'</b></div>' +
           '<span>'+(mode==='dm'?'💬':(isSel?'✅':'⚪'))+'</span>' +
         '</div>';
-      }).join("") : '<div class="mu" style="padding:12px;text-align:center">لا يوجد مستخدم مطابق بالقائمة.<br>إذا كتبت جيميل صحيحاً بالأعلى يمكنك إضافته مباشرة بالزر أدناه:</div>') +
-      (q.indexOf("@") > 0 ? '<button class="b s" style="width:100%;margin-top:6px" onclick="selectChatUser(\''+esc(q)+'\',\''+esc(q.split("@")[0])+'\',\'\')">+ اختيار الجيميل: '+esc(q)+'</button>' : '') +
+      }).join("") : '<div class="mu" style="padding:12px;text-align:center">لا يوجد مستخدم مطابق بالقائمة.<br>اكتب اسماً أو يوزراً صحيحاً في البحث.</div>') +
+      (q.indexOf("@") > 0 ? '<button class="b s" style="width:100%;margin-top:6px" onclick="selectChatUser(\''+esc(q)+'\',\'مستخدم\',\'\')">+ إضافة مستخدم عبر الإيميل المباشر</button>' : '') +
     '</div>' +
     (mode!=='dm' ? '<button class="b" style="width:100%;margin-top:10px;background:#15803d" onclick="confirmGroupCreateOrAdd()">'+(mode==='grp'?'✅ إنشاء الكروب الآن':'✅ إضافة الأعضاء المحددين')+'</button>' : '') +
   '</div>';
@@ -3276,7 +3310,7 @@ function selectChatUser(em, name, photo){
     var md = $("md"); if(md) md.remove();
     var existing = S.cv.find(function(c){ return !c.g && c.peerEmail === em; });
     if(existing){ S.curChatId = existing.id; draw(); return; }
-    var newChat = { id: "dm_" + Date.now(), n: name || em, peerEmail: em, photo: photo || "", g: 0, members: [S.email, em], msgs: [] };
+    var newChat = { id: "dm_" + Date.now(), n: name || "مستخدم", peerEmail: em, photo: photo || "", g: 0, members: [S.email, em], msgs: [] };
     S.cv.unshift(newChat);
     S.curChatId = newChat.id;
     if(window.fbSaveChatRoom) window.fbSaveChatRoom(newChat);
@@ -3289,30 +3323,36 @@ function selectChatUser(em, name, photo){
 
 function confirmGroupCreateOrAdd(){
   var picked = Object.keys(S.chatPickEmails).filter(function(k){ return S.chatPickEmails[k]; });
+  var pickedNames = picked.map(function(em){ return getUserDispName(em); });
   if(S.chatModal === "grp"){
     var gName = (S.chatGroupName || "").trim() || "كروب دراسي جديد";
     var members = [S.email].concat(picked);
+    var msgId = "m_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
+    var sysMsg = { id: msgId, e: S.email, isSys: true, sender: "النظام", t: "أنشأ " + (S.dispName || "مستخدم") + " الكروب (" + members.length + " أعضاء)", at: Date.now() };
     var grpObj = {
       id: "grp_" + Date.now(),
       n: gName,
       g: 1,
       members: members,
-      msgs: [{ e: "sys", sender: "النظام", t: "أنشأ " + (S.dispName || S.email) + " الكروب (" + members.length + " أعضاء)", at: Date.now() }]
+      msgs: [sysMsg]
     };
     S.chatModal = null;
-    var md = $("md"); if(md) md.remove();
+    var md = document.getElementById("md"); if(md) md.remove();
     S.cv.unshift(grpObj);
     S.curChatId = grpObj.id;
-    if(window.fbSaveChatRoom) window.fbSaveChatRoom(grpObj);
+    if(window.fbSendRoomMessage) window.fbSendRoomMessage(grpObj, sysMsg);
     saveAllUserStorage(); draw();
   }else if(S.chatModal === "add_member"){
     var c = S.cv.find(function(x){ return x.id === S.curChatId; });
     S.chatModal = null;
-    var md2 = $("md"); if(md2) md2.remove();
+    var md2 = document.getElementById("md"); if(md2) md2.remove();
     if(c && picked.length){
       c.members = Array.from(new Set((c.members || [S.email]).concat(picked)));
-      c.msgs.push({ e: "sys", sender: "النظام", t: "أُضيف: " + picked.join("، "), at: Date.now() });
-      if(window.fbSaveChatRoom) window.fbSaveChatRoom(c);
+      var msgId = "m_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
+      var sysMsg = { id: msgId, e: S.email, isSys: true, sender: "النظام", t: "أُضيف: " + pickedNames.join("، "), at: Date.now() };
+      c.msgs = c.msgs || [];
+      c.msgs.push(sysMsg);
+      if(window.fbSendRoomMessage) window.fbSendRoomMessage(c, sysMsg);
       saveAllUserStorage(); draw();
     }
   }
@@ -3334,8 +3374,8 @@ function roomV(){
     '</div>' +
     '<div class="wa-body" id="waBody">' +
       (ms.length ? ms.map(function(m, mi){
-        if(m.e === "sys"){
-          return '<div style="text-align:center;font-size:11px;color:var(--mu);background:var(--sf);padding:3px 10px;border-radius:99px;align-self:center">'+esc(m.t)+'</div>';
+        if(m.isSys || m.e === "sys"){
+          return '<div style="text-align:center;font-size:11px;color:var(--mu);background:var(--sf);padding:3px 10px;border-radius:99px;align-self:center;margin:4px 0">'+esc(m.t)+'</div>';
         }
         var me = m.e === S.email;
         var timeStr = m.at ? new Date(m.at).toLocaleTimeString("ar-IQ",{hour:"2-digit",minute:"2-digit"}) : "";

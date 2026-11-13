@@ -1,5 +1,5 @@
 /* Service Worker - مسبار AI: يجلب النسخة الجديدة أولاً من الإنترنت، ويعمل بدون إنترنت من آخر نسخة محفوظة */
-const CACHE_NAME = 'misbar-ai-v2.8.0';
+const CACHE_NAME = 'misbar-ai-v2.9.0';
 const CORE_ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (event) => {
