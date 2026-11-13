@@ -126,7 +126,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.18.0";
+var APP_VERSION = "2.20.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -3464,10 +3464,30 @@ function pickerUsers(){
   var q = (S.chatSearch || "").toLowerCase().trim();
   var qh = q.replace(/^@+/, "");
   var seen = {}, all = [];
-  (S.allUsers || []).concat(S.foundUsers || []).forEach(function(u){
+  
+  // Always include found users
+  (S.foundUsers || []).forEach(function(u){
     if(!u || !u.email || u.email === S.email || seen[u.email]) return;
     seen[u.email] = 1; all.push(u);
   });
+  
+  // If owner, include all users. If not, include users we already have a chat with.
+  if(S.isOwner){
+    (S.allUsers || []).forEach(function(u){
+      if(!u || !u.email || u.email === S.email || seen[u.email]) return;
+      seen[u.email] = 1; all.push(u);
+    });
+  } else {
+    // Extract known users from existing chats
+    (S.cv || []).forEach(function(c){
+      if(!c.g && c.peerEmail && !seen[c.peerEmail] && c.peerEmail !== S.email){
+        seen[c.peerEmail] = 1;
+        // Find existing handle/name from S.foundUsers or default
+        all.push({ email: c.peerEmail, name: chatTitle(c), photo: chatPhoto(c) });
+      }
+    });
+  }
+  
   return all.filter(function(u){
     if(!q) return true;
     return (u.name || "").toLowerCase().indexOf(q) > -1 ||
@@ -3843,7 +3863,8 @@ function roomV(){
         '<button style="background:transparent;color:#fff;border:none;font-size:22px;font-weight:bold;cursor:pointer;padding:0 8px" onclick="var m=document.getElementById(\'waMenuDropdown\');if(m)m.style.display=m.style.display===\'none\'?\'block\':\'none\';event.stopPropagation();">⋮</button>' +
         '<div id="waMenuDropdown" style="display:none;position:absolute;top:38px;left:0;background:var(--sf);color:var(--tx);min-width:170px;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,0.2);z-index:100;overflow:hidden;text-align:start;font-size:15px;font-weight:600">' +
           (c.g ? '<div style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--ln);color:#ef4444" onclick="confirmLeaveGroup(\''+c.id+'\')">مغادرة المجموعة</div>' 
-               : '<div style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--ln);color:#ef4444" onclick="confirmDeleteChat(\''+c.id+'\')">حذف المحادثة</div>' +
+               : '<div style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--ln);color:#ef4444" onclick="confirmDeleteChat(\''+c.id+'\', true)">حذف المحادثة من الطرفين</div>' +
+                 '<div style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--ln);color:#ef4444" onclick="confirmDeleteChat(\''+c.id+'\', false)">حذف المحادثة من جهازي</div>' +
                  '<div style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--ln);color:#ef4444" onclick="toggleBlockUser(\''+chatPeerEmail(c)+'\')">' + (S.blocked && S.blocked.indexOf(chatPeerEmail(c)) > -1 ? '✅ فك الحظر' : '🚫 حظر المستخدم') + '</div>') +
           '<div style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--ln)" onclick="clearChatMessages(\''+c.id+'\')">مسح محتوى المحادثة</div>' +
           '<div style="padding:14px 16px;cursor:pointer" onclick="openWaWallpaperModal();document.getElementById(\'waMenuDropdown\').style.display=\'none\';">تغيير الخلفية</div>' +
@@ -3863,13 +3884,15 @@ function roomV(){
         if(m.file){
           if(m.file.isImg && m.file.data){
             fileHtml = '<div style="margin-top:5px"><img src="'+m.file.data+'" alt="" style="max-width:100%;max-height:220px;border-radius:10px;display:block">' +
-              '<button type="button" class="b s" style="width:100%;margin-top:5px;min-height:32px;padding:3px" onclick="downloadChatAttachment('+mi+')">⬇️ تحميل الصورة</button></div>';
+              '<button type="button" class="b s" style="width:100%;margin-top:5px;min-height:32px;padding:3px" onclick="downloadChatAttachment('+mi+')">⬇️ تحميل</button></div>';
+          }else if(m.file.isAudio && m.file.data){
+            fileHtml = '<div style="margin-top:5px"><audio controls src="'+m.file.data+'" style="max-width:200px;height:40px;outline:none"></audio></div>';
           }else{
             fileHtml = '<div class="wa-file-box">' +
               '<div class="row"><span style="font-size:22px">📄</span><div class="grow" style="overflow:hidden"><b style="display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(m.file.name)+'</b><span style="font-size:11px;opacity:.8">'+esc(m.file.sizeTxt||'ملف مرفق')+'</span></div></div>' +
               '<div class="grid" style="margin-top:6px">' +
-                '<button type="button" class="b s" style="min-height:30px;padding:2px 6px;font-size:12px" onclick="openChatAttachmentInApp('+mi+')">👁️ فتح بالتطبيق</button>' +
-                '<button type="button" class="b s" style="min-height:30px;padding:2px 6px;font-size:12px" onclick="downloadChatAttachment('+mi+')">⬇️ تحميل للجهاز</button>' +
+                '<button type="button" class="b s" style="min-height:30px;padding:2px 6px;font-size:12px" onclick="openChatAttachmentInApp('+mi+')">👁️ فتح</button>' +
+                '<button type="button" class="b s" style="min-height:30px;padding:2px 6px;font-size:12px" onclick="downloadChatAttachment('+mi+')">⬇️ تحميل</button>' +
               '</div>' +
             '</div>';
           }
@@ -3879,7 +3902,16 @@ function roomV(){
           (c.g && !me ? '<div style="font-size:11px;font-weight:800;color:var(--ac);margin-bottom:2px">'+esc(m.sender)+'</div>' : '') +
           (m.t ? '<div>'+esc(m.t)+'</div>' : '') +
           fileHtml +
-          '<div style="font-size:10px;opacity:.75;text-align:end;margin-top:3px">'+timeStr+(me?(m._fail?' ⚠️ لم تصل':(m._pend?' 🕓':' ✓')):'')+'</div>' +
+          (function(){
+            if(!me) return '<div style="font-size:10px;opacity:.75;text-align:end;margin-top:3px">'+timeStr+'</div>';
+            if(m._fail) return '<div style="font-size:10px;opacity:.75;text-align:end;margin-top:3px">'+timeStr+' ⚠️ لم تصل</div>';
+            if(m._pend) return '<div style="font-size:10px;opacity:.75;text-align:end;margin-top:3px">'+timeStr+' 🕓</div>';
+            var peer = chatPeerEmail(c);
+            var isRead = c.readBy && c.readBy[peer] && c.readBy[peer] >= (m.at||0);
+            var isDelv = c.dlv && c.dlv[peer] && c.dlv[peer] >= (m.at||0);
+            var ticks = isRead ? '<span style="color:#3b82f6;font-weight:bold;letter-spacing:-2px">✓✓</span>' : (isDelv ? '<span style="color:#9ca3af;font-weight:bold;letter-spacing:-2px">✓✓</span>' : '<span style="color:#9ca3af;font-weight:bold">✓</span>');
+            return '<div style="font-size:10px;opacity:.75;text-align:end;margin-top:3px">'+timeStr+' '+ticks+'</div>';
+          })() +
         '</div>';
       }).join("") : '<div class="mu" style="text-align:center;margin:24px 0;background:var(--sf);padding:8px 14px;border-radius:10px;align-self:center;z-index:1">ابدأ المحادثة الآن أو أرسل ملفاً/صورة للجميع 📎</div>') +
     '</div>' +
@@ -3919,17 +3951,54 @@ function sendM(fileObj){
   setTimeout(function(){ var wb=$("waBody"); if(wb) wb.scrollTop=wb.scrollHeight; }, 30);
 }
 
-function attachChatFile(){
+
+/* ==================== واتساب - المرفقات والصوتيات ==================== */
+function waInputChanged(){
+  var mt = document.getElementById("mt");
+  var btn = document.getElementById("waSendBtn");
+  if(!mt || !btn) return;
+  if(mt.value.trim().length > 0){
+    btn.innerHTML = "➤";
+    btn.style.background = "var(--ac)";
+  } else {
+    btn.innerHTML = "🎙️";
+    if(S.isRecording) btn.style.background = "#ef4444";
+    else btn.style.background = "var(--ac)";
+  }
+}
+
+function waSendOrMic(){
+  var mt = document.getElementById("mt");
+  if(mt && mt.value.trim().length > 0){
+    sendM();
+    waInputChanged();
+  } else {
+    toggleVoiceRecord();
+  }
+}
+
+function attachChatFile(type){
+  var m = document.getElementById("waAttachMenu");
+  if(m) m.style.display = "none";
+  
   var f = document.createElement("input");
   f.type = "file";
-  f.accept = "image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt";
+  if(type === "gallery"){
+    f.accept = "image/*,video/*";
+  } else {
+    f.accept = ".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt";
+  }
+  
   f.onchange = function(){
     var x = f.files[0]; if(!x) return;
     var isImg = /^image\//.test(x.type);
-    if(!isImg && x.size > 720000){
-      toast("الحد الأقصى للملفات المرفقة في المحادثة هو 700 كيلوبايت");
+    var isVid = /^video\//.test(x.type);
+    
+    if(!isImg && !isVid && x.size > 720000){
+      toast("الحد الأقصى للمستندات هو 700 كيلوبايت");
       return;
     }
+    
     var r = new FileReader();
     r.onload = function(){
       if(isImg){
@@ -3943,7 +4012,7 @@ function attachChatFile(){
           sendM({ name: x.name, isImg: true, data: compressed, sizeTxt: Math.round(compressed.length*0.75/1024)+" ك.ب" });
         };
         im.src = r.result;
-      }else{
+      } else {
         sendM({ name: x.name, isImg: false, mime: x.type, data: r.result, sizeTxt: Math.round(x.size/1024)+" ك.ب" });
       }
     };
@@ -3951,6 +4020,45 @@ function attachChatFile(){
   };
   f.click();
 }
+
+var mediaRecorder;
+var audioChunks = [];
+function toggleVoiceRecord(){
+  if(S.isRecording){
+    if(mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+    S.isRecording = false;
+    waInputChanged();
+    toast("جاري إرسال البصمة...");
+  } else {
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      toast("متصفحك لا يدعم تسجيل الصوت");
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+      mediaRecorder.addEventListener("dataavailable", function(e){
+        audioChunks.push(e.data);
+      });
+      mediaRecorder.addEventListener("stop", function(){
+        stream.getTracks().forEach(function(track){ track.stop(); });
+        var audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+        var reader = new FileReader();
+        reader.onload = function(){
+           sendM({ name: "بصمة صوتية", isAudio: true, data: reader.result, sizeTxt: "صوت" });
+        };
+        reader.readAsDataURL(audioBlob);
+      });
+      mediaRecorder.start();
+      S.isRecording = true;
+      waInputChanged();
+      toast("🔴 جاري تسجيل البصمة، اضغط مجدداً للإرسال");
+    }).catch(function(e){
+      toast("تعذر الوصول للمايكروفون: " + e.message);
+    });
+  }
+}
+
 
 function downloadChatAttachment(mi){
   var c = S.cv.find(function(x){ return x.id === S.curChatId; }); if(!c || !c.msgs[mi] || !c.msgs[mi].file) return;
@@ -4405,9 +4513,11 @@ onAuthStateChanged(auth,function(u){
     draw();
   },err));
 
-  unsubs.push(onSnapshot(collection(db,"users"),function(s){
-    var a=[];s.forEach(function(d){a.push(d.data())});S.allUsers=a;S.usersErr="";draw();
-  },function(e){S.usersErr=(e&&e.code)||"err"}));
+  if(S.isOwner){
+    unsubs.push(onSnapshot(collection(db,"users"),function(s){
+      var a=[];s.forEach(function(d){a.push(d.data())});S.allUsers=a;S.usersErr="";draw();
+    },function(e){S.usersErr=(e&&e.code)||"err"}));
+  }
 
   var msgUnsub = null, watchedChatId = null;
   var chatFail=function(e){
@@ -4428,6 +4538,13 @@ onAuthStateChanged(auth,function(u){
       var room = S.cv.find(function(x){ return x.id === chatId; });
       if(room && arr.length){
         room.msgs = arr;
+        if(room.lastFrom && room.lastFrom !== S.email){
+           room.readBy = room.readBy || {};
+           if(!room.readBy[S.email] || room.readBy[S.email] < room.updatedAt){
+             room.readBy[S.email] = Date.now();
+             if(window.fbUpdateChatFields) window.fbUpdateChatFields(chatId, { readBy: room.readBy });
+           }
+        }
         draw();
         setTimeout(function(){ var wb=$("waBody"); if(wb) wb.scrollTop=wb.scrollHeight; }, 30);
       }
@@ -4459,6 +4576,14 @@ onAuthStateChanged(auth,function(u){
         var senderTitle = chatTitle(x);
         var prevTxt = x.lastPreview || "رسالة جديدة";
         if(S.curChatId===x.id && S.tab===(S.role==="pro"?5:4)) return;
+        
+        // Mark delivered
+        x.dlv = x.dlv || {};
+        if(!x.dlv[S.email] || x.dlv[S.email] < x.updatedAt){
+           x.dlv[S.email] = Date.now();
+           if(window.fbUpdateChatFields) window.fbUpdateChatFields(x.id, { dlv: x.dlv });
+        }
+        
         toast("💬 "+senderTitle+": "+prevTxt);
         showBrowserNotification("مسبار AI - " + senderTitle, prevTxt);
       });
@@ -4475,13 +4600,26 @@ onAuthStateChanged(auth,function(u){
     draw();
   },function(e){ chatFail(e); }));
 
+  
+  window.fbUpdateChatFields = function(chatId, fields){
+    if(chatId && chatId !== "local_notes"){
+      updateDoc(doc(db,"chats",chatId), fields).catch(function(){});
+    }
+  };
+
   window.fbSaveChatRoom=function(chatObj){
     if(!chatObj||!chatObj.id||chatObj.id==="local_notes")return Promise.resolve();
     var members=(chatObj.members&&chatObj.members.length)?chatObj.members:[S.email];
     var meta={id:chatObj.id,n:chatObj.n||"",g:chatObj.g?1:0,members:arrayUnion.apply(null,members),photo:chatObj.photo||"",lastPreview:chatObj.lastPreview||"",lastFrom:chatObj.lastFrom||"",updatedAt:chatObj.updatedAt||Date.now()};
     return setDoc(doc(db,"chats",chatObj.id),meta,{merge:true});
   };
-  window.fbDeleteRoomMessage=function(chatId, msgId){
+  
+  window.fbDeleteChatEntirely = function(chatId) {
+    if(chatId && chatId !== "local_notes") {
+      deleteDoc(doc(db,"chats",chatId)).catch(function(){});
+    }
+  };
+window.fbDeleteRoomMessage=function(chatId, msgId){
     if(chatId && chatId !== "local_notes" && msgId){
       deleteDoc(doc(db,"chats",chatId,"messages",msgId)).catch(function(){});
     }
