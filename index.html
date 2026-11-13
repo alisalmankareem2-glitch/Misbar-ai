@@ -126,7 +126,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.28.0";
+var APP_VERSION = "2.30.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -147,6 +147,10 @@ async function checkForLiveUpdate() {
     if (!res.ok) return;
     var data = await res.json();
     if (data && data.v && data.v !== APP_VERSION) {
+      var lastReload = sessionStorage.getItem("misbar_last_reload") || 0;
+      if (Date.now() - lastReload < 5000) return; // الحماية من التحديث اللانهائي (Loop Protection)
+      sessionStorage.setItem("misbar_last_reload", Date.now());
+      
       toast("🔄 جاري تحديث مسبار AI تلقائياً إلى الإصدار " + data.v + "...");
       if ("caches" in window) {
         var keys = await caches.keys();
