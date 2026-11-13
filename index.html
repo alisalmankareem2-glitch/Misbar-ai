@@ -126,7 +126,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.27.0";
+var APP_VERSION = "2.28.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -4232,15 +4232,16 @@ function roomV(){
 
   return '<div class="wa-room">' +
     '<div class="wa-head">' +
-      '<button class="b s" style="min-height:34px;padding:4px 10px" onclick="S.curChatId=null;draw()">←</button>' +
+      '<button class="b s" style="min-height:34px;padding:4px 10px;font-size:16px;background:transparent;border:none;color:#fff" onclick="S.curChatId=null;draw()">←</button>' +
       '<div style="cursor:pointer;display:flex;align-items:center" onclick="'+(c.g?'showGroupProfile(\''+c.id+'\')':'showPeerProfile(\''+chatPeerEmail(c)+'\')')+'">' + avatarHtml(chatTitle(c), chatPhoto(c)) + '</div>' +
-      '<div class="grow" style="overflow:hidden;cursor:pointer" onclick="'+(c.g?'showGroupProfile(\''+c.id+'\')':'showPeerProfile(\''+chatPeerEmail(c)+'\')')+'"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(c.g?'👥 ':'')+esc(chatTitle(c))+'</b>' +
+      '<div class="grow" style="overflow:hidden;cursor:pointer" onclick="'+(c.g?'showGroupProfile(\''+c.id+'\')':'showPeerProfile(\''+chatPeerEmail(c)+'\')')+'"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px">'+(c.g?'👥 ':'')+esc(chatTitle(c))+'</b>' +
         '<div style="font-size:11px;opacity:.88">'+(c.g ? ((c.members?c.members.length:1)+' أعضاء · اضغط للتفاصيل') : (chatPeerHandle(c) || 'مراسلة مباشرة'))+'</div>' +
       '</div>' +
-      '<div class="grow" style="overflow:hidden;cursor:pointer" onclick="showPeerProfile(\''+(!c.g ? chatPeerEmail(c) : '')+'\')"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(c.g?'👥 ':'')+esc(chatTitle(c))+'</b>' +
-        '<div style="font-size:11px;opacity:.88">'+(c.g ? ((c.members?c.members.length:1)+' أعضاء · اضغط 📎 لمشاركة ملف') : (chatPeerHandle(c) || 'مراسلة مباشرة'))+'</div>' +
-      '</div>' +
-      (c.g ? '<button style="background:transparent;color:#fff;border:none;font-size:20px;cursor:pointer" onclick="openChatPicker(\'add_member\')" title="إضافة عضو">👤+</button>' : '') +
+      (!c.g && c.id !== "local_notes" ? 
+        '<button style="background:transparent;color:#fff;border:none;font-size:18px;cursor:pointer;padding:0 8px" onclick="startCall(\''+chatPeerEmail(c)+'\', true)" title="مكالمة فيديو">📹</button>' +
+        '<button style="background:transparent;color:#fff;border:none;font-size:18px;cursor:pointer;padding:0 8px" onclick="startCall(\''+chatPeerEmail(c)+'\', false)" title="اتصال صوتي">📞</button>' 
+      : '') +
+      (c.g ? '<button style="background:transparent;color:#fff;border:none;font-size:20px;cursor:pointer;padding:0 8px" onclick="openChatPicker(\'add_member\')" title="إضافة عضو">👤+</button>' : '') +
       '<div style="position:relative">' +
         '<button style="background:transparent;color:#fff;border:none;font-size:22px;font-weight:bold;cursor:pointer;padding:0 8px" onclick="var m=document.getElementById(\'waMenuDropdown\');if(m)m.style.display=m.style.display===\'none\'?\'block\':\'none\';event.stopPropagation();">⋮</button>' +
         '<div id="waMenuDropdown" style="display:none;position:absolute;top:38px;left:0;background:var(--sf);color:var(--tx);min-width:170px;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,0.2);z-index:100;overflow:hidden;text-align:start;font-size:15px;font-weight:600">' +
