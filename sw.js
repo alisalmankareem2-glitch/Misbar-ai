@@ -1,5 +1,5 @@
 /* Service Worker - مسبار AI: يجلب النسخة الجديدة أولاً من الإنترنت، ويعمل بدون إنترنت من آخر نسخة محفوظة */
-const CACHE_NAME = 'misbar-ai-v2.24.0';
+const CACHE_NAME = 'misbar-ai-v2.25.0';
 const CORE_ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-512-maskable.png', './apple-touch-icon.png', './favicon-32.png'];
 
 self.addEventListener('install', (event) => {
