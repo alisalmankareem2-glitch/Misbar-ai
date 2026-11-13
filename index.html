@@ -90,6 +90,8 @@ nav button.on{color:var(--ac)}nav i{display:block;font-style:normal;font-size:19
 .wa-foot{background:var(--sf);border-top:1px solid var(--ln);padding:8px;display:flex;align-items:center;gap:6px}
 .avatar-ci{width:38px;height:38px;border-radius:50%;background:var(--acs);color:var(--ac);font-weight:800;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:15px}
 .avatar-ci img{width:100%;height:100%;object-fit:cover}
+nav button{position:relative}
+.nbdot{position:absolute;top:4px;left:50%;margin-left:6px;min-width:17px;height:17px;border-radius:99px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px}
 
 /* A4 Sheet & Booklet Print Styles */
 .sheet-wrap{overflow-x:auto;padding-bottom:8px}
@@ -119,7 +121,7 @@ nav button.on{color:var(--ac)}nav i{display:block;font-style:normal;font-size:19
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.9.0";
+var APP_VERSION = "2.10.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -160,7 +162,7 @@ document.addEventListener("visibilitychange", function(){ if (!document.hidden) 
    [الأساس ٢] الحالة العامة للتطبيق (State) والتخزين المحلي على جهاز الزبون
    ============================================================================ */
 var S={
-  authReady:false,uid:null,email:"",dispName:"",isOwner:false,
+  authReady:false,uid:null,email:"",dispName:"",isOwner:false,username:"",customName:"",profLoaded:false,profileOpen:false,foundUsers:[],usersErr:"",
   role:null,tab:0,taps:0,code:"1234",
   userAiKey:"",busy:false,awaitingAutoKey:false,
   driveToken:"",driveFolderId:"",driveFileId:"",driveSyncing:false,driveLastSync:"",
@@ -177,7 +179,6 @@ var S={
   plans:[{n:"أسبوعي",p:2000,v:1,u:"أسبوع"},{n:"شهري",p:5000,v:1,u:"شهر"},{n:"6 أشهر",p:25000,v:6,u:"شهر"},{n:"سنوي",p:45000,v:12,u:"شهر"}],
   subs:[],req:[],allUsers:[],rt:0,rs:"new",rq:"",pick:null,subv:0,
   fl:[{n:"ملفاتي",it:[]}],fo:0,scnAutoCrop:true,scnQuery:"",scnDocId:null,scnEd:null,scnPrintDoc:null,scnSelectMode:false,scnSelected:{},scnMoreOpen:false,use:{},
-  username:"",
   cv:[{id:"local_notes",n:"ملاحظاتي السريعة",g:0,members:[],msgs:[]}],curChatId:null,chatModal:null,chatSearch:"",chatPickEmails:{},chatGroupName:"",
   gw:null,pp:null,bk:null,docs:[],
   planRows:null,pi:"",per:"أسبوعية",pv:0
@@ -206,7 +207,6 @@ function loadUserDeviceData(){
     var acPref = localStorage.getItem(p+"scnAutoCrop");
     if(acPref !== null) S.scnAutoCrop = acPref === "1";
     S.scnDocId = localStorage.getItem(p+"scnDocId") || null;
-    S.username = localStorage.getItem(p+"username") || (S.email ? S.email.split("@")[0] : "");
     migrateScannerFolders();
   }catch(e){}
 }
@@ -231,7 +231,6 @@ function saveDeviceOnly(){
   S.updatedAt = Date.now();
   try{
     localStorage.setItem(p+"updatedAt", String(S.updatedAt));
-    localStorage.setItem(p+"username", S.username || "");
     localStorage.setItem(p+"docs", JSON.stringify(S.docs));
     localStorage.setItem(p+"gr", JSON.stringify(S.gr));
     localStorage.setItem(p+"joined", JSON.stringify(S.joined));
@@ -514,6 +513,126 @@ function ask(l,cb,pw,defVal){
 }
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 
+/* ==================== صفحة الحساب: الاسم + اليوزر نيم (مثل انستا/تليجرام) ==================== */
+function findUserByEmail(em){
+  em = (em || "").toLowerCase();
+  var all = (S.allUsers || []).concat(S.foundUsers || []);
+  for(var i = 0; i < all.length; i++){ if(all[i] && (all[i].email || "").toLowerCase() === em) return all[i]; }
+  return null;
+}
+function getUserDispName(em){
+  if(em === S.email) return S.dispName || "أنا";
+  var u = findUserByEmail(em);
+  return u ? (u.name || u.username || "عضو") : "عضو";
+}
+function chatPeerEmail(c){
+  var o = (c.members || []).filter(function(e){ return e !== S.email; });
+  return o[0] || c.peerEmail || "";
+}
+function chatTitle(c){
+  if(c.g || c.id === "local_notes") return c.n || "";
+  var em = chatPeerEmail(c), u = findUserByEmail(em);
+  return (u && (u.name || u.username)) || c.n || (em ? em.split("@")[0] : "مستخدم");
+}
+function chatPhoto(c){
+  if(c.g || c.id === "local_notes") return c.photo || "";
+  var u = findUserByEmail(chatPeerEmail(c));
+  return (u && u.photo) || "";
+}
+function chatPeerHandle(c){
+  if(c.g) return "";
+  var u = findUserByEmail(chatPeerEmail(c));
+  return u && u.username ? "@" + u.username : "";
+}
+/* شعار الرسائل الجديدة: نحفظ على الجهاز آخر وقت قراءة لكل محادثة */
+function getChatRead(){
+  if(!S._cr){
+    try{ S._cr = JSON.parse(localStorage.getItem(storagePrefix() + "chatread") || "{}"); }catch(e){ S._cr = {}; }
+  }
+  return S._cr;
+}
+function markChatRead(c){
+  if(!c || !c.id) return;
+  var r = getChatRead(), t = c.updatedAt || 0;
+  if((r[c.id] || 0) < t){
+    r[c.id] = t;
+    try{ localStorage.setItem(storagePrefix() + "chatread", JSON.stringify(r)); }catch(e){}
+  }
+}
+function chatUnread(c){
+  return !!(c && c.id && c.id !== "local_notes" && c.lastFrom && c.lastFrom !== S.email && (c.updatedAt || 0) > (getChatRead()[c.id] || 0));
+}
+function chatUnreadCount(){
+  return (S.cv || []).filter(chatUnread).length;
+}
+
+function openProfileModal(){ S.profileOpen = true; draw(); window.scrollTo(0, 0); }
+
+function profileScr(){
+  var nm = S.dispName || (S.email ? S.email.split("@")[0] : "");
+  var photo = "";
+  var me = findUserByEmail(S.email); if(me && me.photo) photo = me.photo;
+  var h = '<header><button class="b s" onclick="S.profileOpen=false;draw()">←</button><h1>حسابي</h1>' +
+    '<button class="b d" onclick="fbLogout()">خروج</button></header>' +
+    '<main>' +
+    '<div style="text-align:center;margin:6px 0 14px">' +
+      '<div style="transform:scale(1.7);display:inline-block;margin:14px 0 8px">' + avatarHtml(nm, photo) + '</div>' +
+      '<div style="font-weight:800;font-size:17px">' + esc(nm) + '</div>' +
+      '<div class="mu" dir="ltr" style="font-size:14px">' + (S.username ? '@' + esc(S.username) : 'ما عندك يوزر نيم بعد') + '</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<label>الاسم (يظهر للآخرين)</label>' +
+      '<input id="prfName" value="' + esc(S.dispName) + '" placeholder="اكتب اسمك هنا">' +
+      '<label>اليوزر نيم (للتواصل، مثل انستا وتليجرام)</label>' +
+      '<div class="row" style="gap:6px"><b style="font-size:18px">@</b>' +
+        '<input id="prfUser" class="grow" dir="ltr" autocapitalize="none" autocomplete="off" spellcheck="false" maxlength="20" style="margin:4px 0 8px" value="' + esc(S.username) + '" placeholder="username"></div>' +
+      '<div class="mu" style="font-size:11px;margin-bottom:10px">إنجليزي صغير وأرقام و _ و . فقط (٣ إلى ٢٠ حرف) ويبدأ بحرف. اي شخص يكتب اليوزر نيم مالك بالبحث يگدر يراسلك.</div>' +
+      (S.username ? '<button class="b s" style="width:100%;margin-bottom:8px" onclick="copyMyUsername()">📋 نسخ @' + esc(S.username) + '</button>' : '') +
+      '<button class="b" style="width:100%;background:#15803d" onclick="saveProfile()">💾 حفظ التغييرات</button>' +
+    '</div>' +
+    '<div class="card">' +
+      '<label>الجيميل المرتبط بالحساب</label>' +
+      '<div dir="ltr" style="font-weight:700;margin:4px 0 8px;word-break:break-all">' + esc(S.email) + '</div>' +
+      '<div class="mu" style="font-size:11px;margin-bottom:10px">تسجيل الدخول يتم عبر حساب Google، فالجيميل ما ينغير من داخل التطبيق. إذا تريد جيميل ثاني سجّل خروج وادخل بالحساب الجديد.</div>' +
+      '<button class="b s" style="width:100%" onclick="fbLogout()">🔁 تبديل الحساب</button>' +
+    '</div>' +
+    '<div class="mu" style="text-align:center;margin-top:8px;font-size:11px">إصدار v' + APP_VERSION + '</div>' +
+    '</main>';
+  $("app").className = S.role == "pro" ? "pro" : "";
+  $("app").innerHTML = h;
+}
+
+function copyMyUsername(){
+  var t = "@" + S.username;
+  if(navigator.clipboard) navigator.clipboard.writeText(t);
+  toast("تم نسخ " + t);
+}
+
+function saveProfile(){
+  var n = ($("prfName").value || "").trim();
+  var raw = ($("prfUser").value || "").trim().replace(/^@+/, "").toLowerCase();
+  if(!n){ toast("الرجاء كتابة الاسم"); return; }
+  var finish = function(){
+    S.dispName = n; S.customName = n;
+    saveAllUserStorage();
+    toast("✅ تم حفظ حسابك");
+    draw();
+  };
+  if(!raw){ finish(); return; }
+  if(!/^[a-z][a-z0-9_.]{2,19}$/.test(raw) || /\.\./.test(raw) || /\.$/.test(raw)){
+    toast("اليوزر نيم غير صالح: إنجليزي وأرقام و _ و . (٣-٢٠) ويبدأ بحرف");
+    return;
+  }
+  if(!window.fbClaimUsername){ toast("الاتصال بالسيرفر غير جاهز، جرّب بعد لحظة"); return; }
+  window.fbClaimUsername(raw, n, function(ok, why){
+    if(ok){ S.username = raw; finish(); }
+    else if(why === "taken") toast("❌ اليوزر نيم @" + raw + " مستخدم، جرّب غيره");
+    else if(why === "permission-denied") toast("⚠️ تحتاج تحديث قواعد Firebase (ملف firestore.rules)");
+    else toast("تعذر حفظ اليوزر نيم: " + why);
+  });
+}
+
+
 Object.defineProperty(S,"used",{
   get:function(){return S.use[S.email+"|"+new Date().toDateString()]||0},
   set:function(v){S.use[S.email+"|"+new Date().toDateString()]=v;try{localStorage.setItem("misbar_use_v1",JSON.stringify(S.use))}catch(e){}}
@@ -528,38 +647,6 @@ function gate(){if(isSub())return true;if(S.used>=S.free){toast("انتهت دخ
 /* ============================================================================
    [الأساس ٥] محرك الذكاء الاصطناعي بحساب Gmail الخاص بالزبون نفسه
    ============================================================================ */
-
-/* نافذة إدارة الحساب الشخصي (تغيير الاسم، يوزر نيم @handle، إعدادات الحساب) */
-function openAccountSettingsModal(){
-  var old = $("md"); if(old) old.remove();
-  var d = document.createElement("div"); d.id = "md";
-  d.innerHTML = '<div class="mc" style="width:min(380px,94%)">' +
-    '<div class="row" style="margin-bottom:10px"><b class="grow">⚙️ إعدادات الحساب الشخصي</b><button class="b d" style="min-height:32px;padding:3px 9px" onclick="document.getElementById(\'md\').remove()">×</button></div>' +
-    '<label>الاسم الكامل</label>' +
-    '<input id="setDispName" value="'+esc(S.dispName||"")+'">' +
-    '<label>اليوزر نيم الشخصي (يظهر للجميع بـ @ بدلاً من الإيميل)</label>' +
-    '<input id="setUsername" dir="ltr" placeholder="username (بدون @)" value="'+esc(S.username||"")+'">' +
-    '<label>البريد الإلكتروني (غير قابل للتعديل)</label>' +
-    '<input disabled dir="ltr" value="'+esc(S.email)+'" style="background:var(--bg);color:var(--mu)">' +
-    '<button class="b" style="width:100%;margin-top:10px;background:#15803d" onclick="saveAccountSettings()">✅ حفظ التعديلات</button>' +
-  '</div>';
-  document.body.appendChild(d);
-}
-
-function saveAccountSettings(){
-  var nameIn = $("setDispName"), usrIn = $("setUsername");
-  if(nameIn) S.dispName = nameIn.value.trim();
-  if(usrIn){
-    var u = usrIn.value.trim().replace(/^@+/, "").replace(/[^a-zA-Z0-9_؀-ۿ]/g, "");
-    S.username = u || S.email.split("@")[0];
-  }
-  saveAllUserStorage();
-  if(window.fbSyncUserProfile) window.fbSyncUserProfile();
-  var md = $("md"); if(md) md.remove();
-  toast("✅ تم حفظ إعدادات الحساب بنجاح");
-  draw();
-}
-
 function openAutoKeyConnect(onConnectedCb){
   var d=document.createElement("div");d.id="md";
   d.innerHTML='<div class="mc">'+
@@ -657,12 +744,13 @@ function head(t){
     ? '<button class="b s" title="مزامنة Google Drive" onclick="handleDriveSyncClick()">'+(S.driveSyncing?'⏳':(S.driveToken?'☁️ Drive':'☁️ ربط'))+'</button>'
     : '';
   return '<header><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>'+t+'</h1>'+
+  (S.role!='own' ? '<button class="b s" style="min-width:38px;padding:4px 0;font-size:16px" onclick="openProfileModal()" title="حسابي">👤</button>' : '') +
   drvBtn+
-  (stat()&&S.role!='own'?'<button class="b s" onclick="S.subv=1;draw()">'+stat()+'</button>':''+'<button class="b s" title="إعدادات الحساب" onclick="openAccountSettingsModal()">⚙️ الحساب</button>')+
+  (stat()&&S.role!='own'?'<button class="b s" onclick="S.subv=1;draw()">'+stat()+'</button>':'')+
   (S.role?'<button class="b s" title="تبديل بين الأستاذ والطالب" onclick="setRole(null)">🔄</button>':'')+
   '<button class="b d" title="تسجيل الخروج النهائي" onclick="fbLogout()">خروج</button></header>';
 }
-function navb(items){return '<nav>'+items.map(function(x,i){return '<button class="'+(S.tab==i?'on':'')+'" onclick="tab('+i+')"><i>'+x[0]+'</i>'+x[1]+'</button>'}).join("")+'</nav>'}
+function navb(items){return '<nav>'+items.map(function(x,i){var n=(i==items.length-1)?chatUnreadCount():0;return '<button class="'+(S.tab==i?'on':'')+'" onclick="tab('+i+')"><i>'+x[0]+'</i>'+x[1]+(n?'<span class="nbdot">'+n+'</span>':'')+'</button>'}).join("")+'</nav>'}
 
 function driveBannerH(){
   return '<div class="card" style="padding:10px 12px;border-inline-start:4px solid #2563eb">'+
@@ -3244,22 +3332,32 @@ function chatV(){
 }
 
 function cListV(){
-  return '<h2>💬 المحادثات والكروبات والملاحظات</h2>'+
-  S.cv.map(function(c,i){
+  var nag = !S.username
+    ? '<div class="card" style="border-inline-start:4px solid #2563eb"><div class="row"><div class="grow"><b>🆔 اختر يوزر نيم</b><div class="mu" style="font-size:12px">حتى الناس تلاقيك وتراسلك مثل انستا وتليجرام</div></div><button class="b" onclick="openProfileModal()">إعداد</button></div></div>'
+    : '';
+  var list = S.cv.slice().sort(function(a, b){
+    if(a.id === "local_notes") return 1;
+    if(b.id === "local_notes") return -1;
+    return (b.updatedAt || 0) - (a.updatedAt || 0);
+  });
+  return nag + '<h2>💬 المحادثات والكروبات والملاحظات</h2>' +
+  list.map(function(c, i){
     if(!c.id) c.id = "chat_loc_" + i;
-    var ms=c.msgs||[];
-    var l=ms[ms.length-1];
+    var ms = c.msgs || [];
+    var l = ms[ms.length - 1];
     var preview = l ? (l.file ? ('📎 ' + l.file.name) : (l.t || '')) : (c.lastPreview || 'ابدأ المراسلة الآن');
-    return '<div class="card row" style="cursor:pointer" onclick="S.curChatId=\''+esc(c.id)+'\';draw()">'+
-      avatarHtml(c.n, c.photo)+
-      '<span class="grow"><b>'+(c.g?'👥 ':'')+esc(c.n)+'</b><div class="mu">'+esc(preview)+'</div></span>'+
-      (c.g?'<span class="badge">'+(c.members?c.members.length:1)+' عضو</span>':'')+
+    var un = chatUnread(c);
+    return '<div class="card row" style="cursor:pointer" onclick="S.curChatId=\'' + esc(c.id) + '\';draw()">' +
+      avatarHtml(chatTitle(c), chatPhoto(c)) +
+      '<span class="grow" style="overflow:hidden"><b>' + (c.g ? '👥 ' : '') + esc(chatTitle(c)) + '</b><div class="mu" style="' + (un ? 'font-weight:800;color:var(--tx);' : '') + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(preview) + '</div></span>' +
+      (un ? '<span class="badge" style="background:#ef4444;color:#fff">جديد</span>' : '') +
+      (c.g ? '<span class="badge">' + (c.members ? c.members.length : 1) + ' عضو</span>' : '') +
     '</div>';
-  }).join("")+
+  }).join("") +
   '<div class="grid"><button class="b" onclick="openChatPicker(\'dm\')">💬 محادثة شخصية</button><button class="b s" onclick="openChatPicker(\'grp\')">👥 إنشاء كروب واتساب/تليجرام</button></div>';
 }
 
-/* نافذة اختيار الأعضاء بالاسم أو اليوزر أو الجيميل مع عرض الصورة مثل الواتساب */
+/* نافذة اختيار الأعضاء بالاسم أو اليوزر نيم أو الجيميل */
 function openChatPicker(mode){
   S.chatModal = mode; // 'dm' | 'grp' | 'add_member'
   S.chatSearch = "";
@@ -3268,51 +3366,92 @@ function openChatPicker(mode){
   renderChatPickerModal();
 }
 
+function pickerUsers(){
+  var q = (S.chatSearch || "").toLowerCase().trim();
+  var qh = q.replace(/^@+/, "");
+  var seen = {}, all = [];
+  (S.allUsers || []).concat(S.foundUsers || []).forEach(function(u){
+    if(!u || !u.email || u.email === S.email || seen[u.email]) return;
+    seen[u.email] = 1; all.push(u);
+  });
+  return all.filter(function(u){
+    if(!q) return true;
+    return (u.name || "").toLowerCase().indexOf(q) > -1 ||
+           (u.username || "").toLowerCase().indexOf(qh) > -1 ||
+           (u.email || "").toLowerCase().indexOf(q) > -1;
+  });
+}
+
 function renderChatPickerModal(){
   var old = $("md"); if(old) old.remove();
   if(!S.chatModal) return;
   var mode = S.chatModal;
   var q = (S.chatSearch || "").toLowerCase().trim();
-  var users = (S.allUsers || []).filter(function(u){
-    if(!u || !u.email || u.email === S.email) return false;
-    if(!q) return true;
-    return (u.name || "").toLowerCase().indexOf(q) > -1 || (u.email || "").toLowerCase().indexOf(q) > -1;
-  });
-
+  var qh = q.replace(/^@+/, "");
+  var users = pickerUsers();
+  S._pickList = users;
   var pickedList = Object.keys(S.chatPickEmails).filter(function(k){ return S.chatPickEmails[k]; });
+  var handleLike = /^[a-z][a-z0-9_.]{2,19}$/.test(qh);
+  var exactHandleFound = users.some(function(u){ return (u.username || "").toLowerCase() === qh; });
   var d = document.createElement("div"); d.id = "md";
   d.innerHTML = '<div class="mc" style="width:min(400px,95%);max-height:86vh;display:flex;flex-direction:column">' +
-    '<div class="row" style="margin-bottom:8px"><b class="grow">'+(mode==='dm'?'💬 مراسلة شخصية جديدة':(mode==='grp'?'👥 إنشاء كروب جديد':'➕ إضافة أعضاء للكروب'))+'</b><button class="b d" style="min-height:32px;padding:3px 9px" onclick="S.chatModal=null;document.getElementById(\'md\').remove()">×</button></div>' +
-    (mode==='grp' ? '<input id="grpNameIn" placeholder="اسم الكروب (مثل: كروب الأحياء - الخامس)" value="'+esc(S.chatGroupName)+'" oninput="S.chatGroupName=this.value">' : '') +
-    '<input id="usrSearchIn" placeholder="🔍 ابحث بالاسم أو اليوزر أو الجيميل..." value="'+esc(S.chatSearch)+'" oninput="S.chatSearch=this.value;renderChatPickerModal()">' +
-    (mode!=='dm' && pickedList.length ? '<div class="mu" style="margin-bottom:4px">تم اختيار: <b>'+pickedList.length+'</b> أعضاء</div>' : '') +
+    '<div class="row" style="margin-bottom:8px"><b class="grow">' + (mode === 'dm' ? '💬 مراسلة شخصية جديدة' : (mode === 'grp' ? '👥 إنشاء كروب جديد' : '➕ إضافة أعضاء للكروب')) + '</b><button class="b d" style="min-height:32px;padding:3px 9px" onclick="S.chatModal=null;document.getElementById(\'md\').remove()">×</button></div>' +
+    (mode === 'grp' ? '<input id="grpNameIn" placeholder="اسم الكروب (مثل: كروب الأحياء - الخامس)" value="' + esc(S.chatGroupName) + '" oninput="S.chatGroupName=this.value">' : '') +
+    '<input id="usrSearchIn" dir="auto" placeholder="🔍 ابحث بالاسم أو @اليوزر نيم أو الجيميل..." value="' + esc(S.chatSearch) + '" oninput="S.chatSearch=this.value;renderChatPickerModal()">' +
+    (mode !== 'dm' && pickedList.length ? '<div class="mu" style="margin-bottom:4px">تم اختيار: <b>' + pickedList.length + '</b> أعضاء</div>' : '') +
     '<div style="flex:1;overflow-y:auto;max-height:260px;border:1px solid var(--ln);border-radius:10px;padding:4px">' +
-      (users.length ? users.map(function(u){
+      (users.length ? users.map(function(u, i){
         var isSel = !!S.chatPickEmails[u.email];
-        return '<div class="row" style="padding:7px;border-bottom:1px solid var(--ln);cursor:pointer;background:'+(isSel?'var(--acs)':'transparent')+';border-radius:8px" onclick="selectChatUser(\''+esc(u.email)+'\',\''+esc(u.name||u.email)+'\',\''+esc(u.photo||'')+'\')">' +
-          avatarHtml(u.name || u.email, u.photo) +
-          '<div class="grow" style="overflow:hidden"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(u.name || u.email.split("@")[0])+'</b><div class="mu" dir="ltr" style="font-size:12px;text-align:start">'+esc(u.email)+'</div></div>' +
-          '<span>'+(mode==='dm'?'💬':(isSel?'✅':'⚪'))+'</span>' +
+        var disp = u.name || u.username || "مستخدم";
+        return '<div class="row" style="padding:7px;border-bottom:1px solid var(--ln);cursor:pointer;background:' + (isSel ? 'var(--acs)' : 'transparent') + ';border-radius:8px" onclick="pickUserIdx(' + i + ')">' +
+          avatarHtml(disp, u.photo) +
+          '<div class="grow" style="overflow:hidden"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(disp) + '</b>' +
+          (u.username ? '<span class="mu" dir="ltr" style="font-size:12px">@' + esc(u.username) + '</span>' : '') + '</div>' +
+          '<span>' + (mode === 'dm' ? '💬' : (isSel ? '✅' : '⚪')) + '</span>' +
         '</div>';
-      }).join("") : '<div class="mu" style="padding:12px;text-align:center">لا يوجد مستخدم مطابق بالقائمة.<br>إذا كتبت جيميل صحيحاً بالأعلى يمكنك إضافته مباشرة بالزر أدناه:</div>') +
-      (q.indexOf("@") > 0 ? '<button class="b s" style="width:100%;margin-top:6px" onclick="selectChatUser(\''+esc(q)+'\',\''+esc(q.split("@")[0])+'\',\'\')">+ اختيار الجيميل: '+esc(q)+'</button>' : '') +
+      }).join("") : '<div class="mu" style="padding:12px;text-align:center">' +
+        (S.usersErr ? 'تعذر تحميل قائمة المستخدمين. ابحث باليوزر نيم بالضبط.' : 'لا يوجد مستخدم مطابق.') +
+        '<br>اكتب اليوزر نيم الصحيح مثل <b dir="ltr">@ali</b> واضغط بحث.</div>') +
+      (handleLike && !exactHandleFound ? '<button class="b" style="width:100%;margin-top:6px" onclick="lookupUsername()">🔍 ابحث عن @' + esc(qh) + ' في مسبار</button>' : '') +
+      (q.indexOf("@") > 0 ? '<button class="b s" style="width:100%;margin-top:6px" onclick="selectChatUser(S.chatSearch,\'مستخدم\',\'\')">+ إضافة مستخدم عبر الإيميل المباشر</button>' : '') +
     '</div>' +
-    (mode!=='dm' ? '<button class="b" style="width:100%;margin-top:10px;background:#15803d" onclick="confirmGroupCreateOrAdd()">'+(mode==='grp'?'✅ إنشاء الكروب الآن':'✅ إضافة الأعضاء المحددين')+'</button>' : '') +
+    (mode !== 'dm' ? '<button class="b" style="width:100%;margin-top:10px;background:#15803d" onclick="confirmGroupCreateOrAdd()">' + (mode === 'grp' ? '✅ إنشاء الكروب الآن' : '✅ إضافة الأعضاء المحددين') + '</button>' : '') +
   '</div>';
   document.body.appendChild(d);
   var inp = $("usrSearchIn");
   if(inp){ inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
 }
 
+function pickUserIdx(i){
+  var u = (S._pickList || [])[i]; if(!u) return;
+  selectChatUser(u.email, u.name || u.username || "مستخدم", u.photo || "");
+}
+
+/* بحث دقيق باليوزر نيم من سجل اليوزرات (يشتغل حتى لو قائمة المستخدمين محجوبة) */
+function lookupUsername(){
+  var h = (S.chatSearch || "").trim().toLowerCase().replace(/^@+/, "");
+  if(!h || !window.fbFindUser) return;
+  window.fbFindUser(h, function(u, failed){
+    if(failed){ toast("تعذر البحث. تأكد من قواعد Firebase"); return; }
+    if(!u){ toast("ما لقيت @" + h); return; }
+    if(u.uid === S.uid){ toast("هذا حسابك أنت 🙂"); return; }
+    S.foundUsers = (S.foundUsers || []).filter(function(x){ return x.email !== u.email; });
+    S.foundUsers.push({ email: (u.email || "").toLowerCase(), name: u.name || h, photo: u.photo || "", username: h, uid: u.uid });
+    renderChatPickerModal();
+  });
+}
 
 function selectChatUser(em, name, photo){
-  em = em.trim().toLowerCase();
+  em = (em || "").trim().toLowerCase();
+  if(!em) return;
   if(S.chatModal === "dm"){
     S.chatModal = null;
     var md = $("md"); if(md) md.remove();
-    var existing = S.cv.find(function(c){ return !c.g && c.peerEmail === em; });
+    /* معرّف ثابت لكل اثنين حتى يشوفون نفس المحادثة بالضبط */
+    var dmId = "dm_" + [S.email, em].sort().join("__");
+    var existing = S.cv.find(function(c){ return c.id === dmId; });
     if(existing){ S.curChatId = existing.id; draw(); return; }
-    var newChat = { id: "dm_" + Date.now(), n: name || em, peerEmail: em, photo: photo || "", g: 0, members: [S.email.toLowerCase(), em], updatedAt: Date.now(), msgs: [] };
+    var newChat = { id: dmId, n: name || "مستخدم", peerEmail: em, photo: photo || "", g: 0, members: [S.email, em], msgs: [], updatedAt: Date.now() };
     S.cv.unshift(newChat);
     S.curChatId = newChat.id;
     if(window.fbSaveChatRoom) window.fbSaveChatRoom(newChat);
@@ -3325,61 +3464,54 @@ function selectChatUser(em, name, photo){
 
 function confirmGroupCreateOrAdd(){
   var picked = Object.keys(S.chatPickEmails).filter(function(k){ return S.chatPickEmails[k]; });
+  var pickedNames = picked.map(function(em){ return getUserDispName(em); });
   if(S.chatModal === "grp"){
     var gName = (S.chatGroupName || "").trim() || "كروب دراسي جديد";
-    var members = Array.from(new Set([S.email.toLowerCase()].concat(picked.map(function(e){ return e.toLowerCase(); }))));
-    var senderHandle = S.username ? ("@" + S.username) : (S.dispName || S.email.split("@")[0]);
-    var grpObj = {
-      id: "grp_" + Date.now(),
-      n: gName,
-      g: 1,
-      members: members,
-      updatedAt: Date.now(),
-      msgs: [{ e: S.email.toLowerCase(), sender: senderHandle, t: "أنشأ الكروب (" + members.length + " أعضاء)", at: Date.now() }]
-    };
+    var members = [S.email].concat(picked);
+    var msgId = "m_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+    var sysMsg = { id: msgId, e: S.email, isSys: true, sender: "النظام", t: "أنشأ " + (S.dispName || "مستخدم") + " الكروب (" + members.length + " أعضاء)", at: Date.now() };
+    var grpObj = { id: "grp_" + Date.now(), n: gName, g: 1, members: members, msgs: [sysMsg], updatedAt: sysMsg.at };
     S.chatModal = null;
-    var md = $("md"); if(md) md.remove();
+    var md = document.getElementById("md"); if(md) md.remove();
     S.cv.unshift(grpObj);
     S.curChatId = grpObj.id;
-    if(window.fbSaveChatRoom) window.fbSaveChatRoom(grpObj);
+    if(window.fbSendRoomMessage) window.fbSendRoomMessage(grpObj, sysMsg);
     saveAllUserStorage(); draw();
-    toast("✅ تم إنشاء الكروب بنجاح");
   }else if(S.chatModal === "add_member"){
     var c = S.cv.find(function(x){ return x.id === S.curChatId; });
     S.chatModal = null;
-    var md2 = $("md"); if(md2) md2.remove();
+    var md2 = document.getElementById("md"); if(md2) md2.remove();
     if(c && picked.length){
-      c.members = Array.from(new Set((c.members || [S.email.toLowerCase()]).concat(picked.map(function(e){ return e.toLowerCase(); }))));
-      c.updatedAt = Date.now();
-      var addedNames = picked.join("، ");
-      var senderHandle2 = S.username ? ("@" + S.username) : (S.dispName || S.email.split("@")[0]);
-      c.msgs.push({ e: S.email.toLowerCase(), sender: senderHandle2, t: "أُضيف إلى الكروب: " + addedNames, at: Date.now() });
-      if(window.fbSaveChatRoom) window.fbSaveChatRoom(c);
-      saveAllUserStorage();
-      toast("✅ تم إضافة الأعضاء بنجاح");
-      draw();
+      c.members = Array.from(new Set((c.members || [S.email]).concat(picked)));
+      var msgId2 = "m_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+      var sysMsg2 = { id: msgId2, e: S.email, isSys: true, sender: "النظام", t: "أُضيف: " + pickedNames.join("، "), at: Date.now() };
+      c.msgs = c.msgs || [];
+      c.msgs.push(sysMsg2);
+      if(window.fbSendRoomMessage) window.fbSendRoomMessage(c, sysMsg2);
+      saveAllUserStorage(); draw();
     }
   }
 }
 
-
+/* واجهة غرفة الدردشة بسلاسة واتساب وتليجرام + رفع وتحميل الملفات */
 function roomV(){
   var c = S.cv.find(function(x){ return x.id === S.curChatId; }); if(!c){ S.curChatId = null; return cListV(); }
   if(window.fbWatchRoomMessages) window.fbWatchRoomMessages(c.id);
+  markChatRead(c);
   var ms = c.msgs || [];
   return '<div class="wa-room">' +
     '<div class="wa-head">' +
       '<button class="b s" style="min-height:34px;padding:4px 10px" onclick="S.curChatId=null;draw()">←</button>' +
-      avatarHtml(c.n, c.photo) +
-      '<div class="grow" style="overflow:hidden"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(c.g?'👥 ':'')+esc(c.n)+'</b>' +
-        '<div style="font-size:11px;opacity:.88">'+(c.g ? ((c.members?c.members.length:1)+' أعضاء · اضغط 📎 لمشاركة ملف') : 'متصل · مراسلة مباشرة')+'</div>' +
+      avatarHtml(chatTitle(c), chatPhoto(c)) +
+      '<div class="grow" style="overflow:hidden"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(c.g?'👥 ':'')+esc(chatTitle(c))+'</b>' +
+        '<div style="font-size:11px;opacity:.88">'+(c.g ? ((c.members?c.members.length:1)+' أعضاء · اضغط 📎 لمشاركة ملف') : (chatPeerHandle(c) || 'مراسلة مباشرة'))+'</div>' +
       '</div>' +
       (c.g ? '<button class="b s" style="min-height:34px;padding:4px 9px" onclick="openChatPicker(\'add_member\')">+ عضو</button>' : '') +
     '</div>' +
     '<div class="wa-body" id="waBody">' +
       (ms.length ? ms.map(function(m, mi){
-        if(m.e === "sys"){
-          return '<div style="text-align:center;font-size:11px;color:var(--mu);background:var(--sf);padding:3px 10px;border-radius:99px;align-self:center">'+esc(m.t)+'</div>';
+        if(m.isSys || m.e === "sys"){
+          return '<div style="text-align:center;font-size:11px;color:var(--mu);background:var(--sf);padding:3px 10px;border-radius:99px;align-self:center;margin:4px 0">'+esc(m.t)+'</div>';
         }
         var me = m.e === S.email;
         var timeStr = m.at ? new Date(m.at).toLocaleTimeString("ar-IQ",{hour:"2-digit",minute:"2-digit"}) : "";
@@ -3402,7 +3534,7 @@ function roomV(){
           (c.g && !me ? '<div style="font-size:11px;font-weight:800;color:var(--ac);margin-bottom:2px">'+esc(m.sender)+'</div>' : '') +
           (m.t ? '<div>'+esc(m.t)+'</div>' : '') +
           fileHtml +
-          '<div style="font-size:10px;opacity:.75;text-align:end;margin-top:3px">'+timeStr+(me?' ✓✓':'')+'</div>' +
+          '<div style="font-size:10px;opacity:.75;text-align:end;margin-top:3px">'+timeStr+(me?(m._fail?' ⚠️ لم تصل':(m._pend?' 🕓':' ✓')):'')+'</div>' +
         '</div>';
       }).join("") : '<div class="mu" style="text-align:center;margin:24px 0">ابدأ المحادثة الآن أو أرسل ملفاً/صورة للجميع 📎</div>') +
     '</div>' +
@@ -3418,11 +3550,12 @@ function sendM(fileObj){
   var e = $("mt"), t = e ? e.value.trim() : "";
   if(!t && !fileObj) return;
   var c = S.cv.find(function(x){ return x.id === S.curChatId; }); if(!c) return;
+  if(e) e.value = "";
   var msgId = "m_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
   var msg = {
     id: msgId,
     e: S.email,
-    sender: S.username ? ("@" + S.username) : (S.dispName || S.email.split("@")[0]),
+    sender: S.dispName || S.email.split("@")[0],
     t: t,
     file: fileObj || null,
     at: Date.now()
@@ -3431,6 +3564,7 @@ function sendM(fileObj){
   c.msgs.push(msg);
   c.lastPreview = fileObj ? ("📎 " + fileObj.name) : t;
   c.updatedAt = msg.at;
+  c.lastFrom = S.email;
   if(window.fbSendRoomMessage) window.fbSendRoomMessage(c, msg);
   else if(window.fbSaveChatRoom) window.fbSaveChatRoom(c);
   saveAllUserStorage();
@@ -3665,6 +3799,7 @@ function draw(){
   var oldFab=$("fab");if(oldFab)oldFab.remove();
   if(!S.authReady)return;
   if(!S.uid){loginV();return}
+  if(S.profileOpen){profileScr();return}
   if(S.subv&&(S.role=="pro"||S.role=="stu")){subScr();return}
   if(S.scnPrintDoc){scnPrintScr();return}
   if(S.scnEd){scnEditorScr();return}
@@ -3674,9 +3809,10 @@ function draw(){
     gwStepsScr();return;
   }
 
+  var _mt=$("mt"),_mtv=_mt?_mt.value:null,_mtf=!!_mt&&document.activeElement===_mt;
   var h="",r=S.role;
   if(!r){
-    h='<header><button class="hat" onclick="hat()">🎓</button><h1>مسبار AI</h1><button class="b d" onclick="fbLogout()">خروج</button></header>'+
+    h='<header><button class="hat" onclick="hat()">🎓</button><h1>مسبار AI</h1><button class="b s" style="min-width:38px;padding:4px 0;font-size:16px" onclick="openProfileModal()" title="حسابي">👤</button><button class="b d" onclick="fbLogout()">خروج</button></header>'+
     '<div class="hero" style="padding-top:22px"><div class="hat">🎓</div><h1>أهلاً بك في مسبار AI</h1><p class="mu" dir="ltr">'+esc(S.email)+'</p></div>'+
     '<main>'+driveBannerH()+'<div class="grid">'+
       '<button class="b" style="background:#15803d;min-height:56px;font-size:16px" onclick="setRole(\'pro\')">👨‍🏫 أنا أستاذ</button>'+
@@ -3695,6 +3831,7 @@ function draw(){
   }
   $("app").className=r=="pro"?"pro":"";
   $("app").innerHTML=h;
+  var _nm=$("mt");if(_nm&&_mtv!==null){_nm.value=_mtv;if(_mtf)_nm.focus();}
 }
 
 
@@ -3728,7 +3865,7 @@ window.addEventListener("load", function(){ setTimeout(checkIOSInstallPrompt, 30
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,reauthenticateWithPopup,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {getFirestore,doc,setDoc,getDoc,updateDoc,deleteDoc,collection,onSnapshot,query,where} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import {getFirestore,doc,setDoc,getDoc,updateDoc,deleteDoc,collection,onSnapshot,query,where,runTransaction,arrayUnion} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 var OWNER="alisalmankareem2@gmail.com";
 
@@ -3774,8 +3911,8 @@ window.fbLogin=function(){
 };
 
 window.fbSyncUserProfile=function(){
-  if(!S.uid)return;
-  var payload={email:S.email,name:S.dispName,username:S.username||S.email.split("@")[0],photo:(auth.currentUser&&auth.currentUser.photoURL)||"",lastSeen:Date.now(),updatedAt:S.updatedAt||Date.now()};
+  if(!S.uid||!S.profLoaded)return;
+  var payload={uid:S.uid,email:S.email,name:S.dispName,customName:S.customName||"",photo:(auth.currentUser&&auth.currentUser.photoURL)||"",lastSeen:Date.now(),updatedAt:S.updatedAt||Date.now()};
   if(S.userAiKey)payload.userAiKey=S.userAiKey;
   try{
     var docsJson=JSON.stringify(S.docs||[]);
@@ -3786,6 +3923,27 @@ window.fbSyncUserProfile=function(){
     payload.bagJson=JSON.stringify(S.bag||[]);
   }catch(e){}
   setDoc(doc(db,"users",S.uid),payload,{merge:true}).catch(err);
+};
+
+/* حجز اليوزر نيم: سجل usernames/{handle} فريد لكل شخص، وإذا مأخوذ من غيره يرفض */
+window.fbClaimUsername=function(handle,name,cb){
+  if(!S.uid){cb(false,"not-signed-in");return}
+  var h=String(handle||"").toLowerCase(),old=S.username||"";
+  var ref=doc(db,"usernames",h);
+  var photo=(auth.currentUser&&auth.currentUser.photoURL)||"";
+  runTransaction(db,async function(tx){
+    var s=await tx.get(ref);
+    if(s.exists()&&s.data().uid!==S.uid)throw {code:"taken"};
+    tx.set(ref,{uid:S.uid,email:S.email,name:name||"",photo:photo,at:Date.now()});
+    if(old&&old!==h)tx.delete(doc(db,"usernames",old));
+    tx.set(doc(db,"users",S.uid),{uid:S.uid,username:h,name:name||"",customName:name||""},{merge:true});
+  }).then(function(){cb(true)}).catch(function(e){cb(false,(e&&e.code)||String(e))});
+};
+
+window.fbFindUser=function(handle,cb){
+  getDoc(doc(db,"usernames",String(handle||"").toLowerCase())).then(function(s){
+    cb(s.exists()?s.data():null);
+  }).catch(function(){cb(null,true)});
 };
 
 window.fbConnectDrive=function(cb){
@@ -3809,6 +3967,7 @@ window.fbLogout=function(){
   S.driveToken="";S.driveFolderId="";S.driveFileId="";
   S.subv=0;S.tab=0;S.openMat=null;S.gw=null;S.pp=null;S.bk=null;
   S.subs=[];S.req=[];
+  S.username="";S.customName="";S.profLoaded=false;S.profileOpen=false;S._cr=null;S.foundUsers=[];
   signOut(auth).then(function(){
     try{if(oldUid)sessionStorage.removeItem("misbar_dtoken_"+oldUid)}catch(e){}
     toast("تم تسجيل الخروج بنجاح");draw();
@@ -3819,6 +3978,7 @@ onAuthStateChanged(auth,function(u){
   S.authReady=true;
   unsubs.forEach(function(f){try{f()}catch(e){}});unsubs=[];
   S.subs=[];S.req=[];
+  S.username="";S.customName="";S.profLoaded=false;S.profileOpen=false;S._cr=null;S.foundUsers=[];
   if(!u){
     S.subv=0;S.tab=0;S.openMat=null;S.uid=null;S.email="";S.role=null;S.isOwner=false;S.userAiKey="";
     S.driveToken="";S.driveFolderId="";S.driveFileId="";
@@ -3832,6 +3992,9 @@ onAuthStateChanged(auth,function(u){
   getDoc(doc(db,"users",u.uid)).then(function(uSnap){
     if(uSnap.exists()){
       var ud=uSnap.data();
+      if(ud.customName){S.customName=ud.customName;S.dispName=ud.customName}
+      else if(ud.name&&ud.name!==(u.displayName||"")){S.customName=ud.name;S.dispName=ud.name}
+      if(ud.username)S.username=ud.username;
       if((ud.updatedAt||0)>(S.updatedAt||0)){
         if(ud.docsJson){try{S.docs=JSON.parse(ud.docsJson)}catch(e){}}
         if(ud.grJson){try{S.gr=JSON.parse(ud.grJson)}catch(e){}}
@@ -3847,9 +4010,11 @@ onAuthStateChanged(auth,function(u){
       }
       draw();
     }
+    S.profLoaded=true;
     window.fbSyncUserProfile();
   }).catch(function(){
-    setDoc(doc(db,"users",u.uid),{email:S.email,name:S.dispName,photo:u.photoURL||"",lastSeen:Date.now()},{merge:true}).catch(err);
+    S.profLoaded=true;
+    setDoc(doc(db,"users",u.uid),{uid:u.uid,email:S.email,photo:u.photoURL||"",lastSeen:Date.now()},{merge:true}).catch(err);
   });
 
   if(S.driveToken){
@@ -3866,17 +4031,24 @@ onAuthStateChanged(auth,function(u){
   },err));
 
   unsubs.push(onSnapshot(collection(db,"users"),function(s){
-    var a=[];s.forEach(function(d){a.push(d.data())});S.allUsers=a;draw();
-  },function(){}));
+    var a=[];s.forEach(function(d){a.push(d.data())});S.allUsers=a;S.usersErr="";draw();
+  },function(e){S.usersErr=(e&&e.code)||"err"}));
 
   var msgUnsub = null, watchedChatId = null;
+  var chatFail=function(e){
+    var c=e&&e.code;
+    if(c==="permission-denied"){
+      if(!S._pdToast){S._pdToast=1;toast("⚠️ قواعد Firebase تمنع المحادثات، حدّث Firestore Rules (ملف firestore.rules)");}
+    }else toast("تعذر الإرسال: "+(c||e));
+  };
+
   window.fbWatchRoomMessages = function(chatId){
     if(!chatId || chatId === "local_notes" || chatId === watchedChatId) return;
     if(msgUnsub){ try{msgUnsub()}catch(e){} msgUnsub = null; }
     watchedChatId = chatId;
     msgUnsub = onSnapshot(collection(db,"chats",chatId,"messages"),function(msSnap){
       var arr=[];
-      msSnap.forEach(function(md){ arr.push(md.data()); });
+      msSnap.forEach(function(md){ var m=md.data(); m._pend=md.metadata.hasPendingWrites; arr.push(m); });
       arr.sort(function(a,b){ return (a.at||0)-(b.at||0); });
       var room = S.cv.find(function(x){ return x.id === chatId; });
       if(room && arr.length){
@@ -3884,39 +4056,64 @@ onAuthStateChanged(auth,function(u){
         draw();
         setTimeout(function(){ var wb=$("waBody"); if(wb) wb.scrollTop=wb.scrollHeight; }, 30);
       }
-    },function(){});
+    },function(e){ watchedChatId=null; chatFail(e); });
     unsubs.push(msgUnsub);
   };
 
-  unsubs.push(onSnapshot(collection(db,"chats"),function(s){
-    var remoteChats=[];
+  /* المحادثات: نسمع فقط للغرف اللي إيميلي بقائمة أعضائها (يطلع عند الطرف الثاني فوراً) */
+  var chatsFirst = true;
+  unsubs.push(onSnapshot(query(collection(db,"chats"),where("members","array-contains",S.email)),function(s){
+    var prev = {};
+    S.cv.forEach(function(c){ if(c && c.id) prev[c.id] = c; });
+    var remote=[], ids={};
     s.forEach(function(d){
-      var x=d.data();x.id=d.id;
-      var oldLocal = S.cv.find(function(o){ return o.id === d.id; });
-      x.msgs = (oldLocal && Array.isArray(oldLocal.msgs) && oldLocal.msgs.length) ? oldLocal.msgs : (x.msgs || []);
-      if(!x.members || x.members.indexOf(S.email)>-1) remoteChats.push(x);
+      var x=d.data(); x.id=d.id;
+      var old = prev[d.id];
+      x.msgs = (old && Array.isArray(old.msgs)) ? old.msgs : [];
+      remote.push(x); ids[d.id]=1;
     });
-    remoteChats.sort(function(a,b){ return (b.updatedAt||0)-(a.updatedAt||0); });
-    if(remoteChats.length){
-      var notes=S.cv.filter(function(c){return c.id==="local_notes"});
-      S.cv=notes.concat(remoteChats);
-      draw();
-    }
-  },function(){}));
-
-  window.fbSaveChatRoom=function(chatObj){
-    if(!chatObj||!chatObj.id||chatObj.id==="local_notes")return;
-    var roomMeta={id:chatObj.id,n:chatObj.n,g:chatObj.g?1:0,members:chatObj.members||[S.email],peerEmail:chatObj.peerEmail||"",photo:chatObj.photo||"",lastPreview:chatObj.lastPreview||"",updatedAt:chatObj.updatedAt||Date.now()};
-    setDoc(doc(db,"chats",chatObj.id),roomMeta,{merge:true}).catch(function(){});
-  };
-  window.fbSendRoomMessage=function(chatObj, msgObj){
-    if(!chatObj||!chatObj.id)return;
-    window.fbSaveChatRoom(chatObj);
-    if(chatObj.id!=="local_notes" && msgObj && msgObj.id){
-      setDoc(doc(db,"chats",chatObj.id,"messages",msgObj.id),msgObj).catch(function(err){
-        toast("تعذر إرسال المرفق (الحجم كبير)");
+    /* إشعار داخل التطبيق عند وصول رسالة/محادثة جديدة من شخص ثاني */
+    if(!chatsFirst){
+      s.docChanges().forEach(function(ch){
+        if(ch.type==="removed" || ch.doc.metadata.hasPendingWrites) return;
+        var x=ch.doc.data(); x.id=ch.doc.id;
+        var o=prev[x.id];
+        if(o && (o.updatedAt||0)>=(x.updatedAt||0)) return;
+        if(!x.lastFrom || x.lastFrom===S.email) return;
+        if(S.curChatId===x.id && S.tab===(S.role==="pro"?5:4)) return;
+        toast("💬 "+chatTitle(x)+": "+(x.lastPreview||"رسالة جديدة"));
       });
     }
+    chatsFirst=false;
+    remote.sort(function(a,b){ return (b.updatedAt||0)-(a.updatedAt||0); });
+    var notes=S.cv.filter(function(c){ return c.id==="local_notes" || (!c.id && !c.g && c.n==="ملاحظاتي السريعة"); });
+    notes.forEach(function(c){ c.id="local_notes"; });
+    if(!notes.length) notes=[{id:"local_notes",n:"ملاحظاتي السريعة",g:0,members:[],msgs:[]}];
+    /* محادثات انصنعت محلياً ولم تنرفع للسيرفر: نرفعها مرة ثانية بدل ما تضيع */
+    var localOnly=S.cv.filter(function(c){ return c.id && c.id!=="local_notes" && !ids[c.id]; });
+    localOnly.forEach(function(c){ if(c.members && c.members.indexOf(S.email)>-1 && window.fbSaveChatRoom) window.fbSaveChatRoom(c); });
+    S.cv=notes.concat(remote,localOnly);
+    draw();
+  },function(e){ chatFail(e); }));
+
+  window.fbSaveChatRoom=function(chatObj){
+    if(!chatObj||!chatObj.id||chatObj.id==="local_notes")return Promise.resolve();
+    var members=(chatObj.members&&chatObj.members.length)?chatObj.members:[S.email];
+    var meta={id:chatObj.id,n:chatObj.n||"",g:chatObj.g?1:0,members:arrayUnion.apply(null,members),photo:chatObj.photo||"",lastPreview:chatObj.lastPreview||"",lastFrom:chatObj.lastFrom||"",updatedAt:chatObj.updatedAt||Date.now()};
+    return setDoc(doc(db,"chats",chatObj.id),meta,{merge:true});
+  };
+  window.fbSendRoomMessage=function(chatObj, msgObj){
+    if(!chatObj||!chatObj.id||chatObj.id==="local_notes"||!msgObj||!msgObj.id)return;
+    chatObj.lastFrom=msgObj.e;
+    chatObj.updatedAt=msgObj.at||Date.now();
+    chatObj.lastPreview=msgObj.file?("📎 "+msgObj.file.name):(msgObj.t||"");
+    var clean=Object.assign({},msgObj);delete clean._pend;delete clean._fail;
+    /* أولاً الغرفة (فيها قائمة الأعضاء) ثم الرسالة، حتى تقبلها القواعد */
+    window.fbSaveChatRoom(chatObj).then(function(){
+      return setDoc(doc(db,"chats",chatObj.id,"messages",msgObj.id),clean);
+    }).catch(function(e){
+      msgObj._fail=true;draw();chatFail(e);
+    });
   };
   window.fbSendFeedback=function(item){
     setDoc(doc(db,"feedbacks",item.id),item).catch(function(){});
