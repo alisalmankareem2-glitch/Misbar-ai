@@ -119,7 +119,7 @@ nav button.on{color:var(--ac)}nav i{display:block;font-style:normal;font-size:19
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.6.0";
+var APP_VERSION = "2.7.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -139,12 +139,15 @@ if ("serviceWorker" in navigator) {
 
 async function checkForLiveUpdate() {
   try {
-    var res = await fetch("./index.html?v=" + Date.now(), { cache: "no-store" });
+    var last = 0;
+    try { last = parseInt(localStorage.getItem("misbar_vchk") || "0", 10) || 0; } catch (e) {}
+    if (Date.now() - last < 30 * 60 * 1000) return;
+    try { localStorage.setItem("misbar_vchk", String(Date.now())); } catch (e) {}
+    var res = await fetch("./version.json?v=" + Date.now(), { cache: "no-store" });
     if (!res.ok) return;
-    var html = await res.text();
-    var m = html.match(/var\s+APP_VERSION\s*=\s*"([^"]+)"/);
-    if (m && m[1] && m[1] !== APP_VERSION) {
-      toast("🔄 جاري تحديث مسبار AI تلقائياً إلى الإصدار " + m[1] + "...");
+    var j = await res.json();
+    if (j && j.v && j.v !== APP_VERSION) {
+      toast("🔄 جاري تحديث مسبار AI إلى الإصدار " + j.v + "...");
       if ("caches" in window) {
         var keys = await caches.keys();
         await Promise.all(keys.map(function(k){ return caches.delete(k); }));
@@ -161,7 +164,7 @@ document.addEventListener("visibilitychange", function(){ if (!document.hidden) 
    ============================================================================ */
 var S={
   authReady:false,uid:null,email:"",dispName:"",isOwner:false,
-  role:null,tab:0,taps:0,code:"1234",
+  role:null,tab:0,taps:0,code:(function(){try{return localStorage.getItem("misbar_oc")||"1234"}catch(e){return "1234"}})(),
   userAiKey:"",busy:false,awaitingAutoKey:false,
   driveToken:"",driveFolderId:"",driveFileId:"",driveSyncing:false,driveLastSync:"",
   updatedAt:0,
@@ -330,7 +333,7 @@ async function restoreFromGoogleDrive(silent){
           if(Array.isArray(remote.bag)) S.bag = remote.bag;
           if(Array.isArray(remote.fl)) S.fl = remote.fl;
           if(Array.isArray(remote.cv)) S.cv = remote.cv;
-          if(remote.userAiKey && !getUserKey()){
+          if(false){
             S.userAiKey = remote.userAiKey;
             try{ localStorage.setItem("misbar_gkey_"+(S.uid||"anon"), remote.userAiKey); }catch(e){}
           }
@@ -365,7 +368,6 @@ async function syncToGoogleDrive(silent){
       version: APP_VERSION,
       email: S.email,
       updatedAt: S.updatedAt || Date.now(),
-      userAiKey: getUserKey(),
       docs: S.docs,
       gr: S.gr,
       classes: S.classes,
@@ -509,7 +511,8 @@ function ask(l,cb,pw,defVal){
   $("mk").onclick=function(){var v=i.value.trim();c();if(v)cb(v)};
   i.onkeydown=function(e){if(e.key=="Enter")$("mk").click()};
 }
-function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function js(s){return esc(JSON.stringify(String(s==null?"":s)))}
 
 Object.defineProperty(S,"used",{
   get:function(){return S.use[S.email+"|"+new Date().toDateString()]||0},
@@ -579,8 +582,8 @@ async function callUserGemini(prompt,sysInst,imgDataUrl,jsonMode){
   var models=["gemini-2.5-flash","gemini-2.0-flash"];
   for(var m=0;m<models.length;m++){
     try{
-      var res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+models[m]+":generateContent?key="+encodeURIComponent(key),{
-        method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)
+      var res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+models[m]+":generateContent",{
+        method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body:JSON.stringify(body)
       });
       var data=await res.json();
       if(data&&data.candidates&&data.candidates[0]&&data.candidates[0].content){
@@ -615,7 +618,7 @@ function tab(i){
 }
 function hat(){
   S.taps++;clearTimeout(S._t);S._t=setTimeout(function(){S.taps=0},2000);
-  if(S.taps>=5){S.taps=0;ask("أدخل رمز المالك",function(c){if(c===S.code)setRole("own");else toast("الرمز غير صحيح")},1)}
+  if(S.taps>=5){S.taps=0;ask("أدخل رمز المالك",function(c){if(c===S.code){if(S.isOwner)setRole("own");else toast("هذا الحساب ليس حساب المالك")}else toast("الرمز غير صحيح")},1)}
 }
 function head(t){
   var drvBtn = S.role!='own'
@@ -2831,7 +2834,7 @@ function clsV(){
       }).join("")+
       '<div class="grid" style="margin-top:8px">'+
         '<button class="b s" onclick="addMatDirect('+ci+')">+ نشر ملزمة/درس</button>'+
-        '<button class="b s" onclick="copyClsCode(\''+esc(c.c)+'\')">📋 نسخ الرمز</button>'+
+        '<button class="b s" onclick="copyClsCode('+js(c.c)+')">📋 نسخ الرمز</button>'+
       '</div></div>';
   }).join("")+
   '<button class="b" onclick="addClass()">+ إنشاء كلاس جديد</button>';
@@ -3170,7 +3173,7 @@ function comV(){
 function postMsg(){
   var v=$("po").value.trim();if(!v)return;
   var author=S.isOwner?"إدارة مسبار":(S.dispName||S.email.split("@")[0]);
-  var pObj={id:"post_"+Date.now(),author:author,text:v,at:Date.now()};
+  var pObj={id:"post_"+Date.now(),uid:S.uid,author:author,text:v.slice(0,1000),at:Date.now()};
   S.posts.unshift(pObj);
   if(window.fbAddPost) window.fbAddPost(pObj);
   saveAllUserStorage();toast("تم النشر في المجتمع");draw();
@@ -3215,7 +3218,7 @@ function cListV(){
     var ms=c.msgs||[];
     var l=ms[ms.length-1];
     var preview = l ? (l.file ? ('📎 ' + l.file.name) : (l.t || '')) : (c.lastPreview || 'ابدأ المراسلة الآن');
-    return '<div class="card row" style="cursor:pointer" onclick="S.curChatId=\''+esc(c.id)+'\';draw()">'+
+    return '<div class="card row" style="cursor:pointer" onclick="S.curChatId='+js(c.id)+';draw()">'+
       avatarHtml(c.n, c.photo)+
       '<span class="grow"><b>'+(c.g?'👥 ':'')+esc(c.n)+'</b><div class="mu">'+esc(preview)+'</div></span>'+
       (c.g?'<span class="badge">'+(c.members?c.members.length:1)+' عضو</span>':'')+
@@ -3254,13 +3257,13 @@ function renderChatPickerModal(){
     '<div style="flex:1;overflow-y:auto;max-height:260px;border:1px solid var(--ln);border-radius:10px;padding:4px">' +
       (users.length ? users.map(function(u){
         var isSel = !!S.chatPickEmails[u.email];
-        return '<div class="row" style="padding:7px;border-bottom:1px solid var(--ln);cursor:pointer;background:'+(isSel?'var(--acs)':'transparent')+';border-radius:8px" onclick="selectChatUser(\''+esc(u.email)+'\',\''+esc(u.name||u.email)+'\',\''+esc(u.photo||'')+'\')">' +
+        return '<div class="row" style="padding:7px;border-bottom:1px solid var(--ln);cursor:pointer;background:'+(isSel?'var(--acs)':'transparent')+';border-radius:8px" onclick="selectChatUser('+js(u.email)+','+js(u.name||u.email)+','+js(u.photo||'')+')">' +
           avatarHtml(u.name || u.email, u.photo) +
           '<div class="grow" style="overflow:hidden"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(u.name || u.email.split("@")[0])+'</b><div class="mu" dir="ltr" style="font-size:12px;text-align:start">'+esc(u.email)+'</div></div>' +
           '<span>'+(mode==='dm'?'💬':(isSel?'✅':'⚪'))+'</span>' +
         '</div>';
       }).join("") : '<div class="mu" style="padding:12px;text-align:center">لا يوجد مستخدم مطابق بالقائمة.<br>إذا كتبت جيميل صحيحاً بالأعلى يمكنك إضافته مباشرة بالزر أدناه:</div>') +
-      (q.indexOf("@") > 0 ? '<button class="b s" style="width:100%;margin-top:6px" onclick="selectChatUser(\''+esc(q)+'\',\''+esc(q.split("@")[0])+'\',\'\')">+ اختيار الجيميل: '+esc(q)+'</button>' : '') +
+      (q.indexOf("@") > 0 ? '<button class="b s" style="width:100%;margin-top:6px" onclick="selectChatUser('+js(q)+','+js(q.split("@")[0])+',\'\')">+ اختيار الجيميل: '+esc(q)+'</button>' : '') +
     '</div>' +
     (mode!=='dm' ? '<button class="b" style="width:100%;margin-top:10px;background:#15803d" onclick="confirmGroupCreateOrAdd()">'+(mode==='grp'?'✅ إنشاء الكروب الآن':'✅ إضافة الأعضاء المحددين')+'</button>' : '') +
   '</div>';
@@ -3401,8 +3404,8 @@ function attachChatFile(){
   f.onchange = function(){
     var x = f.files[0]; if(!x) return;
     var isImg = /^image\//.test(x.type);
-    if(!isImg && x.size > 720000){
-      toast("الحد الأقصى للملفات المرفقة في المحادثة هو 700 كيلوبايت");
+    if(!isImg && x.size > 300000){
+      toast("الحد الأقصى للملفات المرفقة في المحادثة هو 300 كيلوبايت (للملفات الأكبر ارفعها على Drive وأرسل الرابط)");
       return;
     }
     var r = new FileReader();
@@ -3485,7 +3488,7 @@ function stuV(){
     var mats=c.mats||[];
     return '<h2>🏫 '+esc(c.n)+'</h2>'+
       (mats.length?mats.map(function(m,i){
-        return '<div class="card row" onclick="S.openMat=S.classes.find(x=>x.c==\''+c.c+'\').mats['+i+'];S.out=\'\';S.quiz=null;draw()" style="cursor:pointer"><b>'+(i+1)+'</b><span class="grow">'+esc(m.title)+'</span><span>‹</span></div>';
+        return '<div class="card row" onclick="S.openMat=S.classes.find(x=>x.c=='+js(c.c)+').mats['+i+'];S.out=\'\';S.quiz=null;draw()" style="cursor:pointer"><b>'+(i+1)+'</b><span class="grow">'+esc(m.title)+'</span><span>‹</span></div>';
       }).join(""):'<div class="card mu">لا توجد ملازم منشورة في هذا الكلاس بعد.</div>');
   }).join(""):'<div class="card mu">لم تنضم لأي كلاس بعد.</div>');
 }
@@ -3589,7 +3592,7 @@ function reqV(){
 function plansV(){
   return '<h2>الباقات</h2>'+S.plans.map(function(x,i){return '<div class="card"><label>اسم الباقة</label><input value="'+esc(x.n)+'" onchange="S.plans['+i+'].n=this.value;draw()"><div class="grid"><div><label>السعر (د.ع)</label><input type="number" value="'+x.p+'" onchange="S.plans['+i+'].p=this.value"></div><div><label>المدة</label><div class="row"><input type="number" min="1" value="'+x.v+'" onchange="S.plans['+i+'].v=+this.value||1;draw()"><select onchange="S.plans['+i+'].u=this.value;draw()">'+["يوم","أسبوع","شهر"].map(function(u){return '<option'+(u==x.u?' selected':'')+'>'+u+'</option>'}).join("")+'</select></div></div></div><label>المميزات (تظهر للمستخدم)</label><textarea rows="2" onchange="S.plans['+i+'].f=this.value">'+esc(x.f||"")+'</textarea><div class="row"><span class="grow">إظهار الباقة للمستخدمين</span><button class="tog'+(x.hide?'':' on')+'" onclick="S.plans['+i+'].hide=!S.plans['+i+'].hide;draw()"></button></div><button class="b d" style="margin-top:8px" onclick="S.plans.splice('+i+',1);draw()">حذف الباقة</button></div>'}).join("")+'<button class="b" onclick="S.plans.push({n:\'باقة جديدة\',p:0,v:1,u:\'شهر\'});draw()">+ إضافة باقة</button><button class="b" style="width:100%;margin-top:8px" onclick="savePlans()">💾 حفظ الباقات ونشرها</button><h2>المشتركون الفعالون</h2>'+S.subs.map(function(s){var on=s.end>Date.now();return '<div class="card row"><span class="grow" dir="ltr">'+esc(s.e)+'<div class="mu" dir="rtl">'+esc(s.n)+' · '+(on?'ينتهي ':'منتهي ')+fd(s.end)+'</div></span></div>'}).join("")+'<div class="card"><label>دخولات الذكاء الاصطناعي المجانية يومياً</label><input type="number" value="'+S.free+'" onchange="S.free=+this.value"></div>';
 }
-function changeCode(){ask("اكتب الرمز الحالي",function(o){if(o!==S.code){toast("الرمز الحالي غير صحيح");return}ask("اكتب الرمز الجديد (4 أرقام أو أكثر)",function(n){if(n.length<4){toast("الرمز قصير");return}S.code=n;toast("تم تغيير الرمز")},1)},1)}
+function changeCode(){ask("اكتب الرمز الحالي",function(o){if(o!==S.code){toast("الرمز الحالي غير صحيح");return}ask("اكتب الرمز الجديد (4 أرقام أو أكثر)",function(n){if(n.length<4){toast("الرمز قصير");return}S.code=n;try{localStorage.setItem("misbar_oc",n)}catch(e){}toast("تم تغيير الرمز")},1)},1)}
 function ownV(){
   var activeSubs=S.subs.filter(function(s){return s.end>Date.now()}).length;
   var fbs=S.feedbacks||[];
@@ -3658,7 +3661,7 @@ function draw(){
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,reauthenticateWithPopup,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {getFirestore,doc,setDoc,getDoc,updateDoc,deleteDoc,collection,onSnapshot,query,where} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import {getFirestore,doc,setDoc,getDoc,updateDoc,deleteDoc,deleteField,collection,onSnapshot,query,where,orderBy,limit} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 var OWNER="alisalmankareem2@gmail.com";
 
@@ -3705,16 +3708,9 @@ window.fbLogin=function(){
 
 window.fbSyncUserProfile=function(){
   if(!S.uid)return;
-  var payload={email:S.email,name:S.dispName,photo:(auth.currentUser&&auth.currentUser.photoURL)||"",lastSeen:Date.now(),updatedAt:S.updatedAt||Date.now()};
-  if(S.userAiKey)payload.userAiKey=S.userAiKey;
-  try{
-    var docsJson=JSON.stringify(S.docs||[]);
-    if(docsJson.length<450000)payload.docsJson=docsJson;
-    payload.grJson=JSON.stringify(S.gr||[]);
-    payload.joinedJson=JSON.stringify(S.joined||[]);
-    payload.classesJson=JSON.stringify(S.classes||[]);
-    payload.bagJson=JSON.stringify(S.bag||[]);
-  }catch(e){}
+  var payload={email:S.email,name:S.dispName||"",photo:(auth.currentUser&&auth.currentUser.photoURL)||"",updatedAt:Date.now()};
+  /* تنظيف أي حقول قديمة كانت تُرفع بالخطأ: المفتاح الشخصي وبيانات الأستاذ */
+  ["userAiKey","docsJson","grJson","joinedJson","classesJson","bagJson","lastSeen"].forEach(function(k){payload[k]=deleteField()});
   setDoc(doc(db,"users",S.uid),payload,{merge:true}).catch(err);
 };
 
@@ -3759,28 +3755,7 @@ onAuthStateChanged(auth,function(u){
   S.isOwner=S.email==OWNER.toLowerCase()&&u.emailVerified;
 
   loadUserDeviceData();
-  getDoc(doc(db,"users",u.uid)).then(function(uSnap){
-    if(uSnap.exists()){
-      var ud=uSnap.data();
-      if((ud.updatedAt||0)>(S.updatedAt||0)){
-        if(ud.docsJson){try{S.docs=JSON.parse(ud.docsJson)}catch(e){}}
-        if(ud.grJson){try{S.gr=JSON.parse(ud.grJson)}catch(e){}}
-        if(ud.joinedJson){try{S.joined=JSON.parse(ud.joinedJson)}catch(e){}}
-        if(ud.classesJson){try{S.classes=JSON.parse(ud.classesJson)}catch(e){}}
-        if(ud.bagJson){try{S.bag=JSON.parse(ud.bagJson)}catch(e){}}
-        S.updatedAt=ud.updatedAt;
-        saveDeviceOnly();
-      }
-      if(ud.userAiKey&&!getUserKey()){
-        S.userAiKey=ud.userAiKey;
-        try{localStorage.setItem("misbar_gkey_"+u.uid,ud.userAiKey)}catch(e){}
-      }
-      draw();
-    }
-    window.fbSyncUserProfile();
-  }).catch(function(){
-    setDoc(doc(db,"users",u.uid),{email:S.email,name:S.dispName,photo:u.photoURL||"",lastSeen:Date.now()},{merge:true}).catch(err);
-  });
+  window.fbSyncUserProfile();
 
   if(S.driveToken){
     setTimeout(function(){restoreFromGoogleDrive(true)},400);
@@ -3795,9 +3770,11 @@ onAuthStateChanged(auth,function(u){
     draw();
   },err));
 
-  unsubs.push(onSnapshot(collection(db,"users"),function(s){
-    var a=[];s.forEach(function(d){a.push(d.data())});S.allUsers=a;draw();
-  },function(){}));
+  if(S.isOwner){
+    unsubs.push(onSnapshot(collection(db,"users"),function(s){
+      var a=[];s.forEach(function(d){a.push(d.data())});S.allUsers=a;draw();
+    },function(){}));
+  }
 
   var msgUnsub = null, watchedChatId = null;
   window.fbWatchRoomMessages = function(chatId){
@@ -3818,7 +3795,7 @@ onAuthStateChanged(auth,function(u){
     unsubs.push(msgUnsub);
   };
 
-  unsubs.push(onSnapshot(collection(db,"chats"),function(s){
+  unsubs.push(onSnapshot(query(collection(db,"chats"),where("members","array-contains",S.email)),function(s){
     var remoteChats=[];
     s.forEach(function(d){
       var x=d.data();x.id=d.id;
@@ -3837,16 +3814,14 @@ onAuthStateChanged(auth,function(u){
   window.fbSaveChatRoom=function(chatObj){
     if(!chatObj||!chatObj.id||chatObj.id==="local_notes")return;
     var roomMeta={id:chatObj.id,n:chatObj.n,g:chatObj.g?1:0,members:chatObj.members||[S.email],peerEmail:chatObj.peerEmail||"",photo:chatObj.photo||"",lastPreview:chatObj.lastPreview||"",updatedAt:chatObj.updatedAt||Date.now()};
-    setDoc(doc(db,"chats",chatObj.id),roomMeta,{merge:true}).catch(function(){});
+    return setDoc(doc(db,"chats",chatObj.id),roomMeta,{merge:true}).catch(function(){});
   };
   window.fbSendRoomMessage=function(chatObj, msgObj){
-    if(!chatObj||!chatObj.id)return;
-    window.fbSaveChatRoom(chatObj);
-    if(chatObj.id!=="local_notes" && msgObj && msgObj.id){
-      setDoc(doc(db,"chats",chatObj.id,"messages",msgObj.id),msgObj).catch(function(err){
-        toast("تعذر إرسال المرفق (الحجم كبير)");
-      });
-    }
+    if(!chatObj||!chatObj.id||chatObj.id==="local_notes"||!msgObj||!msgObj.id)return;
+    var p=window.fbSaveChatRoom(chatObj)||Promise.resolve();
+    p.then(function(){
+      return setDoc(doc(db,"chats",chatObj.id,"messages",msgObj.id),msgObj);
+    }).catch(function(){ toast("تعذر إرسال الرسالة أو المرفق"); });
   };
   window.fbSendFeedback=function(item){
     setDoc(doc(db,"feedbacks",item.id),item).catch(function(){});
@@ -3854,7 +3829,7 @@ onAuthStateChanged(auth,function(u){
   window.fbAddPost=function(pObj){
     setDoc(doc(db,"posts",pObj.id),pObj).catch(function(){});
   };
-  unsubs.push(onSnapshot(collection(db,"posts"),function(s){
+  unsubs.push(onSnapshot(query(collection(db,"posts"),orderBy("at","desc"),limit(40)),function(s){
     var a=[];s.forEach(function(d){a.push(d.data())});
     if(a.length){
       a.sort(function(x,y){return (y.at||0)-(x.at||0)});
