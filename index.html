@@ -126,7 +126,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.21.0";
+var APP_VERSION = "2.23.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -3806,8 +3806,8 @@ window.showPeerProfile = function(email){
      '<div class="mu" dir="ltr" style="font-size:14px;margin-bottom:4px">' + esc(email) + '</div>' +
      (u.username ? '<div class="mu" dir="ltr" style="font-size:14px;color:var(--ac);font-weight:600">@' + esc(u.username) + '</div>' : '') +
      '<div class="grid" style="margin-top:24px">' +
-        '<button class="b s" style="min-height:44px" onclick="toggleBlockUser(''+email+'');document.getElementById('md').remove()">'+(isBlocked?'✅ فك الحظر':'🚫 حظر الشخص')+'</button>' +
-        '<button class="b" style="min-height:44px" onclick="document.getElementById('md').remove()">إغلاق</button>' +
+        '<button class="b s" style="min-height:44px" onclick="toggleBlockUser(\''+email+'\');document.getElementById(\'md\').remove()">'+(isBlocked?'✅ فك الحظر':'🚫 حظر الشخص')+'</button>' +
+        '<button class="b" style="min-height:44px" onclick="document.getElementById(\'md\').remove()">إغلاق</button>' +
      '</div>' +
   '</div>';
   document.body.appendChild(d);
@@ -3821,8 +3821,7 @@ window.waReplyMsg = function(txt){
    var mt = document.getElementById("mt");
    if(mt){
      var shortTxt = txt.length > 40 ? txt.substring(0,40)+"..." : txt;
-     mt.value = "رد: «" + shortTxt + "»
-" + mt.value;
+     mt.value = "رد: «" + shortTxt + "»\\n" + mt.value;
      mt.focus();
      if(window.waInputChanged) window.waInputChanged();
    }
@@ -3835,34 +3834,52 @@ window.waForwardMsg = function(txt){
 }
 
 /* ==================== حذف الرسائل والمحادثات ==================== */
-function deleteOrLeaveChat(chatId){
+window.confirmLeaveGroup = function(chatId){
+  var md = document.getElementById('waMenuDropdown'); if(md) md.style.display = 'none';
   var c = S.cv.find(function(x){ return x.id === chatId; }); if(!c) return;
-  if(c.id === "local_notes"){ toast("لا يمكن حذف ملاحظاتي السريعة"); return; }
-  
-  if(c.g){
-    ask("هل أنت متأكد أنك تريد مغادرة الكروب («"+esc(c.n)+"»)؟", function(conf){
-      if(conf !== "نعم"){ toast("اكتب نعم للتأكيد"); return; }
-      c.members = c.members.filter(function(em){ return em !== S.email.toLowerCase(); });
-      var senderHandle = S.username ? ("@" + S.username) : (S.dispName || S.email.split("@")[0]);
-      c.msgs.push({ e: S.email.toLowerCase(), isSys: true, sender: "النظام", t: "غادر " + senderHandle + " الكروب", at: Date.now() });
-      if(window.fbSaveChatRoom) window.fbSaveChatRoom(c);
-      S.cv = S.cv.filter(function(x){ return x.id !== chatId; });
-      S.curChatId = null;
-      saveAllUserStorage();
-      toast("تم مغادرة الكروب");
-      draw();
-    }, 0, "نعم");
-  }else{
-    ask("هل أنت متأكد من حذف هذه المحادثة من جهازك؟ (الرسائل ستبقى عند الطرف الآخر)", function(conf){
-      if(conf !== "نعم"){ toast("اكتب نعم للتأكيد"); return; }
-      S.cv = S.cv.filter(function(x){ return x.id !== chatId; });
-      S.curChatId = null;
-      saveAllUserStorage();
-      toast("تم حذف المحادثة");
-      draw();
-    }, 0, "نعم");
-  }
-}
+  ask("هل أنت متأكد أنك تريد مغادرة الكروب («"+esc(c.n)+"»)؟", function(conf){
+    if(conf !== "نعم"){ toast("اكتب نعم للتأكيد"); return; }
+    c.members = c.members.filter(function(em){ return em !== S.email.toLowerCase(); });
+    var senderHandle = S.username ? ("@" + S.username) : (S.dispName || S.email.split("@")[0]);
+    c.msgs.push({ e: S.email.toLowerCase(), isSys: true, sender: "النظام", t: "غادر " + senderHandle + " الكروب", at: Date.now() });
+    if(window.fbSaveChatRoom) window.fbSaveChatRoom(c);
+    S.cv = S.cv.filter(function(x){ return x.id !== chatId; });
+    S.curChatId = null;
+    saveAllUserStorage();
+    toast("تم مغادرة الكروب");
+    draw();
+  }, 0, "نعم");
+};
+
+window.confirmDeleteChat = function(chatId, forEveryone){
+  var md = document.getElementById('waMenuDropdown'); if(md) md.style.display = 'none';
+  if(chatId === "local_notes"){ toast("لا يمكن حذف ملاحظاتي السريعة"); return; }
+  var msg = forEveryone ? "هل أنت متأكد من مسح المحادثة نهائياً من الطرفين؟" : "هل أنت متأكد من حذف هذه المحادثة من جهازك فقط؟";
+  ask(msg, function(conf){
+    if(conf !== "نعم"){ toast("اكتب نعم للتأكيد"); return; }
+    if(forEveryone && window.fbDeleteChatEntirely){ window.fbDeleteChatEntirely(chatId); }
+    S.cv = S.cv.filter(function(x){ return x.id !== chatId; });
+    if(S.curChatId === chatId) S.curChatId = null;
+    saveAllUserStorage();
+    toast("تم حذف المحادثة");
+    draw();
+  }, 0, "نعم");
+};
+
+window.clearChatMessages = function(chatId){
+  var md = document.getElementById('waMenuDropdown'); if(md) md.style.display = 'none';
+  if(chatId === "local_notes"){ toast("لا يمكن مسح ملاحظاتي السريعة"); return; }
+  ask("هل أنت متأكد من مسح محتوى المحادثة بالكامل؟", function(conf){
+    if(conf !== "نعم"){ toast("اكتب نعم للتأكيد"); return; }
+    var c = S.cv.find(function(x){ return x.id === chatId; }); if(!c) return;
+    c.msgs = [];
+    c.lastPreview = "";
+    saveAllUserStorage();
+    toast("تم مسح محتوى المحادثة محلياً");
+    draw();
+  }, 0, "نعم");
+};
+
 
 function showMsgMenu(chatId, msgId, isMine, msgTxt){
   if(!msgId) return;
