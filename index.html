@@ -126,7 +126,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.23.0";
+var APP_VERSION = "2.24.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -278,6 +278,8 @@ function loadUserDeviceData(){
     S.scnDocId = localStorage.getItem(p+"scnDocId") || null;
     try{ S.hiddenMsgs = JSON.parse(localStorage.getItem(p+"hiddenMsgs")||"{}"); }catch(e){}
     try{ S.blocked = JSON.parse(localStorage.getItem(p+"blocked")||"[]"); }catch(e){}
+    try{ S.pinnedChats = JSON.parse(localStorage.getItem(p+"pinnedChats")||"{}"); }catch(e){}
+    try{ S.mutedChats = JSON.parse(localStorage.getItem(p+"mutedChats")||"{}"); }catch(e){}
     migrateScannerFolders();
   }catch(e){}
 }
@@ -3429,9 +3431,14 @@ function cListV(){
   var nag = !S.username
     ? '<div class="card" style="border-inline-start:4px solid #2563eb"><div class="row"><div class="grow"><b>🆔 اختر يوزر نيم</b><div class="mu" style="font-size:12px">حتى الناس تلاقيك وتراسلك مثل انستا وتليجرام</div></div><button class="b" onclick="openProfileModal()">إعداد</button></div></div>'
     : '';
+  S.pinnedChats = S.pinnedChats || {};
+  S.mutedChats = S.mutedChats || {};
   var list = S.cv.slice().sort(function(a, b){
     if(a.id === "local_notes") return 1;
     if(b.id === "local_notes") return -1;
+    var pinA = S.pinnedChats[a.id] ? 1 : 0;
+    var pinB = S.pinnedChats[b.id] ? 1 : 0;
+    if(pinA !== pinB) return pinB - pinA;
     return (b.updatedAt || 0) - (a.updatedAt || 0);
   });
   return nag + '<h2>💬 المحادثات والكروبات والملاحظات</h2>' +
@@ -3444,8 +3451,11 @@ function cListV(){
     return '<div class="card row" style="cursor:pointer" onclick="S.curChatId=\'' + esc(c.id) + '\';draw()">' +
       avatarHtml(chatTitle(c), chatPhoto(c)) +
       '<span class="grow" style="overflow:hidden"><b>' + (c.g ? '👥 ' : '') + esc(chatTitle(c)) + '</b><div class="mu" style="' + (un ? 'font-weight:800;color:var(--tx);' : '') + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(preview) + '</div></span>' +
-      (un ? '<span class="badge" style="background:#ef4444;color:#fff">جديد</span>' : '') +
-      (c.g ? '<span class="badge">' + (c.members ? c.members.length : 1) + ' عضو</span>' : '') +
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
+        (S.pinnedChats && S.pinnedChats[c.id] ? '<span style="font-size:14px" title="مثبتة">📌</span>' : '') +
+        (S.mutedChats && S.mutedChats[c.id] ? '<span style="font-size:12px;color:var(--mu)" title="مكتومة">🔇</span>' : '') +
+        (un ? '<span class="badge" style="background:#ef4444;color:#fff">جديد</span>' : '') +
+      '</div>' +
     '</div>';
   }).join("") +
   '<div class="grid"><button class="b" onclick="openChatPicker(\'dm\')">💬 محادثة شخصية</button><button class="b s" onclick="openChatPicker(\'grp\')">👥 إنشاء كروب واتساب/تليجرام</button></div>';
@@ -3803,7 +3813,7 @@ window.showPeerProfile = function(email){
   d.innerHTML = '<div class="mc" style="text-align:center;width:min(320px,90%);border-radius:20px;padding:24px 16px">' +
      '<div style="transform:scale(1.8);margin:16px 0 20px">' + avatarHtml(disp, u.photo) + '</div>' +
      '<h2 style="margin:0 0 4px">' + esc(disp) + '</h2>' +
-     '<div class="mu" dir="ltr" style="font-size:14px;margin-bottom:4px">' + esc(email) + '</div>' +
+     /* Email hidden for privacy */
      (u.username ? '<div class="mu" dir="ltr" style="font-size:14px;color:var(--ac);font-weight:600">@' + esc(u.username) + '</div>' : '') +
      '<div class="grid" style="margin-top:24px">' +
         '<button class="b s" style="min-height:44px" onclick="toggleBlockUser(\''+email+'\');document.getElementById(\'md\').remove()">'+(isBlocked?'✅ فك الحظر':'🚫 حظر الشخص')+'</button>' +
@@ -3832,6 +3842,52 @@ window.waForwardMsg = function(txt){
    if(navigator.clipboard) navigator.clipboard.writeText(txt).catch(function(){});
    var m = document.getElementById("md"); if(m) m.remove();
 }
+
+
+window.showGroupProfile = function(chatId){
+  var c = S.cv.find(function(x){ return x.id === chatId; }); if(!c || !c.g) return;
+  var d = document.createElement("div"); d.id="md";
+  var membersHtml = (c.members || []).map(function(em){
+     var u = findUserByEmail(em) || {email: em};
+     var disp = u.name || u.username || "عضو";
+     var handle = u.username ? "@" + u.username : "";
+     var isMe = em === S.email;
+     return '<div class="row" style="padding:8px 0;border-bottom:1px solid var(--ln);cursor:'+(isMe?'default':'pointer')+'" '+(isMe?'':'onclick="showPeerProfile(\''+em+'\')"')+'>' +
+       avatarHtml(disp, u.photo) +
+       '<div class="grow" style="text-align:start"><b style="display:block;font-size:14px">'+esc(disp)+(isMe?' (أنت)':'')+'</b>'+(handle?'<div class="mu" style="font-size:12px" dir="ltr">'+esc(handle)+'</div>':'')+'</div>' +
+     '</div>';
+  }).join("");
+
+  d.innerHTML = '<div class="mc" style="width:min(360px,95%);max-height:85vh;display:flex;flex-direction:column">' +
+     '<div style="text-align:center;padding:10px 0">' +
+       '<div style="transform:scale(1.5);margin:10px 0 16px">' + avatarHtml(c.n, c.photo) + '</div>' +
+       '<h2 style="margin:0 0 4px">' + esc(c.n) + '</h2>' +
+       '<div class="mu" style="font-size:13px">مجموعة · ' + (c.members?c.members.length:1) + ' أعضاء</div>' +
+     '</div>' +
+     '<div style="flex:1;overflow-y:auto;margin:10px 0;border:1px solid var(--ln);border-radius:10px;padding:8px">' + membersHtml + '</div>' +
+     '<div class="grid">' +
+        '<button class="b d" onclick="confirmLeaveGroup(\''+c.id+'\')">مغادرة المجموعة</button>' +
+        '<button class="b" onclick="document.getElementById(\'md\').remove()">إغلاق</button>' +
+     '</div>' +
+  '</div>';
+  document.body.appendChild(d);
+};
+
+
+window.togglePinChat = function(chatId){
+  S.pinnedChats = S.pinnedChats || {};
+  if(S.pinnedChats[chatId]) delete S.pinnedChats[chatId];
+  else S.pinnedChats[chatId] = Date.now();
+  try{ localStorage.setItem(storagePrefix()+"pinnedChats", JSON.stringify(S.pinnedChats)); }catch(e){}
+  draw();
+};
+window.toggleMuteChat = function(chatId){
+  S.mutedChats = S.mutedChats || {};
+  if(S.mutedChats[chatId]) delete S.mutedChats[chatId];
+  else S.mutedChats[chatId] = true;
+  try{ localStorage.setItem(storagePrefix()+"mutedChats", JSON.stringify(S.mutedChats)); }catch(e){}
+  draw();
+};
 
 /* ==================== حذف الرسائل والمحادثات ==================== */
 window.confirmLeaveGroup = function(chatId){
@@ -3949,7 +4005,10 @@ function roomV(){
   return '<div class="wa-room">' +
     '<div class="wa-head">' +
       '<button class="b s" style="min-height:34px;padding:4px 10px" onclick="S.curChatId=null;draw()">←</button>' +
-      '<div style="cursor:pointer;display:flex;align-items:center" onclick="showPeerProfile(\''+(!c.g ? chatPeerEmail(c) : '')+'\')">' + avatarHtml(chatTitle(c), chatPhoto(c)) + '</div>' +
+      '<div style="cursor:pointer;display:flex;align-items:center" onclick="'+(c.g?'showGroupProfile(\''+c.id+'\')':'showPeerProfile(\''+chatPeerEmail(c)+'\')')+'">' + avatarHtml(chatTitle(c), chatPhoto(c)) + '</div>' +
+      '<div class="grow" style="overflow:hidden;cursor:pointer" onclick="'+(c.g?'showGroupProfile(\''+c.id+'\')':'showPeerProfile(\''+chatPeerEmail(c)+'\')')+'"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(c.g?'👥 ':'')+esc(chatTitle(c))+'</b>' +
+        '<div style="font-size:11px;opacity:.88">'+(c.g ? ((c.members?c.members.length:1)+' أعضاء · اضغط للتفاصيل') : (chatPeerHandle(c) || 'مراسلة مباشرة'))+'</div>' +
+      '</div>' +
       '<div class="grow" style="overflow:hidden;cursor:pointer" onclick="showPeerProfile(\''+(!c.g ? chatPeerEmail(c) : '')+'\')"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(c.g?'👥 ':'')+esc(chatTitle(c))+'</b>' +
         '<div style="font-size:11px;opacity:.88">'+(c.g ? ((c.members?c.members.length:1)+' أعضاء · اضغط 📎 لمشاركة ملف') : (chatPeerHandle(c) || 'مراسلة مباشرة'))+'</div>' +
       '</div>' +
@@ -3961,6 +4020,8 @@ function roomV(){
                : '<div style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--ln);color:#ef4444" onclick="confirmDeleteChat(\''+c.id+'\', true)">حذف المحادثة من الطرفين</div>' +
                  '<div style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--ln);color:#ef4444" onclick="confirmDeleteChat(\''+c.id+'\', false)">حذف المحادثة من جهازي</div>' +
                  '<div style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--ln);color:#ef4444" onclick="toggleBlockUser(\''+chatPeerEmail(c)+'\')">' + (S.blocked && S.blocked.indexOf(chatPeerEmail(c)) > -1 ? '✅ فك الحظر' : '🚫 حظر المستخدم') + '</div>') +
+          '<div style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--ln)" onclick="togglePinChat(\''+c.id+'\');document.getElementById(\'waMenuDropdown\').style.display=\'none\'">' + (S.pinnedChats&&S.pinnedChats[c.id] ? '📌 إلغاء التثبيت' : '📌 تثبيت المحادثة') + '</div>' +
+          '<div style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--ln)" onclick="toggleMuteChat(\''+c.id+'\');document.getElementById(\'waMenuDropdown\').style.display=\'none\'">' + (S.mutedChats&&S.mutedChats[c.id] ? '🔊 تفعيل الإشعارات' : '🔇 كتم الإشعارات') + '</div>' +
           '<div style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--ln)" onclick="clearChatMessages(\''+c.id+'\')">مسح محتوى المحادثة</div>' +
           '<div style="padding:14px 16px;cursor:pointer" onclick="openWaWallpaperModal();document.getElementById(\'waMenuDropdown\').style.display=\'none\';">تغيير الخلفية</div>' +
         '</div>' +
@@ -4674,6 +4735,7 @@ onAuthStateChanged(auth,function(u){
         if(o && (o.updatedAt||0)>=(x.updatedAt||0)) return;
         if(!x.lastFrom || x.lastFrom===S.email) return;
         if(!x.g && S.blocked && S.blocked.indexOf(x.lastFrom) > -1) return; // Ignore blocked users
+        if(S.mutedChats && S.mutedChats[x.id]) return; // Ignore muted chats
         var senderTitle = chatTitle(x);
         var prevTxt = x.lastPreview || "رسالة جديدة";
         if(S.curChatId===x.id && S.tab===(S.role==="pro"?5:4)) return;
