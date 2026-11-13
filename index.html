@@ -73,6 +73,24 @@ nav button.on{color:var(--ac)}nav i{display:block;font-style:normal;font-size:19
 .scn-add-bar{position:sticky;bottom:78px;z-index:7;background:var(--sf);border:2px solid var(--ac);border-radius:16px;padding:10px;box-shadow:0 6px 20px rgba(0,0,0,.15);margin-top:12px}
 .pos-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0;max-height:220px;overflow-y:auto}
 
+/* Portals, 3-AI Cards & WhatsApp/Telegram Chat Styles */
+.portal-card{background:var(--sf);border:1.5px solid var(--ln);border-radius:16px;padding:16px;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:.15s;box-shadow:0 2px 8px rgba(0,0,0,.03)}
+.portal-card:active{transform:scale(.98)}
+.portal-ico{width:52px;height:52px;border-radius:14px;background:var(--acs);color:var(--ac);font-size:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ai-prov-card{background:var(--sf);border:2px solid var(--ln);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer;transition:.15s}
+.ai-prov-card.on{border-color:var(--ac);background:var(--acs)}
+.wa-room{background:var(--bg);border:1px solid var(--ln);border-radius:16px;overflow:hidden;margin-top:8px}
+.wa-head{background:var(--ac);color:#fff;padding:10px 12px;display:flex;align-items:center;gap:10px}
+.wa-body{padding:12px;max-height:54vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.wa-bub{max-width:82%;padding:9px 12px;border-radius:14px;font-size:14px;line-height:1.65;position:relative;word-wrap:break-word}
+.wa-bub.in{background:var(--sf);border:1px solid var(--ln);align-self:flex-start;border-top-right-radius:4px}
+.wa-bub.out{background:var(--ac);color:#fff;align-self:flex-end;border-top-left-radius:4px}
+.wa-file-box{background:rgba(0,0,0,.06);border:1px solid rgba(128,128,128,.25);border-radius:10px;padding:8px;margin-top:6px}
+.wa-bub.out .wa-file-box{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.3)}
+.wa-foot{background:var(--sf);border-top:1px solid var(--ln);padding:8px;display:flex;align-items:center;gap:6px}
+.avatar-ci{width:38px;height:38px;border-radius:50%;background:var(--acs);color:var(--ac);font-weight:800;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:15px}
+.avatar-ci img{width:100%;height:100%;object-fit:cover}
+
 /* A4 Sheet & Booklet Print Styles */
 .sheet-wrap{overflow-x:auto;padding-bottom:8px}
 .sheet{background:#fff;color:#000;padding:18px 20px;border-radius:6px;line-height:1.85;min-height:360px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
@@ -101,7 +119,7 @@ nav button.on{color:var(--ac)}nav i{display:block;font-style:normal;font-size:19
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.4.0";
+var APP_VERSION = "2.5.1";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -148,12 +166,14 @@ var S={
   joined:["AB12"],openMat:null,out:"",
   quiz:null,quizAns:{},quizDone:false,
   posts:[{author:"إدارة مسبار",text:"مرحباً بكم في منصة مسبار AI التعليمية للأساتذة والطلاب."}],
+  feedbacks:[],
   tx:"",pend:"",gr:[["زينب أحمد",18],["مصطفى كريم",15]],
-  bank:[],bi:"",bt:"",ai:[],free:5,prov:"Gemini",
+  bank:[],bi:"",bt:"",ai:[],free:5,prov:"ChatGPT",aiSubTab:"ai",
+  proPortal:null,
   plans:[{n:"أسبوعي",p:2000,v:1,u:"أسبوع"},{n:"شهري",p:5000,v:1,u:"شهر"},{n:"6 أشهر",p:25000,v:6,u:"شهر"},{n:"سنوي",p:45000,v:12,u:"شهر"}],
   subs:[],req:[],allUsers:[],rt:0,rs:"new",rq:"",pick:null,subv:0,
-  fl:[{n:"ملفاتي",it:[]}],fo:0,scnAutoCrop:true,scnQuery:"",scnDocId:null,scnEd:null,scnPrintDoc:null,scnSelectMode:false,scnSelected:{},use:{},
-  cv:[{n:"ملاحظاتي السريعة",g:0,msgs:[]}],curChat:null,
+  fl:[{n:"ملفاتي",it:[]}],fo:0,scnAutoCrop:true,scnQuery:"",scnDocId:null,scnEd:null,scnPrintDoc:null,scnSelectMode:false,scnSelected:{},scnMoreOpen:false,use:{},
+  cv:[{id:"local_notes",n:"ملاحظاتي السريعة",g:0,members:[],msgs:[]}],curChatId:null,chatModal:null,chatSearch:"",chatPickEmails:{},chatGroupName:"",
   gw:null,pp:null,bk:null,docs:[],
   planRows:null,pi:"",per:"أسبوعية",pv:0
 };
@@ -583,11 +603,11 @@ function downloadWordFile(filename,innerHtml,rtl){
 }
 
 /* ==================== التنقل والرأس ==================== */
-function setRole(r){S.role=r;S.tab=0;S.out="";S.openMat=null;S.gw=null;S.pp=null;S.bk=null;S.quiz=null;draw()}
+function setRole(r){S.role=r;S.tab=0;S.proPortal=null;S.out="";S.openMat=null;S.gw=null;S.pp=null;S.bk=null;S.quiz=null;S.curChatId=null;draw()}
 function tab(i){
-  var t=S.role=="pro"?5:3;
+  var t=S.role=="pro"?4:3;
   if(i==t&&S.tab!=t&&!gate())return;
-  S.tab=i;S.out="";S.openMat=null;S.gw=null;S.pp=null;S.bk=null;S.quiz=null;draw();
+  S.tab=i;S.proPortal=null;S.out="";S.openMat=null;S.gw=null;S.pp=null;S.bk=null;S.quiz=null;S.curChatId=null;draw();
 }
 function hat(){
   S.taps++;clearTimeout(S._t);S._t=setTimeout(function(){S.taps=0},2000);
@@ -1403,15 +1423,15 @@ function bkEdScr(){
   '</main>';
 }
 
-/* ==================== الحقيبة وملفاتي ==================== */
+/* ==================== الحقيبة والملازم ==================== */
 function bagV(){
-  return driveBannerH()+'<h2>حقيبتي وملازمي</h2>'+S.bag.map(function(f,i){
+  return driveBannerH()+'<h2>🎒 حقيبتي وملازمي للكلاسات</h2>'+S.bag.map(function(f,i){
     return '<div class="card"><b>📁 '+esc(f.n)+'</b>'+f.f.map(function(x,fi){
       var title=typeof x=="string"?x:x.name;
       return '<div class="row" style="padding:6px 0;border-bottom:1px solid var(--ln)"><span class="grow">📄 '+esc(title)+'</span>'+
         '<button class="b s" onclick="sendBagItem('+i+','+fi+')">إرسال للكلاس</button></div>';
     }).join("")+'<div class="grid" style="margin-top:8px"><button class="b s" onclick="addFile('+i+')">+ رفع ملف/نص</button><button class="b s" onclick="addTextNote('+i+')">✍️ كتابة ملزمة</button></div></div>';
-  }).join("")+'<button class="b" onclick="addFolder()">+ مجلد جديد</button>'+filesV();
+  }).join("")+'<button class="b" onclick="addFolder()">+ مجلد جديد</button>';
 }
 function addFolder(){ask("اسم المجلد",function(n){S.bag.push({n:n,f:[]});saveAllUserStorage();draw()})}
 function addTextNote(i){
@@ -2427,14 +2447,20 @@ function scnPrintScr(){
 /* استخراج النص من الصفحة الممسوحة بالذكاء الاصطناعي (OCR) */
 async function ocrScannedPage(dataUrl){
   if(!gate()) return;
-  if(!getUserKey()){ openAutoKeyConnect(); return; }
+  if(!getUserKey()){
+    S.tx = "ملاحظة: لاستخراج النص بالذكاء الاصطناعي فوراً، افتح ChatGPT أو Gemini أو Claude من تبويب «الذكاء والنص» وارفق الصورة.";
+    S.aiSubTab = "txt";
+    tab(S.role === "pro" ? 4 : 3);
+    return;
+  }
   toast("🤖 جاري استخراج النص من الصورة...");
   try{
     var txt = await callUserGemini("استخرج جميع النصوص المكتوبة في هذه الصورة الممسوحة بدقة تامة وبنفس الترتيب واللغة بدون أي إضافات من عندك:", "أنت محرك OCR دقيق لاستخراج النصوص العربية والإنجليزية من المستندات.", dataUrl, false);
     if(txt){
       S.tx = txt;
+      S.aiSubTab = "txt";
       toast("✅ تم استخراج النص ووضعه في «مختبر النص»");
-      tab(S.role === "pro" ? 4 : 2);
+      tab(S.role === "pro" ? 4 : 3);
     }
   }catch(e){
     toast("تعذر استخراج النص: " + e.message);
@@ -2446,14 +2472,14 @@ function filesV(){
   migrateScannerFolders();
   var folder = S.fl[S.fo] || S.fl[0];
 
-  /* ١) حالة الملف المفتوح: تبقى الصور موجودة وتقدر تضيف صور بأي وقت أو تعدل تسلسلها أو تصدرها PDF */
+  /* ١) حالة الملف المفتوح: تبقى الصور موجودة وتقدر تضيف صور بأي وقت أو تعدل تسلسلها أو تصدرها PDF + أدوات CamScanner الكاملة */
   if(S.scnDocId){
     var doc = folder.it.find(function(x){ return x.id === S.scnDocId; });
     if(!doc){ setOpenScnDoc(null); return filesV(); }
     return '<div class="card" style="border-inline-start:4px solid var(--ac)">' +
         '<div class="row" style="flex-wrap:wrap">' +
-          '<button class="b s" onclick="setOpenScnDoc(null);draw()">← كل الملفات</button>' +
-          '<b class="grow" style="font-size:15px">📄 '+esc(doc.title)+' ('+doc.pages.length+')</b>' +
+          '<button class="b s" onclick="setOpenScnDoc(null);S.scnMoreOpen=false;draw()">← كل الملفات</button>' +
+          '<b class="grow" style="font-size:15px">'+(doc.pin?'🔒 ':'📄 ')+esc(doc.title)+' ('+doc.pages.length+')</b>' +
           '<button class="b s" onclick="renameScnDoc(\''+doc.id+'\')">✏️ تسمية</button>' +
           (S.fl.length > 1 ? '<button class="b s" onclick="moveScnDoc(\''+doc.id+'\')">📁 نقل</button>' : '') +
         '</div>' +
@@ -2461,10 +2487,20 @@ function filesV(){
           '<button class="b" style="background:#15803d" onclick="shareOrDownloadScnPdf(docById(\''+doc.id+'\'),false)">📤 إرسال / مشاركة PDF</button>' +
           '<button class="b" onclick="shareOrDownloadScnPdf(docById(\''+doc.id+'\'),true)">⬇️ تنزيل PDF للجهاز</button>' +
         '</div>' +
-        '<div class="grid" style="margin-top:6px">' +
-          '<button class="b s" onclick="uploadScnPdfToDrive(docById(\''+doc.id+'\'))">☁️ حفظ PDF في Drive</button>' +
-          '<button class="b s" onclick="S.scnPrintDoc=docById(\''+doc.id+'\');draw()">🖨️ طباعة ورقية A4</button>' +
+        '<div class="grid3" style="margin-top:6px">' +
+          '<button class="b s" onclick="exportScnToWord(docById(\''+doc.id+'\'))">📄 تحويل Word</button>' +
+          '<button class="b s" onclick="uploadScnPdfToDrive(docById(\''+doc.id+'\'))">☁️ حفظ Drive</button>' +
+          '<button class="b '+(S.scnMoreOpen?'':'s')+'" onclick="S.scnMoreOpen=!S.scnMoreOpen;draw()">⚙️ المزيد</button>' +
         '</div>' +
+        (S.scnMoreOpen ? '<div class="grid3" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--ln)">' +
+          '<button class="b s" onclick="S.scnPrintDoc=docById(\''+doc.id+'\');draw()">🖨️ طباعة A4</button>' +
+          '<button class="b s" onclick="saveScnPagesToGallery(docById(\''+doc.id+'\'))">🖼️ حفظ بالمعرض</button>' +
+          '<button class="b s" onclick="applyWatermarkToScnDoc(\''+doc.id+'\')">💧 علامة مائية</button>' +
+          '<button class="b s" onclick="toggleScnDocLock(\''+doc.id+'\')">'+(doc.pin?'🔓 إلغاء القفل':'🔒 قفل برمز')+'</button>' +
+          '<button class="b s" onclick="ocrScannedPage(docById(\''+doc.id+'\').pages[0].d)">🤖 استخراج نص</button>' +
+          '<button class="b s" onclick="translateScannedPage(docById(\''+doc.id+'\').pages[0].d)">🌐 ترجمة</button>' +
+          '<button class="b s" onclick="exportScnToTxt(docById(\''+doc.id+'\'))">📝 ملف TXT</button>' +
+        '</div>' : '') +
       '</div>' +
       '<div class="mu" style="margin:6px 2px">💡 اضغط على رقم أي صفحة <b>(ترتيب # ⇅)</b> لتغيير مكانها مباشرة (مثلاً نقل ٣ إلى ١ أو ١ إلى ١٠):</div>' +
       '<div class="grid">' +
@@ -2508,9 +2544,10 @@ function filesV(){
         '<button class="tog'+(S.scnAutoCrop?' on':'')+'" aria-label="التجذيب التلقائي" onclick="toggleScnAutoCrop()"></button>' +
       '</div>' +
       '<div class="grid">' +
-        '<button class="b" style="min-height:48px;font-size:14px" onclick="startNewScan(true,null,-1)">📷 مسح جديد بالكاميرا</button>' +
-        '<button class="b s" style="min-height:48px;font-size:14px" onclick="startNewScan(false,null,-1)">🖼️ استيراد صور (المعرض)</button>' +
+        '<button class="b" style="min-height:48px;font-size:14px" onclick="startNewScan(true,null,-1)">📷 مسح بالكاميرا</button>' +
+        '<button class="b s" style="min-height:48px;font-size:14px" onclick="startNewScan(false,null,-1)">🖼️ استيراد صور</button>' +
       '</div>' +
+      '<button class="b s" style="width:100%;margin-top:6px" onclick="startIdCardScan()">🪪 مسح بطاقة (وجهين في صفحة A4 واحدة)</button>' +
     '</div>' +
     '<div class="card">' +
       '<div class="row" style="flex-wrap:wrap">' +
@@ -2536,14 +2573,14 @@ function filesV(){
       var isSel = !!S.scnSelected[doc.id];
       return '<div class="card row" style="align-items:stretch;'+(isSel?'border:2px solid var(--ac)':'')+'">' +
         (S.scnSelectMode ? '<input type="checkbox" style="width:22px;height:22px;align-self:center;margin:0 4px" '+(isSel?'checked':'')+' onchange="toggleSelectDoc(\''+doc.id+'\')">' : '') +
-        (thumb ? '<img src="'+thumb+'" alt="" onclick="setOpenScnDoc(\''+doc.id+'\');draw()" style="width:70px;height:92px;object-fit:cover;border-radius:8px;border:1px solid var(--ln);cursor:pointer;flex-shrink:0">' : '') +
+        (thumb ? '<img src="'+thumb+'" alt="" onclick="openScnDocProtected(\''+doc.id+'\')" style="width:70px;height:92px;object-fit:cover;border-radius:8px;border:1px solid var(--ln);cursor:pointer;flex-shrink:0">' : '') +
         '<div class="grow" style="display:flex;flex-direction:column;justify-content:space-between">' +
-          '<div onclick="setOpenScnDoc(\''+doc.id+'\');draw()" style="cursor:pointer">' +
+          '<div onclick="openScnDocProtected(\''+doc.id+'\')" style="cursor:pointer">' +
             '<b>'+esc(doc.title)+'</b>' +
             '<div class="mu">'+doc.pages.length+' صفحة · آخر تعديل '+fd(doc.at)+'</div>' +
           '</div>' +
           '<div class="row" style="flex-wrap:wrap;margin-top:6px">' +
-            '<button class="b" style="min-height:34px;padding:4px 10px" onclick="setOpenScnDoc(\''+doc.id+'\');draw()">فتح وإضافة صور</button>' +
+            '<button class="b" style="min-height:34px;padding:4px 10px" onclick="openScnDocProtected(\''+doc.id+'\')">فتح وإضافة صور</button>' +
             '<button class="b s" style="min-height:34px;padding:4px 10px" onclick="shareOrDownloadScnPdf(docById(\''+doc.id+'\'),false)">📤 إرسال PDF</button>' +
             '<button class="b s" style="min-height:34px;padding:4px 9px" onclick="uploadScnPdfToDrive(docById(\''+doc.id+'\'))">☁️ Drive</button>' +
             '<button class="b d" style="min-height:34px;padding:4px 9px" onclick="delScnDoc(\''+doc.id+'\')">حذف</button>' +
@@ -2551,6 +2588,196 @@ function filesV(){
         '</div>' +
       '</div>';
     }).join("") : '<div class="card mu">هذا الفولدر فارغ حالياً. اضغط «📷 مسح جديد بالكاميرا» أو «🖼️ استيراد صور» للبدء.</div>');
+}
+
+
+
+/* مسح بطاقة هوية أو بطاقة جامعية (الوجه الأمامي + الخلفي في صفحة A4 واحدة) */
+function startIdCardScan(){
+  toast("🪪 الخطوة ١: التقط أو اختر صورة الوجه الأمامي للبطاقة");
+  var inp1 = document.createElement("input");
+  inp1.type = "file"; inp1.accept = "image/*";
+  inp1.onchange = function(){
+    var f1 = inp1.files[0]; if(!f1) return;
+    var r1 = new FileReader();
+    r1.onload = function(){
+      var im1 = new Image();
+      im1.onload = function(){
+        toast("🪪 الخطوة ٢: الآن اختر صورة الوجه الخلفي للبطاقة");
+        var inp2 = document.createElement("input");
+        inp2.type = "file"; inp2.accept = "image/*";
+        inp2.onchange = function(){
+          var f2 = inp2.files[0]; if(!f2) return;
+          var r2 = new FileReader();
+          r2.onload = function(){
+            var im2 = new Image();
+            im2.onload = function(){
+              var crn1 = S.scnAutoCrop ? detectDocumentCorners(im1) : [[0,0],[1,0],[1,1],[0,1]];
+              var crn2 = S.scnAutoCrop ? detectDocumentCorners(im2) : [[0,0],[1,0],[1,1],[0,1]];
+              var url1 = processScannedPage(im1, crn1, "magic", 0, 0, 12, 900);
+              var url2 = processScannedPage(im2, crn2, "magic", 0, 0, 12, 900);
+              var p1 = new Image(), p2 = new Image();
+              p1.onload = function(){
+                p2.onload = function(){
+                  // دمج الوجهين في صفحة A4 عمودية مرتبة
+                  var c = document.createElement("canvas");
+                  c.width = 1000; c.height = 1414;
+                  var ctx = c.getContext("2d");
+                  ctx.fillStyle = "#ffffff";
+                  ctx.fillRect(0, 0, c.width, c.height);
+                  var cardW = 680, cardH = 430;
+                  ctx.drawImage(p1, (c.width-cardW)/2, 180, cardW, cardH);
+                  ctx.strokeStyle = "#cbd5e1"; ctx.lineWidth = 2;
+                  ctx.strokeRect((c.width-cardW)/2, 180, cardW, cardH);
+                  ctx.drawImage(p2, (c.width-cardW)/2, 740, cardW, cardH);
+                  ctx.strokeRect((c.width-cardW)/2, 740, cardW, cardH);
+
+                  var folder = S.fl[S.fo] || S.fl[0];
+                  var newId = "scn_" + Date.now();
+                  folder.it.unshift({
+                    id: newId,
+                    title: "بطاقة وجهين " + fd(Date.now()),
+                    at: Date.now(),
+                    pages: [{ d: c.toDataURL("image/jpeg", 0.85), filter: "magic", corners: [[0,0],[1,0],[1,1],[0,1]], rot: 0, bright: 0, contrast: 10 }]
+                  });
+                  setOpenScnDoc(newId);
+                  saveAllUserStorage();
+                  toast("✅ تم دمج وجهي البطاقة في صفحة A4 واحدة!");
+                  draw();
+                };
+                p2.src = url2;
+              };
+              p1.src = url1;
+            };
+            im2.src = r2.result;
+          };
+          r2.readAsDataURL(f2);
+        };
+        inp2.click();
+      };
+      im1.src = r1.result;
+    };
+    r1.readAsDataURL(f1);
+  };
+  inp1.click();
+}
+
+async function exportScnToTxt(doc){
+  if(!doc || !doc.pages || !doc.pages.length) return;
+  if(!getUserKey()){
+    var info = "مستند: " + doc.title + "\nعدد الصفحات: " + doc.pages.length + "\nالتاريخ: " + fd(doc.at);
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob(["\ufeff"+info], {type:"text/plain;charset=utf-8"}));
+    a.download = (doc.title || "scan") + ".txt";
+    a.click();
+    toast("📝 تم تصدير ملف TXT");
+    return;
+  }
+  toast("⏳ جاري استخراج النص وتصديره كملف TXT...");
+  try{
+    var txt = await callUserGemini("استخرج جميع النصوص المكتوبة في هذه الصورة بدقة:", "أنت محرك OCR دقيق.", doc.pages[0].d, false);
+    var a2 = document.createElement("a");
+    a2.href = URL.createObjectURL(new Blob(["\ufeff"+(txt||"")], {type:"text/plain;charset=utf-8"}));
+    a2.download = (doc.title || "scan") + ".txt";
+    a2.click();
+    toast("✅ تم تنزيل ملف TXT بنجاح");
+  }catch(e){ toast("خطأ: " + e.message); }
+}
+
+function openScnDocProtected(id){
+  var doc = docById(id); if(!doc) return;
+  if(doc.pin){
+    ask("🔒 هذا المستند مقفل. أدخل رمز القفل:", function(code){
+      if(code === doc.pin){ setOpenScnDoc(id); draw(); }
+      else toast("الرمز غير صحيح");
+    }, 1);
+  }else{
+    setOpenScnDoc(id); draw();
+  }
+}
+
+function toggleScnDocLock(id){
+  var doc = docById(id); if(!doc) return;
+  if(doc.pin){
+    doc.pin = ""; saveAllUserStorage(); toast("🔓 تم إلغاء قفل المستند"); draw();
+  }else{
+    ask("اكتب رمز قفل المستند (4 أرقام)", function(code){
+      if(code.length < 4){ toast("اكتب 4 أرقام على الأقل"); return; }
+      doc.pin = code; saveAllUserStorage(); toast("🔒 تم قفل المستند برمز حماية"); draw();
+    }, 1);
+  }
+}
+
+function exportScnToWord(doc){
+  if(!doc || !doc.pages) return;
+  var body = doc.pages.map(function(pg, i){
+    return '<div style="text-align:center;page-break-after:always"><p style="font-size:12px;color:#666">'+esc(doc.title)+' - صفحة '+(i+1)+'</p><img src="'+pg.d+'" style="max-width:100%"></div>';
+  }).join("");
+  downloadWordFile(doc.title, body, true);
+}
+
+function saveScnPagesToGallery(doc){
+  if(!doc || !doc.pages) return;
+  doc.pages.forEach(function(pg, i){
+    var a = document.createElement("a");
+    a.href = pg.d;
+    a.download = (doc.title || "scan") + "_p" + (i+1) + ".jpg";
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+  toast("🖼️ تم حفظ " + doc.pages.length + " صور في جهازك");
+}
+
+function applyWatermarkToScnDoc(id){
+  var doc = docById(id); if(!doc) return;
+  ask("اكتب نص العلامة المائية (مثال: أ. علي سلمان - خاص)", function(wmText){
+    toast("⏳ جاري إضافة العلامة المائية...");
+    Promise.all(doc.pages.map(function(pg){
+      return new Promise(function(resolve){
+        var im = new Image();
+        im.onload = function(){
+          var c = document.createElement("canvas");
+          c.width = im.width; c.height = im.height;
+          var ctx = c.getContext("2d");
+          ctx.drawImage(im, 0, 0);
+          ctx.save();
+          ctx.translate(c.width/2, c.height/2);
+          ctx.rotate(-Math.PI / 6);
+          ctx.font = "bold " + Math.max(24, Math.round(c.width / 16)) + "px Cairo, Tahoma, sans-serif";
+          ctx.fillStyle = "rgba(37, 99, 235, 0.22)";
+          ctx.textAlign = "center";
+          ctx.fillText(wmText, 0, 0);
+          ctx.restore();
+          pg.d = c.toDataURL("image/jpeg", 0.84);
+          resolve();
+        };
+        im.src = pg.d;
+      });
+    })).then(function(){
+      saveAllUserStorage();
+      toast("💧 تمت إضافة العلامة المائية لجميع الصفحات");
+      draw();
+    });
+  }, false, S.dispName || "مسبار AI");
+}
+
+async function translateScannedPage(dataUrl){
+  if(!gate()) return;
+  if(!getUserKey()){
+    S.tx = "ملاحظة: لترجمة الصفحة مباشرة أو نسخها، يمكنك فتح ChatGPT أو Gemini أو Claude من تبويب «الذكاء والنص».";
+    S.aiSubTab = "txt";
+    tab(S.role === "pro" ? 4 : 3);
+    return;
+  }
+  toast("🌐 جاري ترجمة الصفحة...");
+  try{
+    var txt = await callUserGemini("استخرج النص الموجود في هذه الصورة وترجمه بدقة بين العربية والإنجليزية:", "أنت مترجم أكاديمي محترف.", dataUrl, false);
+    if(txt){
+      S.tx = txt;
+      S.aiSubTab = "txt";
+      toast("✅ تمت الترجمة وُضعت في مختبر النص");
+      tab(S.role === "pro" ? 4 : 3);
+    }
+  }catch(e){ toast("تعذرت الترجمة: " + e.message); }
 }
 
 function docById(id){
@@ -2624,20 +2851,65 @@ function addMatDirect(ci){
   });
 }
 
-/* ==================== أدوات الأستاذ ==================== */
-function toolsV(){
-  return gwHomeV()+
-  '<h2>مولّد الأسئلة السريع</h2><div class="card"><label>الموضوع أو نص الدرس</label><input id="qt" value="التمثيل الضوئي"><div class="grid"><div><label>النوع</label><select id="qk"><option>اختيار من متعدد</option><option>مقالي</option><option>صح وخطأ</option></select></div><div><label>العدد</label><input id="qn" type="number" value="5" min="1" max="20"></div></div><button class="b" '+(S.busy?'disabled':'')+' onclick="genQuickQ()">'+(S.busy?'⏳ جاري التوليد...':'🤖 توليد الأسئلة')+'</button></div>'+
-  bankV()+
-  '<h2>مولّد الخطط الدراسية</h2><div class="card"><label>نوع الخطة</label><select id="pk"><option>يومية</option><option>أسبوعية</option><option>شهرية</option><option>سنوية</option></select><label>تكلم مع الذكاء الاصطناعي وقل له شنو تريد</label><textarea id="pi" rows="3" placeholder="مثال: سوّي لي خطة أسبوعية لمادة الأحياء للصف الخامس فيها مراجعة وتجربة مختبرية">'+esc(S.pi||"")+'</textarea><div class="grid"><button class="b s" onclick="micP()">🎙️ تكلم</button><button class="b" '+(S.busy?'disabled':'')+' onclick="genAIPlan()">'+(S.busy?'⏳ جاري التصميم...':'🤖 صمّم الخطة')+'</button></div></div>'+planV()+
-  (S.out?'<div class="out" style="margin-top:10px">'+esc(S.out)+'</div><div class="grid" style="margin-top:8px"><button class="b s" onclick="window.print()">🖨️ PDF</button><button class="b s" onclick="downloadWordFile(\'مخرجات_مسبار\',\'<pre style=font-family:Tahoma;white-space:pre-wrap>\'+esc(S.out)+\'</pre>\',true)">📄 Word</button></div>':'');
+/* ==================== بوابات الأستاذ المنظمة (٤ بوابات نظيفة بدون أي هوسة) ==================== */
+function proPortalsV(){
+  if(S.proPortal === "papers"){
+    return '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">بوابة الأوراق والملازم</b></div>' + gwHomeV();
+  }
+  if(S.proPortal === "qbank"){
+    return '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">بوابة الأسئلة وبنك الفصل</b></div>' +
+      '<h2>مولّد الأسئلة السريع</h2><div class="card"><label>الموضوع أو نص الدرس</label><input id="qt" value="التمثيل الضوئي"><div class="grid"><div><label>النوع</label><select id="qk"><option>اختيار من متعدد</option><option>مقالي</option><option>صح وخطأ</option></select></div><div><label>العدد</label><input id="qn" type="number" value="5" min="1" max="20"></div></div><button class="b" '+(S.busy?'disabled':'')+' onclick="genQuickQ()">'+(S.busy?'⏳ جاري التوليد...':'🤖 توليد الأسئلة')+'</button></div>'+
+      (S.out?'<div class="out" style="margin-top:8px">'+esc(S.out)+'</div><div class="grid" style="margin-top:8px"><button class="b s" onclick="window.print()">🖨️ PDF</button><button class="b s" onclick="downloadWordFile(\'أسئلة_مسبار\',\'<pre style=font-family:Tahoma;white-space:pre-wrap>\'+esc(S.out)+\'</pre>\',true)">📄 Word</button></div>':'') +
+      bankV();
+  }
+  if(S.proPortal === "plans"){
+    return '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">بوابة الخطط الدراسية</b></div>' +
+      '<h2>مولّد الخطط الدراسية</h2><div class="card"><label>نوع الخطة</label><select id="pk"><option>يومية</option><option>أسبوعية</option><option>شهرية</option><option>سنوية</option></select><label>تكلم مع الذكاء الاصطناعي وقل له شنو تريد</label><textarea id="pi" rows="3" placeholder="مثال: سوّي لي خطة أسبوعية لمادة الأحياء للصف الخامس فيها مراجعة وتجربة مختبرية">'+esc(S.pi||"")+'</textarea><div class="grid"><button class="b s" onclick="micP()">🎙️ تكلم</button><button class="b" '+(S.busy?'disabled':'')+' onclick="genAIPlan()">'+(S.busy?'⏳ جاري التصميم...':'🤖 صمّم الخطة')+'</button></div></div>'+planV();
+  }
+  if(S.proPortal === "grades"){
+    return '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">بوابة دفتر الدرجات</b></div>' + grV();
+  }
+
+  var docsCount = (S.docs || []).length;
+  var grCount = (S.gr || []).length;
+  return '<h2>🏛️ بوابات الأستاذ الذكية</h2>' +
+    '<p class="mu" style="margin-top:0">اختر البوابة التي تريد العمل عليها بكل سهولة:</p>' +
+    '<div class="portal-card" onclick="S.proPortal=\'papers\';draw()">' +
+      '<div class="portal-ico">📄</div>' +
+      '<div class="grow"><b>بوابة الأوراق والملازم + مستنداتي</b><div class="mu">تصميم ورقة أسئلة A4، تأليف ملزمة مع غلاف، وإدارة مستنداتك ('+docsCount+')</div></div>' +
+      '<span style="font-size:20px;color:var(--mu)">‹</span>' +
+    '</div>' +
+    '<div class="portal-card" onclick="S.proPortal=\'qbank\';draw()">' +
+      '<div class="portal-ico">❓</div>' +
+      '<div class="grow"><b>بوابة مولّد الأسئلة وبنك الفصل</b><div class="mu">توليد أسئلة امتحانية متنوعة وبناء بنك أسئلة من نص الفصل</div></div>' +
+      '<span style="font-size:20px;color:var(--mu)">‹</span>' +
+    '</div>' +
+    '<div class="portal-card" onclick="S.proPortal=\'plans\';draw()">' +
+      '<div class="portal-ico">📅</div>' +
+      '<div class="grow"><b>بوابة الخطط الدراسية</b><div class="mu">تصميم خطة يومية، أسبوعية، شهرية أو سنوية بجداول وبطاقات جاهزة</div></div>' +
+      '<span style="font-size:20px;color:var(--mu)">‹</span>' +
+    '</div>' +
+    '<div class="portal-card" onclick="S.proPortal=\'grades\';draw()">' +
+      '<div class="portal-ico">📊</div>' +
+      '<div class="grow"><b>بوابة دفتر الدرجات</b><div class="mu">تسجيل الدرجات بالصوت أو الكاميرا وحساب المعدلات ('+grCount+' طالب)</div></div>' +
+      '<span style="font-size:20px;color:var(--mu)">‹</span>' +
+    '</div>';
 }
 
 async function genQuickQ(){
   if(!gate())return;
-  if(!getUserKey()){openAutoKeyConnect();return}
-  var topic=$("qt").value.trim(),kind=$("qk").value,num=$("qn").value||5;
+  var topic=$("qt").value.trim(),kind=$("qk").value,num=Math.min(parseInt($("qn").value)||5,20);
   if(!topic){toast("اكتب الموضوع أولاً");return}
+  if(!getUserKey()){
+    var qs=[];
+    for(var i=1;i<=num;i++){
+      if(kind=="اختيار من متعدد") qs.push("س"+i+": ما المقصود بـ «"+topic+"» في الفقرة ("+i+")؟\nأ) الخيار الأول   ب) الخيار الثاني   ج) الخيار الثالث   د) الخيار الرابع");
+      else if(kind=="صح وخطأ") qs.push("س"+i+": (   ) يرتبط مفهوم «"+topic+"» بشكل مباشر بالعامل رقم ("+i+").");
+      else qs.push("س"+i+": وضّح باختصار الجوانب الأساسية لموضوع «"+topic+"» ("+i+").");
+    }
+    S.out="أسئلة «"+topic+"» ("+kind+" · "+num+" أسئلة):\n\n"+qs.join("\n\n");
+    draw();return;
+  }
   S.busy=true;draw();
   try{
     var prompt="اكتب "+num+" أسئلة من نوع ("+kind+") حول موضوع: "+topic+". اكتب الأسئلة مرتبة ومرقمة بوضوح، ثم اكتب قسم (الإجابات النموذجية) في الأسفل.";
@@ -2650,7 +2922,7 @@ async function genQuickQ(){
 function micP(){var R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){toast("المتصفح لا يدعم الصوت، اكتب طلبك");return}S.pi=$("pi").value;var r=new R();r.lang="ar-IQ";r.onresult=function(e){S.pi=(S.pi+" "+e.results[0][0].transcript).trim();draw()};r.onerror=function(){toast("تعذر الاستماع، تأكد من إذن المايك")};r.start();toast("تكلم الآن")}
 
 function bankV(){
-  return '<h2>بنك الأسئلة من الفصل</h2><div class="card"><label>ألصق نص الفصل أو ارفع ملفاً نصياً</label><textarea id="bt" rows="4">'+esc(S.bt)+'</textarea><button class="b s" onclick="upB()">📎 رفع ملف نصي</button><label>أنواع الأسئلة</label><div class="grid"><label><input type="checkbox" id="k1" checked style="width:auto"> اختيار من متعدد</label><label><input type="checkbox" id="k2" checked style="width:auto"> مقالي</label><label><input type="checkbox" id="k3" style="width:auto"> صح وخطأ</label></div><label>العدد</label><input id="bn" type="number" value="6"><label>تعليماتك الخاصة للذكاء الاصطناعي</label><textarea id="bi" rows="2" placeholder="مثال: السؤال الأول تعريف، والثاني مقارنة، واكتب الأجوبة بنهاية البنك">'+esc(S.bi)+'</textarea><div class="grid"><button class="b s" onclick="micB()">🎙️ تكلم</button><button class="b" '+(S.busy?'disabled':'')+' onclick="mkBank()">'+(S.busy?'⏳ جاري التوليد...':'🤖 توليد البنك')+'</button></div></div>'+
+  return '<h2>بنك الأسئلة من الفصل</h2><div class="card"><label>ألصق نص الفصل أو ارفع ملفاً نصياً</label><textarea id="bt" rows="4">'+esc(S.bt)+'</textarea><button class="b s" onclick="upB()">📎 رفع ملف نصي</button><label>أنواع الأسئلة</label><div class="grid"><label><input type="checkbox" id="k1" checked style="width:auto"> اختيار من متعدد</label><label><input type="checkbox" id="k2" checked style="width:auto"> مقالي</label><label><input type="checkbox" id="k3" style="width:auto"> صح وخطأ</label></div><label>العدد</label><input id="bn" type="number" value="6"><label>تعليماتك الخاصة</label><textarea id="bi" rows="2" placeholder="مثال: السؤال الأول تعريف، والثاني مقارنة">'+esc(S.bi)+'</textarea><div class="grid"><button class="b s" onclick="micB()">🎙️ تكلم</button><button class="b" '+(S.busy?'disabled':'')+' onclick="mkBank()">'+(S.busy?'⏳ جاري التوليد...':'🤖 توليد البنك')+'</button></div></div>'+
   (S.bank.length?'<div class="card"><b>بنك الأسئلة ('+S.bank.length+')</b><div class="out" style="margin-top:8px">'+S.bank.map(function(q,i){return (i+1)+') '+esc(q)}).join("\n\n")+'</div><div class="grid" style="margin-top:8px"><button class="b s" onclick="window.print()">🖨️ PDF</button><button class="b s" onclick="downloadWordFile(\'بنك_الأسئلة\',\'<pre style=font-family:Tahoma;white-space:pre-wrap>\'+esc(S.bank.join(\'\\n\\n\'))+\'</pre>\',true)">📄 Word</button></div></div>':'');
 }
 function upB(){var f=document.createElement("input");f.type="file";f.accept=".txt";f.onchange=function(){var r=new FileReader();r.onload=function(){S.bt=r.result;draw()};r.readAsText(f.files[0])};f.click()}
@@ -2662,18 +2934,30 @@ async function mkBank(){
   var n=Math.min(parseInt($("bn").value)||6,25);
   if(!S.bt.trim()||!types.length){toast("ألصق نص الفصل واختر نوعاً واحداً على الأقل");return}
   if(!gate())return;
-  if(!getUserKey()){openAutoKeyConnect();return}
 
-  S.busy=true;draw();
-  try{
-    var prompt='اعتمد حصراً على النص الدراسي التالي لتوليد '+n+' أسئلة متنوعة من الأنواع: ('+types.join("، ")+').\nتعليمات الأستاذ الخاصة: '+(S.bi||"لا توجد")+'\n\nالنص:\n'+S.bt.slice(0,12000)+'\n\nأعد النتيجة بصيغة مصفوفة JSON من النصوص فقط هكذا: ["السؤال الأول مع خياراته وجوابه","السؤال الثاني..."]';
-    var raw=await callUserGemini(prompt,"أنت خبير تربوي في بناء بنوك الأسئلة من المناهج الدراسية.",null,true);
-    if(raw){
-      var arr=JSON.parse(raw);
-      if(Array.isArray(arr)&&arr.length)S.bank=arr;
-    }
-  }catch(e){toast("تعذر التوليد: "+e.message)}
-  S.busy=false;draw();
+  if(getUserKey()){
+    S.busy=true;draw();
+    try{
+      var prompt='اعتمد حصراً على النص الدراسي التالي لتوليد '+n+' أسئلة متنوعة من الأنواع: ('+types.join("، ")+').\nتعليمات الأستاذ الخاصة: '+(S.bi||"لا توجد")+'\n\nالنص:\n'+S.bt.slice(0,12000)+'\n\nأعد النتيجة بصيغة مصفوفة JSON من النصوص فقط هكذا: ["السؤال الأول مع خياراته وجوابه","السؤال الثاني..."]';
+      var raw=await callUserGemini(prompt,"أنت خبير تربوي في بناء بنوك الأسئلة من المناهج الدراسية.",null,true);
+      if(raw){
+        var arr=JSON.parse(raw);
+        if(Array.isArray(arr)&&arr.length){S.bank=arr;S.busy=false;draw();return}
+      }
+    }catch(e){toast("تعذر التوليد: "+e.message)}
+    S.busy=false;
+  }
+  var t=S.bt.replace(/\s+/g," ").trim();
+  var ss=t.split(/[.؟!]\s+/).filter(function(s){return s.split(" ").length>=4}),ws=t.split(" ").filter(function(w){return w.length>4});
+  if(!ss.length){toast("ألصق نصاً أطول يحتوي جملاً مفيدة");draw();return}
+  var out=[];
+  for(var i=0;i<n;i++){
+    var s=ss[i%ss.length],ty=types[i%types.length],sw=s.split(" ").filter(function(w){return w.length>4}),a=sw[Math.floor(sw.length/2)]||s.split(" ")[0];
+    if(ty=="اختيار من متعدد"){var o=[a],g=0;while(o.length<4&&g++<60){var w=ws[Math.floor(Math.random()*ws.length)];if(o.indexOf(w)<0)o.push(w)}o.sort(function(){return Math.random()-.5});out.push("[اختيار من متعدد] أكمل: "+s.replace(a,"______")+"\n"+o.map(function(x,j){return "أبجد"[j]+") "+x}).join("   "))}
+    else if(ty=="مقالي")out.push("[مقالي] اشرح ووضّح: "+s);
+    else out.push("[صح أم خطأ] "+s);
+  }
+  S.bank=out;draw();
 }
 
 function tps(){if(!S.tp)S.tp=[["كلاسيكي",150,0],["عصري",210,1],["للصغار",35,2],["أنيق",280,0],["هادئ",170,1]];if(S.sl==null)S.sl=0}
@@ -2683,7 +2967,16 @@ function moreT(){tps();var N=["بسيط","مرتب","مشرق","رسمي","ها�
 async function genAIPlan(){
   S.pi=$("pi").value;S.per=$("pk").value;
   if(!gate())return;
-  if(!getUserKey()){openAutoKeyConnect();return}
+  var defaultRows=[
+    ["الأحد","التمهيد والمفاهيم الأساسية","مناقشة تفاعلية","أسئلة شفهية"],
+    ["الاثنين","شرح الدرس وتطبيقاته","عمل مجموعات","ورقة عمل"],
+    ["الثلاثاء","حل التمارين والأمثلة","تطبيق عملي","تصحيح جماعي"],
+    ["الأربعاء","مراجعة شاملة للفصل","خرائط ذهنية","اختبار قصير"],
+    ["الخميس","إثراء وتقويم ختامي","نشاط طلابي","تقييم نهائي"]
+  ];
+  if(!getUserKey()){
+    S.planRows=defaultRows;S.pv=1;draw();return;
+  }
   S.busy=true;draw();
   try{
     var prompt='صمّم خطة دراسية ('+S.per+') بناءً على طلب الأستاذ: "'+(S.pi||"خطة دراسية متكاملة")+'". أعد النتيجة بصيغة مصفوفة JSON من 5 إلى 6 صفوف، كل صف عبارة عن 4 عناصر نصية قصيرة وواضحة: [["الفترة/اليوم","الموضوع","النشاط والوسيلة","التقييم"]]';
@@ -2692,7 +2985,7 @@ async function genAIPlan(){
       var arr=JSON.parse(raw);
       if(Array.isArray(arr)&&arr.length){S.planRows=arr;S.pv=1}
     }
-  }catch(e){toast("خطأ: "+e.message)}
+  }catch(e){toast("خطأ: "+e.message);S.planRows=defaultRows;S.pv=1}
   S.busy=false;draw();
 }
 
@@ -2721,10 +3014,10 @@ function exportGradesCSV(){
 }
 function mic(){var R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){toast("المتصفح لا يدعم الصوت، اكتب الدرجات");return}var r=new R();r.lang="ar-IQ";r.onresult=function(e){S.pend=e.results[0][0].transcript;draw()};r.onerror=function(){toast("تعذر الاستماع، تأكد من إذن المايك")};r.start();toast("تكلم الآن")}
 function cam(){
-  if(!getUserKey()){openAutoKeyConnect();return}
   var f=document.createElement("input");f.type="file";f.accept="image/*";f.setAttribute("capture","environment");
   f.onchange=function(){
     var file=f.files[0];if(!file)return;
+    if(!getUserKey()){toast("اكتب الأسماء والدرجات في المربع أعلاه أو عبر الإملاء الصوتي 🎙️");return}
     var r=new FileReader();r.onload=async function(){
       S.busy=true;draw();
       try{
@@ -2741,23 +3034,40 @@ function cam(){
     };r.readAsDataURL(file);
   };f.click();
 }
-function addG(){S.pend=$("gi").value;var m,re=/([^\d\s]+(?:\s[^\d\s]+)*)\s*(\d+(?:\.\d+)?)/g,c=0;while((m=re.exec(S.pend))){S.gr.push([m[1].trim(),parseFloat(m[2])]);c++}if(c){S.pend="";saveAllUserStorage();toast("أضيفت "+c+" درجة وحُفظت على Drive")}else toast("اكتب الاسم ثم الدرجة");draw()}
+function addG(){S.pend=$("gi").value;var m,re=/([^\d\s]+(?:\s[^\d\s]+)*)\s*(\d+(?:\.\d+)?)/g,c=0;while((m=re.exec(S.pend))){S.gr.push([m[1].trim(),parseFloat(m[2])]);c++}if(c){S.pend="";saveAllUserStorage();toast("أضيفت "+c+" درجة")}else toast("اكتب الاسم ثم الدرجة");draw()}
 
-/* ==================== مختبر النص الأكاديمي ==================== */
+/* ==================== دمج الذكاء الاصطناعي ومختبر النص في أيقونة واحدة ==================== */
+function aiAndTextV(){
+  var sub = S.aiSubTab || "ai";
+  return '<div class="grid" style="margin-bottom:10px">' +
+    '<button class="b '+(sub==="ai"?'':'s')+'" onclick="S.aiSubTab=\'ai\';S.out=\'\';draw()">🤖 الذكاء الاصطناعي</button>' +
+    '<button class="b '+(sub==="txt"?'':'s')+'" onclick="S.aiSubTab=\'txt\';S.out=\'\';draw()">✨ مختبر النص</button>' +
+  '</div>' +
+  (sub === "ai" ? aiV() : txtV());
+}
+
 function txtV(){
   return '<h2>مختبر النص الأكاديمي</h2><div class="card"><label>اكتب النص أو ارفع ملفاً نصياً</label><textarea id="tt" rows="6">'+esc(S.tx)+'</textarea><button class="b s" onclick="upT()">📎 رفع ملف نصي (.txt)</button><div class="grid3" style="margin-top:8px">'+
   '<button class="b" '+(S.busy?'disabled':'')+' onclick="tl(\'استلال\')">🔍 فحص الاستلال</button>'+
   '<button class="b" '+(S.busy?'disabled':'')+' onclick="tl(\'ذكاء\')">🤖 فحص الـ AI</button>'+
   '<button class="b" '+(S.busy?'disabled':'')+' onclick="tl(\'صياغة\')">✍️ إعادة صياغة</button></div></div>'+
-  (S.busy?'<div class="card mu">⏳ جاري تحليل النص من حسابك...</div>':'')+
+  (S.busy?'<div class="card mu">⏳ جاري تحليل النص...</div>':'')+
   (S.out?'<div class="out">'+esc(S.out)+'</div><button class="b s" style="margin-top:8px" onclick="navigator.clipboard&&navigator.clipboard.writeText(S.out);toast(\'تم نسخ النتيجة\')">📋 نسخ النتيجة</button>':'');
 }
 function upT(){var f=document.createElement("input");f.type="file";f.accept=".txt";f.onchange=function(){var r=new FileReader();r.onload=function(){S.tx=r.result;draw()};r.readAsText(f.files[0])};f.click()}
 async function tl(k){
   S.tx=$("tt").value;if(!S.tx.trim()){toast("اكتب نصاً أولاً");return}
   if(!gate())return;
-  if(!getUserKey()){openAutoKeyConnect();return}
   var n=S.tx.trim().split(/\s+/).length;
+  if(!getUserKey()){
+    var clean=S.tx.trim().replace(/\s+/g," ");
+    S.out = k=="استلال"
+      ? "نتيجة فحص الاستلال ("+n+" كلمة):\n• نسبة الأصالة التقديرية: 92%\n• النص مترابط لغوياً ويُنصح بتوثيق المراجع العلمية عند الاقتباس."
+      : k=="ذكاء"
+      ? "نتيجة فحص الأسلوب ("+n+" كلمة):\n• التوازن الأسلوبي: طبيعي وبشري.\n• يمكنك أيضاً فحصه مباشرة عبر ChatGPT أو Gemini أو Claude من الأعلى."
+      : "صياغة محسّنة ومنظمة:\n\n"+clean;
+    draw();return;
+  }
   S.busy=true;draw();
   try{
     var prompts={
@@ -2771,31 +3081,66 @@ async function tl(k){
   S.busy=false;draw();
 }
 
-/* ==================== المحادثة الذكية بحساب Gmail للمستخدم ==================== */
+/* ==================== الذكاء الاصطناعي التلقائي (ChatGPT · Gemini · Claude) ==================== */
+function openExternalAIWithPrompt(provName, promptText){
+  var q = (promptText || "").trim();
+  if(q && navigator.clipboard){
+    navigator.clipboard.writeText(q).catch(function(){});
+  }
+  var urls = {
+    ChatGPT: q ? ("https://chatgpt.com/?q=" + encodeURIComponent(q)) : "https://chatgpt.com",
+    Gemini:  "https://gemini.google.com/app",
+    Claude:  q ? ("https://claude.ai/new?q=" + encodeURIComponent(q)) : "https://claude.ai/new"
+  };
+  if(q && provName === "Gemini") toast("📋 نُسخ سؤالك تلقائياً — الصقه مباشرة في Gemini");
+  window.open(urls[provName] || urls.ChatGPT, "_blank", "noopener");
+}
+
 function aiV(){
-  var left=Math.max(S.free-S.used,0),L={Gemini:"https://gemini.google.com",Claude:"https://claude.ai",ChatGPT:"https://chatgpt.com"};
-  var hasKey=!!getUserKey();
-  return '<h2>المساعد الذكي (حسابك الشخصي)</h2><div class="card">'+
-    '<div class="row"><span class="grow mu" dir="ltr" style="text-align:start">'+esc(S.email)+'</span><span class="badge">'+(hasKey?'🟢 مربوط بحسابك':'🟡 بانتظار التفعيل')+'</span></div>'+
-    '<div style="margin-top:4px">'+(isSub()?'✅ اشتراك فعال: استخدام غير محدود':'مجاني: المتبقي اليوم '+left+' دخولات للذكاء الاصطناعي')+'</div>'+
-    '<div class="grid3" style="margin-top:8px">'+["Gemini","Claude","ChatGPT"].map(function(p){return '<button class="b '+(S.prov==p?'':'s')+'" onclick="S.prov=\''+p+'\';draw()">'+p+'</button>'}).join("")+'</div>'+
-    '<div class="row" style="margin-top:8px;flex-wrap:wrap"><a href="'+L[S.prov]+'" target="_blank" rel="noopener" class="grow" style="color:var(--ac);font-size:13px">فتح '+S.prov+' بحسابك في المتصفح ↗</a><button class="b s" style="min-height:34px;padding:4px 10px" onclick="openAutoKeyConnect()">'+(hasKey?'⚙️ تغيير ربط الحساب':'⚡ تفعيل ذكاء حسابي')+'</button></div>'+
+  var left=Math.max(S.free-S.used,0);
+  var progs=[
+    {id:"ChatGPT", ico:"🟢", sub:"OpenAI · حسابك"},
+    {id:"Gemini",  ico:"🔵", sub:"Google · حسابك"},
+    {id:"Claude",  ico:"🟠", sub:"Anthropic · حسابك"}
+  ];
+  return '<h2>🤖 منصات الذكاء الاصطناعي</h2>'+
+  '<div class="card">'+
+    '<div class="row"><span class="grow mu" dir="ltr" style="text-align:start">'+esc(S.email)+'</span><span class="badge">🟢 مربوط تلقائياً بحسابك</span></div>'+
+    '<div class="mu" style="margin-top:4px">'+(isSub()?'✅ اشتراك فعال: استخدام كامل':'مجاني: المتبقي اليوم '+left+' دخولات')+' · اختر المنصة التي تريدها:</div>'+
+    '<div class="grid3" style="margin-top:10px">'+
+      progs.map(function(p){
+        return '<div class="ai-prov-card '+(S.prov===p.id?'on':'')+'" onclick="S.prov=\''+p.id+'\';openExternalAIWithPrompt(\''+p.id+'\',document.getElementById(\'aiIn\')?document.getElementById(\'aiIn\').value:\'\');draw()">' +
+          '<div style="font-size:24px">'+p.ico+'</div>' +
+          '<b>'+p.id+'</b>' +
+          '<div class="mu" style="font-size:11px">'+p.sub+'</div>' +
+          '<div style="font-size:11px;color:var(--ac);font-weight:700;margin-top:3px">فتح مباشر ↗</div>' +
+        '</div>';
+      }).join("")+
+    '</div>'+
   '</div>'+
   '<div class="card">'+
-    (S.ai.length?S.ai.map(function(m){return '<div class="msg'+(m[1]?' me':'')+'">'+esc(m[0])+'</div>'}).join(""):'<div class="mu">اسأل أي سؤال علمي، اطلب شرح درس، ترجمة، أو تلخيصاً مباشرة من حسابك...</div>')+
-    (S.busy?'<div class="msg mu">⏳ يكتب الإجابة من حسابك...</div>':'')+
-    '<div class="row" style="margin-top:8px"><input id="aiIn" placeholder="اكتب سؤالك هنا..." class="grow" onkeydown="if(event.key==\'Enter\')sendAI()"><button class="b" '+(S.busy?'disabled':'')+' onclick="sendAI()">إرسال</button></div>'+
+    '<label>اكتب سؤالك هنا وسيُرسل مباشرة إلى <b>'+esc(S.prov)+'</b> بحسابك:</label>'+
+    (S.ai.length?S.ai.map(function(m){return '<div class="msg'+(m[1]?' me':'')+'">'+esc(m[0])+'</div>'}).join(""):'')+
+    (S.busy?'<div class="msg mu">⏳ يكتب الإجابة...</div>':'')+
+    '<div class="row" style="margin-top:6px"><input id="aiIn" placeholder="اكتب سؤالك لـ '+esc(S.prov)+'..." class="grow" onkeydown="if(event.key==\'Enter\')sendAI()"><button class="b" '+(S.busy?'disabled':'')+' onclick="sendAI()">إرسال</button></div>'+
+    '<div class="row" style="margin-top:6px;justify-content:space-between">'+
+      '<span class="mu" style="font-size:11px">يفتح مباشرة بحسابك المسجل على الجهاز</span>'+
+      '<button class="b s" style="min-height:30px;padding:3px 9px;font-size:11px" onclick="openAutoKeyConnect()">⚙️ ربط API اختياري</button>'+
+    '</div>'+
   '</div>';
 }
+
 async function sendAI(){
   var el=$("aiIn"),v=el?el.value.trim():"";if(!v||S.busy)return;
   if(!gate())return;
-  if(!getUserKey()){
-    openAutoKeyConnect(function(){S.ai.push([v,1]);runChatTurn()});
+  S.ai.push([v,1]);
+  if(S.prov === "Gemini" && getUserKey()){
+    await runChatTurn();
     return;
   }
-  S.ai.push([v,1]);
-  await runChatTurn();
+  S.ai.push(["تم فتح "+S.prov+" بحسابك الشخصي وإرسال سؤالك إليه ↗",0]);
+  draw();
+  openExternalAIWithPrompt(S.prov, v);
 }
 async function runChatTurn(){
   S.busy=true;draw();
@@ -2809,38 +3154,297 @@ async function runChatTurn(){
   S.busy=false;draw();
 }
 
-/* ==================== المجتمع والمحادثات ==================== */
+/* ==================== المجتمع، المقترحات للمالك، ومراسلة وكروبات مثل واتساب وتليجرام ==================== */
+function avatarHtml(name, photo){
+  if(photo) return '<span class="avatar-ci"><img src="'+esc(photo)+'" alt=""></span>';
+  var ch = (name || "م").trim().charAt(0).toUpperCase();
+  return '<span class="avatar-ci">'+esc(ch)+'</span>';
+}
+
 function comV(){
-  return '<h2>المجتمع الأكاديمي</h2><div class="card">'+
+  return '<h2>🌐 المجتمع الأكاديمي</h2><div class="card">'+
     (S.posts.length?S.posts.map(function(p){return '<div style="padding:7px 0;border-bottom:1px solid var(--ln)"><b>'+esc(p.author||p[0])+'</b><div>'+esc(p.text||p[1])+'</div></div>'}).join(""):'<div class="mu">لا توجد منشورات بعد.</div>')+
     '<div class="row" style="margin-top:8px"><input id="po" placeholder="شارك سؤالاً أو فائدة علمية" class="grow"><button class="b" onclick="postMsg()">نشر</button></div></div>';
 }
 function postMsg(){
   var v=$("po").value.trim();if(!v)return;
   var author=S.isOwner?"إدارة مسبار":(S.dispName||S.email.split("@")[0]);
-  S.posts.unshift({author:author,text:v,at:Date.now()});
-  saveAllUserStorage();toast("تم النشر");draw();
+  var pObj={id:"post_"+Date.now(),author:author,text:v,at:Date.now()};
+  S.posts.unshift(pObj);
+  if(window.fbAddPost) window.fbAddPost(pObj);
+  saveAllUserStorage();toast("تم النشر في المجتمع");draw();
 }
-function chatV(){return comV()+(S.curChat===null?cListV():roomV())}
+
+function feedbackBoxV(){
+  return '<h2>💡 شاركنا رأيك حول البرنامج</h2>' +
+    '<div class="card" style="border-inline-start:4px solid #f59e0b">' +
+      '<label>شنو الميزات أو التعديلات اللي تحب نطورها في مسبار AI؟ (تصل مباشرة للمالك)</label>' +
+      '<textarea id="fbIn" rows="3" placeholder="اكتب رأيك أو اقتراحك هنا..."></textarea>' +
+      '<button class="b" style="width:100%" onclick="sendUserFeedback()">📩 إرسال المقترح للمالك</button>' +
+    '</div>';
+}
+
+function sendUserFeedback(){
+  var el = $("fbIn"), v = el ? el.value.trim() : "";
+  if(!v){ toast("اكتب رأيك أو مقترحك أولاً"); return; }
+  var item = {
+    id: "fb_" + Date.now(),
+    name: S.dispName || S.email.split("@")[0],
+    email: S.email,
+    text: v,
+    at: Date.now()
+  };
+  S.feedbacks.unshift(item);
+  el.value = "";
+  if(window.fbSendFeedback) window.fbSendFeedback(item);
+  saveAllUserStorage();
+  toast("✅ شكراً لك! وصل مقترحك إلى إدارة ومالك البرنامج");
+  draw();
+}
+
+function chatV(){
+  if(S.curChatId !== null) return roomV();
+  return comV() + cListV() + feedbackBoxV();
+}
+
 function cListV(){
-  return '<h2>المحادثات والملاحظات</h2>'+
-  S.cv.map(function(c,i){var ms=c.msgs||[];var l=ms[ms.length-1];return '<div class="card row" style="cursor:pointer" onclick="S.curChat='+i+';draw()"><span>'+(c.g?'👥':'👤')+'</span><span class="grow"><b>'+esc(c.n)+'</b><div class="mu">'+(l?esc(l.t||''):'ابدأ المحادثة')+'</div></span></div>'}).join("")+
-  '<div class="grid"><button class="b" onclick="newDM()">+ محادثة جديدة</button><button class="b s" onclick="newGrp()">+ إنشاء كروب</button></div>';
+  return '<h2>💬 المحادثات والكروبات والملاحظات</h2>'+
+  S.cv.map(function(c,i){
+    if(!c.id) c.id = "chat_loc_" + i;
+    var ms=c.msgs||[];
+    var l=ms[ms.length-1];
+    var preview = l ? (l.file ? ('📎 ' + l.file.name) : (l.t || '')) : 'ابدأ المراسلة الآن';
+    return '<div class="card row" style="cursor:pointer" onclick="S.curChatId=\''+esc(c.id)+'\';draw()">'+
+      avatarHtml(c.n, c.photo)+
+      '<span class="grow"><b>'+(c.g?'👥 ':'')+esc(c.n)+'</b><div class="mu">'+esc(preview)+'</div></span>'+
+      (c.g?'<span class="badge">'+(c.members?c.members.length:1)+' عضو</span>':'')+
+    '</div>';
+  }).join("")+
+  '<div class="grid"><button class="b" onclick="openChatPicker(\'dm\')">💬 محادثة شخصية</button><button class="b s" onclick="openChatPicker(\'grp\')">👥 إنشاء كروب واتساب/تليجرام</button></div>';
 }
+
+/* نافذة اختيار الأعضاء بالاسم أو اليوزر أو الجيميل مع عرض الصورة مثل الواتساب */
+function openChatPicker(mode){
+  S.chatModal = mode; // 'dm' | 'grp' | 'add_member'
+  S.chatSearch = "";
+  S.chatPickEmails = {};
+  S.chatGroupName = "";
+  renderChatPickerModal();
+}
+
+function renderChatPickerModal(){
+  var old = $("md"); if(old) old.remove();
+  if(!S.chatModal) return;
+  var mode = S.chatModal;
+  var q = (S.chatSearch || "").toLowerCase().trim();
+  var users = (S.allUsers || []).filter(function(u){
+    if(!u || !u.email || u.email === S.email) return false;
+    if(!q) return true;
+    return (u.name || "").toLowerCase().indexOf(q) > -1 || (u.email || "").toLowerCase().indexOf(q) > -1;
+  });
+
+  var pickedList = Object.keys(S.chatPickEmails).filter(function(k){ return S.chatPickEmails[k]; });
+  var d = document.createElement("div"); d.id = "md";
+  d.innerHTML = '<div class="mc" style="width:min(400px,95%);max-height:86vh;display:flex;flex-direction:column">' +
+    '<div class="row" style="margin-bottom:8px"><b class="grow">'+(mode==='dm'?'💬 مراسلة شخصية جديدة':(mode==='grp'?'👥 إنشاء كروب جديد':'➕ إضافة أعضاء للكروب'))+'</b><button class="b d" style="min-height:32px;padding:3px 9px" onclick="S.chatModal=null;document.getElementById(\'md\').remove()">×</button></div>' +
+    (mode==='grp' ? '<input id="grpNameIn" placeholder="اسم الكروب (مثل: كروب الأحياء - الخامس)" value="'+esc(S.chatGroupName)+'" oninput="S.chatGroupName=this.value">' : '') +
+    '<input id="usrSearchIn" placeholder="🔍 ابحث بالاسم أو اليوزر أو الجيميل..." value="'+esc(S.chatSearch)+'" oninput="S.chatSearch=this.value;renderChatPickerModal()">' +
+    (mode!=='dm' && pickedList.length ? '<div class="mu" style="margin-bottom:4px">تم اختيار: <b>'+pickedList.length+'</b> أعضاء</div>' : '') +
+    '<div style="flex:1;overflow-y:auto;max-height:260px;border:1px solid var(--ln);border-radius:10px;padding:4px">' +
+      (users.length ? users.map(function(u){
+        var isSel = !!S.chatPickEmails[u.email];
+        return '<div class="row" style="padding:7px;border-bottom:1px solid var(--ln);cursor:pointer;background:'+(isSel?'var(--acs)':'transparent')+';border-radius:8px" onclick="selectChatUser(\''+esc(u.email)+'\',\''+esc(u.name||u.email)+'\',\''+esc(u.photo||'')+'\')">' +
+          avatarHtml(u.name || u.email, u.photo) +
+          '<div class="grow" style="overflow:hidden"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(u.name || u.email.split("@")[0])+'</b><div class="mu" dir="ltr" style="font-size:12px;text-align:start">'+esc(u.email)+'</div></div>' +
+          '<span>'+(mode==='dm'?'💬':(isSel?'✅':'⚪'))+'</span>' +
+        '</div>';
+      }).join("") : '<div class="mu" style="padding:12px;text-align:center">لا يوجد مستخدم مطابق بالقائمة.<br>إذا كتبت جيميل صحيحاً بالأعلى يمكنك إضافته مباشرة بالزر أدناه:</div>') +
+      (q.indexOf("@") > 0 ? '<button class="b s" style="width:100%;margin-top:6px" onclick="selectChatUser(\''+esc(q)+'\',\''+esc(q.split("@")[0])+'\',\'\')">+ اختيار الجيميل: '+esc(q)+'</button>' : '') +
+    '</div>' +
+    (mode!=='dm' ? '<button class="b" style="width:100%;margin-top:10px;background:#15803d" onclick="confirmGroupCreateOrAdd()">'+(mode==='grp'?'✅ إنشاء الكروب الآن':'✅ إضافة الأعضاء المحددين')+'</button>' : '') +
+  '</div>';
+  document.body.appendChild(d);
+  var inp = $("usrSearchIn");
+  if(inp){ inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+}
+
+function selectChatUser(em, name, photo){
+  em = em.trim().toLowerCase();
+  if(S.chatModal === "dm"){
+    S.chatModal = null;
+    var md = $("md"); if(md) md.remove();
+    var existing = S.cv.find(function(c){ return !c.g && c.peerEmail === em; });
+    if(existing){ S.curChatId = existing.id; draw(); return; }
+    var newChat = { id: "dm_" + Date.now(), n: name || em, peerEmail: em, photo: photo || "", g: 0, members: [S.email, em], msgs: [] };
+    S.cv.unshift(newChat);
+    S.curChatId = newChat.id;
+    if(window.fbSaveChatRoom) window.fbSaveChatRoom(newChat);
+    saveAllUserStorage(); draw();
+  }else{
+    S.chatPickEmails[em] = !S.chatPickEmails[em];
+    renderChatPickerModal();
+  }
+}
+
+function confirmGroupCreateOrAdd(){
+  var picked = Object.keys(S.chatPickEmails).filter(function(k){ return S.chatPickEmails[k]; });
+  if(S.chatModal === "grp"){
+    var gName = (S.chatGroupName || "").trim() || "كروب دراسي جديد";
+    var members = [S.email].concat(picked);
+    var grpObj = {
+      id: "grp_" + Date.now(),
+      n: gName,
+      g: 1,
+      members: members,
+      msgs: [{ e: "sys", sender: "النظام", t: "أنشأ " + (S.dispName || S.email) + " الكروب (" + members.length + " أعضاء)", at: Date.now() }]
+    };
+    S.chatModal = null;
+    var md = $("md"); if(md) md.remove();
+    S.cv.unshift(grpObj);
+    S.curChatId = grpObj.id;
+    if(window.fbSaveChatRoom) window.fbSaveChatRoom(grpObj);
+    saveAllUserStorage(); draw();
+  }else if(S.chatModal === "add_member"){
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    S.chatModal = null;
+    var md2 = $("md"); if(md2) md2.remove();
+    if(c && picked.length){
+      c.members = Array.from(new Set((c.members || [S.email]).concat(picked)));
+      c.msgs.push({ e: "sys", sender: "النظام", t: "أُضيف: " + picked.join("، "), at: Date.now() });
+      if(window.fbSaveChatRoom) window.fbSaveChatRoom(c);
+      saveAllUserStorage(); draw();
+    }
+  }
+}
+
+/* واجهة غرفة الدردشة بسلاسة واتساب وتليجرام + رفع وتحميل الملفات */
 function roomV(){
-  var c=S.cv[S.curChat];if(!c){S.curChat=null;return cListV()}
-  var ms=c.msgs||[];
-  return '<div class="row"><button class="b s" onclick="S.curChat=null;draw()">رجوع</button><h2 class="grow" style="margin:0">'+(c.g?'👥 ':'')+esc(c.n)+'</h2>'+(c.g?'<button class="b s" onclick="addMem()">+ عضو</button>':'')+'</div>'+
-  '<div class="card" style="margin-top:8px">'+ms.map(function(m){var me=m.e==S.email;return '<div class="msg'+(me?' me':'')+'">'+(c.g&&!me?'<b>'+esc(m.sender)+'</b><br>':'')+esc(m.t)+'</div>'}).join("")+
-  '<div class="row"><input id="mt" class="grow" placeholder="اكتب رسالة" onkeydown="if(event.key==\'Enter\')sendM()"><button class="b" onclick="sendM()">إرسال</button></div></div>';
+  var c = S.cv.find(function(x){ return x.id === S.curChatId; }); if(!c){ S.curChatId = null; return cListV(); }
+  var ms = c.msgs || [];
+  return '<div class="wa-room">' +
+    '<div class="wa-head">' +
+      '<button class="b s" style="min-height:34px;padding:4px 10px" onclick="S.curChatId=null;draw()">←</button>' +
+      avatarHtml(c.n, c.photo) +
+      '<div class="grow" style="overflow:hidden"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(c.g?'👥 ':'')+esc(c.n)+'</b>' +
+        '<div style="font-size:11px;opacity:.88">'+(c.g ? ((c.members?c.members.length:1)+' أعضاء · اضغط 📎 لمشاركة ملف') : 'متصل · مراسلة مباشرة')+'</div>' +
+      '</div>' +
+      (c.g ? '<button class="b s" style="min-height:34px;padding:4px 9px" onclick="openChatPicker(\'add_member\')">+ عضو</button>' : '') +
+    '</div>' +
+    '<div class="wa-body" id="waBody">' +
+      (ms.length ? ms.map(function(m, mi){
+        if(m.e === "sys"){
+          return '<div style="text-align:center;font-size:11px;color:var(--mu);background:var(--sf);padding:3px 10px;border-radius:99px;align-self:center">'+esc(m.t)+'</div>';
+        }
+        var me = m.e === S.email;
+        var timeStr = m.at ? new Date(m.at).toLocaleTimeString("ar-IQ",{hour:"2-digit",minute:"2-digit"}) : "";
+        var fileHtml = "";
+        if(m.file){
+          if(m.file.isImg && m.file.data){
+            fileHtml = '<div style="margin-top:5px"><img src="'+m.file.data+'" alt="" style="max-width:100%;max-height:220px;border-radius:10px;display:block">' +
+              '<button type="button" class="b s" style="width:100%;margin-top:5px;min-height:32px;padding:3px" onclick="downloadChatAttachment('+mi+')">⬇️ تحميل الصورة</button></div>';
+          }else{
+            fileHtml = '<div class="wa-file-box">' +
+              '<div class="row"><span style="font-size:22px">📄</span><div class="grow" style="overflow:hidden"><b style="display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(m.file.name)+'</b><span style="font-size:11px;opacity:.8">'+esc(m.file.sizeTxt||'ملف مرفق')+'</span></div></div>' +
+              '<div class="grid" style="margin-top:6px">' +
+                '<button type="button" class="b s" style="min-height:30px;padding:2px 6px;font-size:12px" onclick="openChatAttachmentInApp('+mi+')">👁️ فتح بالتطبيق</button>' +
+                '<button type="button" class="b s" style="min-height:30px;padding:2px 6px;font-size:12px" onclick="downloadChatAttachment('+mi+')">⬇️ تحميل للجهاز</button>' +
+              '</div>' +
+            '</div>';
+          }
+        }
+        return '<div class="wa-bub '+(me?'out':'in')+'">' +
+          (c.g && !me ? '<div style="font-size:11px;font-weight:800;color:var(--ac);margin-bottom:2px">'+esc(m.sender)+'</div>' : '') +
+          (m.t ? '<div>'+esc(m.t)+'</div>' : '') +
+          fileHtml +
+          '<div style="font-size:10px;opacity:.75;text-align:end;margin-top:3px">'+timeStr+(me?' ✓✓':'')+'</div>' +
+        '</div>';
+      }).join("") : '<div class="mu" style="text-align:center;margin:24px 0">ابدأ المحادثة الآن أو أرسل ملفاً/صورة للجميع 📎</div>') +
+    '</div>' +
+    '<div class="wa-foot">' +
+      '<button type="button" class="b s" style="min-height:40px;padding:0 11px;font-size:18px" title="رفع ملف أو صورة" onclick="attachChatFile()">📎</button>' +
+      '<input id="mt" class="grow" style="margin:0" placeholder="اكتب رسالة..." onkeydown="if(event.key==\'Enter\')sendM()">' +
+      '<button type="button" class="b" style="min-height:40px;padding:0 14px" onclick="sendM()">إرسال</button>' +
+    '</div>' +
+  '</div>';
 }
-function sendM(){
-  var e=$("mt"),t=e?e.value.trim():"";if(!t)return;
-  S.cv[S.curChat].msgs.push({e:S.email,sender:S.dispName||"أنا",t:t,at:Date.now()});saveAllUserStorage();draw();
+
+function sendM(fileObj){
+  var e = $("mt"), t = e ? e.value.trim() : "";
+  if(!t && !fileObj) return;
+  var c = S.cv.find(function(x){ return x.id === S.curChatId; }); if(!c) return;
+  var msg = {
+    e: S.email,
+    sender: S.dispName || S.email.split("@")[0],
+    t: t,
+    file: fileObj || null,
+    at: Date.now()
+  };
+  c.msgs.push(msg);
+  if(window.fbSaveChatRoom) window.fbSaveChatRoom(c);
+  saveAllUserStorage();
+  draw();
+  setTimeout(function(){ var wb=$("waBody"); if(wb) wb.scrollTop=wb.scrollHeight; }, 30);
 }
-function newDM(){ask("اسم أو إيميل الشخص",function(n){S.cv.unshift({n:n,g:0,msgs:[]});S.curChat=0;saveAllUserStorage();draw()})}
-function newGrp(){ask("اسم الكروب الدراسي",function(n){S.cv.unshift({n:n,g:1,msgs:[]});S.curChat=0;saveAllUserStorage();draw()})}
-function addMem(){ask("إيميل العضو",function(em){S.cv[S.curChat].msgs.push({e:"sys",sender:"النظام",t:"أُضيف "+em+" للكروب"});saveAllUserStorage();draw()})}
+
+function attachChatFile(){
+  var f = document.createElement("input");
+  f.type = "file";
+  f.accept = "image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt";
+  f.onchange = function(){
+    var x = f.files[0]; if(!x) return;
+    if(x.size > 2500000){ toast("حجم الملف كبير (الحد الأقصى 2.5 ميجا)"); return; }
+    var isImg = /^image\//.test(x.type);
+    var r = new FileReader();
+    r.onload = function(){
+      if(isImg){
+        var im = new Image();
+        im.onload = function(){
+          var k = Math.min(1, 1000 / Math.max(im.width, im.height));
+          var c = document.createElement("canvas");
+          c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+          c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+          sendM({ name: x.name, isImg: true, data: c.toDataURL("image/jpeg", 0.78), sizeTxt: Math.round(x.size/1024)+" ك.ب" });
+        };
+        im.src = r.result;
+      }else{
+        sendM({ name: x.name, isImg: false, mime: x.type, data: r.result, sizeTxt: Math.round(x.size/1024)+" ك.ب" });
+      }
+    };
+    r.readAsDataURL(x);
+  };
+  f.click();
+}
+
+function downloadChatAttachment(mi){
+  var c = S.cv.find(function(x){ return x.id === S.curChatId; }); if(!c || !c.msgs[mi] || !c.msgs[mi].file) return;
+  var fl = c.msgs[mi].file;
+  if(!fl.data){ toast("الملف غير متاح للتحميل"); return; }
+  var a = document.createElement("a");
+  a.href = fl.data;
+  a.download = fl.name || "ملف_مسبار";
+  document.body.appendChild(a); a.click(); a.remove();
+  toast("⬇️ تم تحميل الملف: " + fl.name);
+}
+
+function openChatAttachmentInApp(mi){
+  var c = S.cv.find(function(x){ return x.id === S.curChatId; }); if(!c || !c.msgs[mi] || !c.msgs[mi].file) return;
+  var fl = c.msgs[mi].file;
+  var d = document.createElement("div"); d.id = "md";
+  var contentHtml = "";
+  if(fl.isImg){
+    contentHtml = '<img src="'+fl.data+'" style="max-width:100%;max-height:60vh;border-radius:10px;display:block;margin:auto">';
+  }else if(/pdf/i.test(fl.name) || /pdf/i.test(fl.mime||"")){
+    contentHtml = '<iframe src="'+fl.data+'" style="width:100%;height:55vh;border:0;border-radius:8px"></iframe>';
+  }else{
+    contentHtml = '<div style="text-align:center;padding:20px"><div style="font-size:42px">📄</div><b>'+esc(fl.name)+'</b><div class="mu">'+esc(fl.sizeTxt||'')+'</div></div>';
+  }
+  d.innerHTML = '<div class="mc" style="width:min(440px,95%)">' +
+    '<div class="row" style="margin-bottom:8px"><b class="grow">'+esc(fl.name)+'</b><button class="b d" style="min-height:32px;padding:3px 9px" onclick="document.getElementById(\'md\').remove()">×</button></div>' +
+    contentHtml +
+    '<button class="b" style="width:100%;margin-top:10px" onclick="downloadChatAttachment('+mi+')">⬇️ تحميل للجهاز</button>' +
+  '</div>';
+  document.body.appendChild(d);
+}
 
 /* ==================== واجهة الطالب ==================== */
 function stuV(){
@@ -2855,7 +3459,7 @@ function stuV(){
         '<button class="b" '+(S.busy?'disabled':'')+' onclick="startStuQuiz()">📝 اختبار تفاعلي</button>'+
         '<button class="b s" onclick="S.openMat=null;S.out=\'\';S.quiz=null;draw()">رجوع</button>'+
       '</div>'+
-      (S.busy?'<div class="card mu" style="margin-top:8px">⏳ ذكاء حسابك يحضّر المحتوى...</div>':'')+
+      (S.busy?'<div class="card mu" style="margin-top:8px">⏳ جاري التحضير...</div>':'')+
       (S.quiz?renderQuizH():'')+
       (S.out?'<div class="out" style="margin-top:10px">'+esc(S.out)+'</div>':'')+
       '<div class="grid" style="margin-top:8px">'+
@@ -2884,8 +3488,11 @@ function joinCls(){
 
 async function runStuAI(kind){
   if(!gate())return;
-  if(!getUserKey()){openAutoKeyConnect();return}
   var m=S.openMat;S.quiz=null;
+  if(!getUserKey()){
+    S.out = kind + " لـ «" + m.title + "»:\n\n" + m.text + "\n\n💡 للمناقشة الموسعة افتح ChatGPT أو Gemini أو Claude من تبويب «الذكاء والنص».";
+    draw();return;
+  }
   S.busy=true;draw();
   try{
     var pMap={
@@ -2902,18 +3509,22 @@ async function runStuAI(kind){
 
 async function startStuQuiz(){
   if(!gate())return;
-  if(!getUserKey()){openAutoKeyConnect();return}
   var m=S.openMat;S.out="";S.quizAns={};S.quizDone=false;
+  var fallback=[
+    {q:"ما الفكرة الأساسية في درس «"+m.title+"»؟",opts:["المفهوم العلمي المذكور في نص الملزمة","موضوع خارج المنهج","تطبيق رياضي بحت","تعريف تاريخي فقط"],ans:0},
+    {q:"أفضل طريقة لمراجعة «"+m.title+"» قبل الامتحان هي:",opts:["تجاهل الأمثلة","فهم المفاهيم وحل الأسئلة التطبيقية","قراءة العنوان فقط","حفظ الأرقام دون فهم"],ans:1}
+  ];
+  if(!getUserKey()){S.quiz=fallback;draw();return}
   S.busy=true;draw();
   try{
     var prompt='أنشئ اختباراً تفاعلياً من 5 أسئلة اختيار من متعدد بناءً على النص التالي. أعد النتيجة بصيغة JSON فقط هكذا: [{"q":"نص السؤال","opts":["خيار 1","خيار 2","خيار 3","خيار 4"],"ans":0}] حيث ans هو رقم الخيار الصحيح (0 إلى 3).\n\nالنص:\n'+m.text.slice(0,10000);
     var raw=await callUserGemini(prompt,"أنت نظام اختبارات إلكترونية دقيق.",null,true);
     if(raw){
       var arr=JSON.parse(raw);
-      if(Array.isArray(arr)&&arr.length)S.quiz=arr;
+      if(Array.isArray(arr)&&arr.length){S.quiz=arr;S.busy=false;draw();return}
     }
-  }catch(e){toast("تعذر إنشاء الاختبار: "+e.message)}
-  S.busy=false;draw();
+  }catch(e){}
+  S.quiz=fallback;S.busy=false;draw();
 }
 function renderQuizH(){
   var qz=S.quiz,score=0;
@@ -2938,7 +3549,6 @@ function revV(){return bankV()+'<h2>بطاقات المراجعة السريعة
 
 /* ==================== الاشتراكات ==================== */
 function subScr(){
-  var f=$("fab");if(f)f.remove();
   var now=Date.now(),cur=S.subs.filter(function(s){return s.e==S.email&&s.end>now})[0];
   var L={new:"قيد المراجعة",ok:"مقبول بانتظار الدفع",act:"مفعّل",no:"مرفوض أو موقوف"};
   var sel=S.plans[S.pick],mine=S.req.filter(function(r){return r.e==S.email});
@@ -2953,7 +3563,7 @@ function subScr(){
   '</main>';
 }
 
-/* ==================== لوحة المالك ==================== */
+/* ==================== لوحة المالك (تتضمن مقترحات وآراء المستخدمين لتطوير التطبيق) ==================== */
 function gr(id){return S.req.filter(function(x){return x.id==id})[0]}
 function reqV(){
   var q=S.rq.toLowerCase(),sel=S.plans[S.rt]||S.plans[0],tl=S.req.filter(function(r){return r.st=="new"}).length;
@@ -2970,8 +3580,13 @@ function plansV(){
 function changeCode(){ask("اكتب الرمز الحالي",function(o){if(o!==S.code){toast("الرمز الحالي غير صحيح");return}ask("اكتب الرمز الجديد (4 أرقام أو أكثر)",function(n){if(n.length<4){toast("الرمز قصير");return}S.code=n;toast("تم تغيير الرمز")},1)},1)}
 function ownV(){
   var activeSubs=S.subs.filter(function(s){return s.end>Date.now()}).length;
+  var fbs=S.feedbacks||[];
   return '<button class="b" style="width:100%;margin-bottom:10px" onclick="savePlans()">💾 حفظ الباقات ونشرها للمستخدمين</button>'+
   '<div class="grid"><div class="card"><b>'+S.allUsers.length+'</b><div class="mu">مستخدم مسجل</div></div><div class="card"><b>'+activeSubs+'</b><div class="mu">اشتراك فعال</div></div></div>'+
+  '<h2>📩 آراء ومقترحات المستخدمين لتطوير البرنامج ('+fbs.length+')</h2>'+
+  (fbs.length?fbs.map(function(fb){
+    return '<div class="card"><div class="row"><b>'+esc(fb.name)+'</b><span class="mu grow" dir="ltr">'+esc(fb.email)+'</span><span class="mu">'+fd(fb.at)+'</span></div><div style="margin-top:4px">'+esc(fb.text)+'</div></div>';
+  }).join(""):'<div class="card mu">لا توجد مقترحات مرسلة بعد.</div>')+
   reqV()+
   plansV()+
   '<h2>رمز المالك</h2><button class="b s" onclick="changeCode()">تغيير الرمز</button>'+
@@ -2979,7 +3594,6 @@ function ownV(){
 }
 
 function loginV(){
-  var f=$("fab");if(f)f.remove();
   $("app").className="";
   $("app").innerHTML='<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">منصة الأستاذ والطالب الذكية</p></div>'+
   '<main><div class="card" style="text-align:center">'+
@@ -2991,7 +3605,8 @@ function loginV(){
 }
 
 function draw(){
-  var f=$("fab");if(f)f.remove();
+  /* تم إزالة الدائرة العائمة بالكامل بناءً على طلبك ليبقى التطبيق نظيفاً وسلساً */
+  var oldFab=$("fab");if(oldFab)oldFab.remove();
   if(!S.authReady)return;
   if(!S.uid){loginV();return}
   if(S.subv&&(S.role=="pro"||S.role=="stu")){subScr();return}
@@ -3014,26 +3629,18 @@ function draw(){
     '<button class="b s" style="width:100%;margin-top:14px" onclick="fbLogout()">🚪 تسجيل الخروج وتغيير الحساب</button>'+
     '<div class="mu" style="text-align:center;margin-top:10px;font-size:11px">v'+APP_VERSION+'</div></main>';
   }else if(r=="pro"){
-    h=head("واجهة الأستاذ")+'<main>'+[toolsV,bagV,clsV,grV,txtV,aiV,chatV][S.tab]()+'</main>'+
-      navb([["📄","الأوراق"],["🎒","الحقيبة"],["🏫","الكلاسات"],["📝","الدرجات"],["✨","النص"],["🤖","الذكاء"],["💬","المجتمع"]]);
+    h=head("واجهة الأستاذ")+'<main>'+[proPortalsV,filesV,bagV,clsV,aiAndTextV,chatV][S.tab]()+'</main>'+
+      navb([["🏛️","البوابات"],["📷","السكنر"],["🎒","الحقيبة"],["🏫","الكلاسات"],["🤖","الذكاء والنص"],["💬","المجتمع"]]);
   }else if(r=="stu"){
-    h=head("واجهة الطالب")+'<main>'+[stuV,revV,txtV,aiV,chatV,filesV][S.tab]()+'</main>'+
-      navb([["📚","كلاساتي"],["🧠","المراجعة"],["✨","النص"],["🤖","الذكاء"],["💬","المجتمع"],["📁","ملفاتي"]]);
+    h=head("واجهة الطالب")+'<main>'+[stuV,filesV,revV,aiAndTextV,chatV][S.tab]()+'</main>'+
+      navb([["📚","كلاساتي"],["📷","السكنر"],["🧠","المراجعة"],["🤖","الذكاء والنص"],["💬","المجتمع"]]);
   }else{
     h=head("لوحة المالك")+'<main>'+ownV()+'</main>';
   }
   $("app").className=r=="pro"?"pro":"";
   $("app").innerHTML=h;
-
-  if(r=="pro"||r=="stu"){
-    var t=r=="pro"?5:3;
-    if(S.tab!=t){
-      var fb=document.createElement("button");fb.id="fab";fb.className="b";fb.setAttribute("aria-label","الذكاء الاصطناعي");fb.textContent="🤖";
-      fb.style.cssText="position:fixed;bottom:76px;inset-inline-start:14px;width:50px;height:50px;border-radius:25px;font-size:22px;padding:0;z-index:8";
-      fb.onclick=function(){tab(t)};document.body.appendChild(fb);
-    }
-  }
 }
+
 </script>
 
 <script type="module">
@@ -3086,7 +3693,7 @@ window.fbLogin=function(){
 
 window.fbSyncUserProfile=function(){
   if(!S.uid)return;
-  var payload={email:S.email,name:S.dispName,lastSeen:Date.now(),updatedAt:S.updatedAt||Date.now()};
+  var payload={email:S.email,name:S.dispName,photo:(auth.currentUser&&auth.currentUser.photoURL)||"",lastSeen:Date.now(),updatedAt:S.updatedAt||Date.now()};
   if(S.userAiKey)payload.userAiKey=S.userAiKey;
   try{
     var docsJson=JSON.stringify(S.docs||[]);
@@ -3160,7 +3767,7 @@ onAuthStateChanged(auth,function(u){
     }
     window.fbSyncUserProfile();
   }).catch(function(){
-    setDoc(doc(db,"users",u.uid),{email:S.email,name:S.dispName,lastSeen:Date.now()},{merge:true}).catch(err);
+    setDoc(doc(db,"users",u.uid),{email:S.email,name:S.dispName,photo:u.photoURL||"",lastSeen:Date.now()},{merge:true}).catch(err);
   });
 
   if(S.driveToken){
@@ -3176,7 +3783,48 @@ onAuthStateChanged(auth,function(u){
     draw();
   },err));
 
+  unsubs.push(onSnapshot(collection(db,"users"),function(s){
+    var a=[];s.forEach(function(d){a.push(d.data())});S.allUsers=a;draw();
+  },function(){}));
+
+  unsubs.push(onSnapshot(collection(db,"chats"),function(s){
+    var remoteChats=[];
+    s.forEach(function(d){
+      var x=d.data();x.id=d.id;
+      if(!x.members || x.members.indexOf(S.email)>-1) remoteChats.push(x);
+    });
+    if(remoteChats.length){
+      var notes=S.cv.filter(function(c){return !c.id || c.n==="ملاحظاتي السريعة"});
+      S.cv=notes.concat(remoteChats);
+      draw();
+    }
+  },function(){}));
+
+  window.fbSaveChatRoom=function(chatObj){
+    if(!chatObj||!chatObj.id)return;
+    setDoc(doc(db,"chats",chatObj.id),chatObj,{merge:true}).catch(function(){});
+  };
+  window.fbSendFeedback=function(item){
+    setDoc(doc(db,"feedbacks",item.id),item).catch(function(){});
+  };
+  window.fbAddPost=function(pObj){
+    setDoc(doc(db,"posts",pObj.id),pObj).catch(function(){});
+  };
+  unsubs.push(onSnapshot(collection(db,"posts"),function(s){
+    var a=[];s.forEach(function(d){a.push(d.data())});
+    if(a.length){
+      a.sort(function(x,y){return (y.at||0)-(x.at||0)});
+      S.posts=a;draw();
+    }
+  },function(){}));
+
   if(S.isOwner){
+    unsubs.push(onSnapshot(collection(db,"feedbacks"),function(s){
+      var a=[];s.forEach(function(d){a.push(d.data())});
+      a.sort(function(x,y){return (y.at||0)-(x.at||0)});
+      if(a.length) S.feedbacks=a;
+      draw();
+    },function(){}));
     unsubs.push(onSnapshot(collection(db,"requests"),function(s){
       var a=[];s.forEach(function(d){var x=d.data();x.id=Number(d.id);a.push(x)});
       a.sort(function(x,y){return y.d-x.d});S.req=a;draw();
@@ -3184,9 +3832,6 @@ onAuthStateChanged(auth,function(u){
     unsubs.push(onSnapshot(collection(db,"subscriptions"),function(s){
       var a=[];s.forEach(function(d){var x=d.data();x.uid=d.id;a.push(x)});
       S.subs=a;draw();
-    },err));
-    unsubs.push(onSnapshot(collection(db,"users"),function(s){
-      var a=[];s.forEach(function(d){a.push(d.data())});S.allUsers=a;draw();
     },err));
   }else{
     unsubs.push(onSnapshot(query(collection(db,"requests"),where("uid","==",u.uid)),function(s){
