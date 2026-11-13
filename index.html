@@ -126,7 +126,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.25.0";
+var APP_VERSION = "2.26.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -4075,16 +4075,29 @@ function roomV(){
     '<div class="wa-foot">' +
       (!c.g && S.blocked && S.blocked.indexOf(chatPeerEmail(c)) > -1 
         ? '<div style="width:100%;text-align:center;padding:8px;color:var(--mu);font-size:13px">لقد قمت بحظر هذا المستخدم. <button class="b s" style="min-height:28px;padding:2px 10px;font-size:12px;margin-inline-start:6px" onclick="toggleBlockUser(\''+chatPeerEmail(c)+'\')">فك الحظر</button></div>'
-        : '<div style="position:relative">' +
-            '<button type="button" id="waAttachBtn" class="b s" style="min-height:40px;padding:0 11px;font-size:18px;background:transparent;border:none" title="إرفاق" onclick="var m=document.getElementById(\'waAttachMenu\');if(m)m.style.display=m.style.display===\'none\'?\'flex\':\'none\';event.stopPropagation();">📎</button>' +
-            '<div id="waAttachMenu" style="display:none;position:absolute;bottom:45px;right:0;background:var(--sf);border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,0.2);padding:12px;flex-direction:column;gap:12px;z-index:100;min-width:160px">' +
-              '<button style="background:transparent;border:none;font-size:15px;text-align:start;cursor:pointer;display:flex;align-items:center;gap:10px;font-weight:600" onclick="attachChatFile(\'camera\')"><span style="font-size:22px">📷</span> كاميرا</button>' +
-              '<button style="background:transparent;border:none;font-size:15px;text-align:start;cursor:pointer;display:flex;align-items:center;gap:10px;font-weight:600" onclick="attachChatFile(\'gallery\')"><span style="font-size:22px">🖼️</span> الاستوديو</button>' +
-              '<button style="background:transparent;border:none;font-size:15px;text-align:start;cursor:pointer;display:flex;align-items:center;gap:10px;font-weight:600" onclick="attachChatFile(\'doc\')"><span style="font-size:22px">📄</span> ملف / مستند</button>' +
+        : '<div id="waNormalInputBox" style="display:flex;width:100%;align-items:center;gap:6px">' +
+            '<div style="position:relative">' +
+              '<button type="button" id="waAttachBtn" class="b s" style="min-height:40px;padding:0 11px;font-size:18px;background:transparent;border:none" title="إرفاق" onclick="var m=document.getElementById(\'waAttachMenu\');if(m)m.style.display=m.style.display===\'none\'?\'flex\':\'none\';event.stopPropagation();">📎</button>' +
+              '<div id="waAttachMenu" style="display:none;position:absolute;bottom:45px;right:0;background:var(--sf);border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,0.2);padding:12px;flex-direction:column;gap:12px;z-index:100;min-width:160px">' +
+                '<button style="background:transparent;border:none;font-size:15px;text-align:start;cursor:pointer;display:flex;align-items:center;gap:10px;font-weight:600" onclick="attachChatFile(\'camera\')"><span style="font-size:22px">📷</span> كاميرا</button>' +
+                '<button style="background:transparent;border:none;font-size:15px;text-align:start;cursor:pointer;display:flex;align-items:center;gap:10px;font-weight:600" onclick="attachChatFile(\'gallery\')"><span style="font-size:22px">🖼️</span> الاستوديو</button>' +
+                '<button style="background:transparent;border:none;font-size:15px;text-align:start;cursor:pointer;display:flex;align-items:center;gap:10px;font-weight:600" onclick="attachChatFile(\'doc\')"><span style="font-size:22px">📄</span> ملف / مستند</button>' +
+              '</div>' +
             '</div>' +
+            '<input id="mt" class="grow" style="margin:0;border-radius:20px;padding:10px 14px" placeholder="اكتب رسالة..." oninput="waInputChanged()" onkeydown="if(event.key==\'Enter\')sendM()">' +
+            '<button type="button" id="waSendBtn" class="b" style="min-height:40px;width:40px;border-radius:50%;padding:0;font-size:18px;display:flex;align-items:center;justify-content:center;transition:background 0.2s" onclick="waSendOrMic()">🎙️</button>' +
           '</div>' +
-          '<input id="mt" class="grow" style="margin:0;border-radius:20px;padding:10px 14px" placeholder="اكتب رسالة..." oninput="waInputChanged()" onkeydown="if(event.key==\'Enter\')sendM()">' +
-          '<button type="button" id="waSendBtn" class="b" style="min-height:40px;width:40px;border-radius:50%;padding:0;font-size:18px;display:flex;align-items:center;justify-content:center;transition:background 0.2s" onclick="waSendOrMic()">🎙️</button>') +
+          '<div id="waRecBox" style="display:none;width:100%;align-items:center;gap:10px;background:var(--sf);padding:0 4px;border-radius:20px;min-height:40px">' +
+            '<button type="button" class="b s" style="min-height:36px;width:36px;border-radius:50%;padding:0;font-size:16px;background:#fee2e2;color:#ef4444" title="إلغاء وحذف" onclick="cancelVoiceRecord()">🗑️</button>' +
+            '<div class="grow row" style="justify-content:center">' +
+               '<div id="waRecDot" style="width:10px;height:10px;background:#ef4444;border-radius:50%;animation:pulse 1s infinite"></div>' +
+               '<b id="waRecTime" style="font-size:15px;font-variant-numeric:tabular-nums;color:#ef4444">0:00</b>' +
+               '<audio id="waRecPreview" controls style="display:none;max-width:180px;height:36px;outline:none"></audio>' +
+            '</div>' +
+            '<button type="button" id="waRecStopBtn" class="b s" style="min-height:36px;width:36px;border-radius:50%;padding:0;font-size:15px;background:#e2e8f0;color:#0f172a" title="إيقاف ومعاينة" onclick="stopVoiceRecord(false)">⏸️</button>' +
+            '<button type="button" id="waRecSendBtn" class="b" style="min-height:36px;width:36px;border-radius:50%;padding:0;font-size:15px;display:none" title="إرسال" onclick="stopVoiceRecord(true)">➤</button>' +
+          '</div>' +
+          '<style>@keyframes pulse{0%{opacity:1}50%{opacity:0.3}100%{opacity:1}}</style>' ) +
     '</div>' +
   '</div>';
 }
@@ -4188,45 +4201,119 @@ function attachChatFile(type){
   f.click();
 }
 
+
 var mediaRecorder;
 var audioChunks = [];
-function toggleVoiceRecord(){
-  if(S.isRecording){
-    if(mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
-    S.isRecording = false;
-    waInputChanged();
-    toast("جاري إرسال البصمة...");
-  } else {
-    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-      toast("متصفحك لا يدعم تسجيل الصوت");
-      return;
-    }
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
-      mediaRecorder = new MediaRecorder(stream);
-      audioChunks = [];
-      mediaRecorder.addEventListener("dataavailable", function(e){
-        audioChunks.push(e.data);
-      });
-      mediaRecorder.addEventListener("stop", function(){
-        stream.getTracks().forEach(function(track){ track.stop(); });
-        
-        var mime = MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "audio/webm";
-        var audioBlob = new Blob(audioChunks, { type: mime });
-        var reader = new FileReader();
-        reader.onload = function(){
-           sendM({ name: "بصمة صوتية", isAudio: true, data: reader.result, sizeTxt: "صوت" });
-        };
-        reader.readAsDataURL(audioBlob);
-      });
-      mediaRecorder.start();
-      S.isRecording = true;
-      waInputChanged();
-      toast("🔴 جاري تسجيل البصمة، اضغط مجدداً للإرسال");
-    }).catch(function(e){
-      toast("تعذر الوصول للمايكروفون: " + e.message);
-    });
+var recTimer = null;
+var recStartTime = 0;
+var recBlob = null;
+
+function updateRecTime(){
+  var r = document.getElementById("waRecTime");
+  if(r && S.isRecording){
+    var s = Math.floor((Date.now() - recStartTime)/1000);
+    var min = Math.floor(s/60);
+    var sec = s % 60;
+    r.innerText = min + ":" + (sec<10?"0"+sec:sec);
   }
 }
+
+function cancelVoiceRecord(){
+  if(mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+  clearInterval(recTimer);
+  S.isRecording = false;
+  S.hasRecBlob = false;
+  recBlob = null;
+  document.getElementById("waNormalInputBox").style.display = "flex";
+  document.getElementById("waRecBox").style.display = "none";
+  waInputChanged();
+  toast("تم إلغاء البصمة");
+}
+
+function stopVoiceRecord(andSend){
+  if(mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+  clearInterval(recTimer);
+  S.isRecording = false;
+  
+  if(andSend && recBlob){
+    // If we already have a blob from a previous stop (preview mode)
+    sendVoiceBlob(recBlob);
+  } else {
+    // We are just stopping to preview
+    S.hasRecBlob = true;
+    document.getElementById("waRecDot").style.display = "none";
+    document.getElementById("waRecTime").innerText = "معاينة البصمة";
+    document.getElementById("waRecStopBtn").style.display = "none";
+    document.getElementById("waRecSendBtn").style.display = "flex";
+    
+    // Create an audio element for preview
+    var p = document.getElementById("waRecPreview");
+    if(p){
+       p.style.display = "block";
+       p.src = URL.createObjectURL(recBlob || new Blob(audioChunks)); // Might be empty if just stopped
+    }
+  }
+}
+
+function sendVoiceBlob(blob){
+  var reader = new FileReader();
+  reader.onload = function(){
+    sendM({ name: "بصمة صوتية", isAudio: true, data: reader.result, sizeTxt: "صوت" });
+    cancelVoiceRecord(); // to reset UI
+  };
+  reader.readAsDataURL(blob);
+}
+
+function toggleVoiceRecord(){
+  if(S.isRecording || S.hasRecBlob){
+    return; // Handled by new UI buttons
+  }
+  
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    toast("متصفحك لا يدعم تسجيل الصوت");
+    return;
+  }
+  
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    mediaRecorder.addEventListener("dataavailable", function(e){
+      audioChunks.push(e.data);
+    });
+    mediaRecorder.addEventListener("stop", function(){
+      stream.getTracks().forEach(function(track){ track.stop(); });
+      var mime = MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "audio/webm";
+      recBlob = new Blob(audioChunks, { type: mime });
+      
+      var p = document.getElementById("waRecPreview");
+      if(p && S.hasRecBlob){
+         p.src = URL.createObjectURL(recBlob);
+      }
+    });
+    mediaRecorder.start();
+    S.isRecording = true;
+    S.hasRecBlob = false;
+    recStartTime = Date.now();
+    recTimer = setInterval(updateRecTime, 1000);
+    
+    // Switch UI
+    document.getElementById("waNormalInputBox").style.display = "none";
+    var recBox = document.getElementById("waRecBox");
+    recBox.style.display = "flex";
+    
+    document.getElementById("waRecDot").style.display = "block";
+    document.getElementById("waRecTime").innerText = "0:00";
+    document.getElementById("waRecStopBtn").style.display = "flex";
+    document.getElementById("waRecSendBtn").style.display = "none";
+    
+    var p = document.getElementById("waRecPreview");
+    if(p) { p.style.display = "none"; p.src = ""; }
+    
+  }).catch(function(e){
+    toast("تعذر الوصول للمايكروفون: " + e.message);
+  });
+}
+
 
 
 function downloadChatAttachment(mi){
@@ -4483,6 +4570,7 @@ function draw(){
   $("app").innerHTML=h;
   var _nm=$("mt");if(_nm&&_mtv!==null){_nm.value=_mtv;if(_mtf)_nm.focus();}
   if(S.curChatId!==null){var _wb=$("waBody");if(_wb)_wb.scrollTop=_wb.scrollHeight;}
+  else { if(typeof cancelVoiceRecord === "function" && (S.isRecording || S.hasRecBlob)) cancelVoiceRecord(); }
 }
 
 
