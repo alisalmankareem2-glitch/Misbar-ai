@@ -126,7 +126,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.31.0";
+var APP_VERSION = "2.32.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -3265,376 +3265,777 @@ function addG(){S.pend=$("gi").value;var m,re=/([^\d\s]+(?:\s[^\d\s]+)*)\s*(\d+(
 
 
 /* ============================================================================
-   [الأساس ٨] نظام الاتصال الصوتي والمرئي (WebRTC + Firebase Signaling)
+   [الأساس ٨] نظام الاتصال الصوتي والمرئي الحقيقي (WebRTC + Firestore Signaling)
+   - الإشارة (signaling) عبر Firestore: calls/{id} و calls/{id}/signals
+   - الصوت والصورة تمر مباشرة بين الجهازين (مشفّرة DTLS-SRTP)
+   - نغمات الرنين تُولَّد بالكود (Web Audio) بدون ملفات خارجية
    ============================================================================ */
+var CALL_CFG = {
+  ringTimeout: 45000,      /* مدة الرنين قبل أن تُعتبر "لم يرد" */
+  connectTimeout: 30000,   /* مدة انتظار ربط الجهازين بعد القبول */
+  /* اختياري: سيرفر TURN لتحسين الاتصال على بعض شبكات الموبايل. مثال:
+     { urls: 'turn:YOUR_HOST:3478', username: 'USER', credential: 'PASS' } */
+  turn: []
+};
+
+var RTC = null;
+function resetRTC(){
+  RTC = {
+    pc: null, local: null, remote: null, callId: null, isCaller: false, polite: false,
+    peerEmail: null, type: 'audio', unsubs: [], muted: false, camOn: false, speakerOn: true,
+    facing: 'user', connected: false, startTime: 0, answered: false, offerStarted: false,
+    negReady: false, makingOffer: false, pending: [], chain: Promise.resolve(), seqN: 0,
+    finishing: false, remoteCam: null, remoteMic: true, camBusy: false, hidePip: false,
+    status: '', override: '', timer: null, ringT: null, connT: null, reconT: null, failT: null,
+    wake: null, tracksAdded: false
+  };
+}
+resetRTC();
+
+/* ---------------------------- نغمات الاتصال ---------------------------- */
+var CallTones = (function(){
+  var ctx = null, iv = null, vib = null;
+  function ensure(){
+    try{
+      if(!ctx){ var AC = window.AudioContext || window.webkitAudioContext; if(!AC) return null; ctx = new AC(); }
+      if(ctx.state === 'suspended') ctx.resume().catch(function(){});
+    }catch(e){ return null; }
+    return ctx;
+  }
+  function beep(freq, t0, dur, vol, type){
+    var c = ensure(); if(!c) return;
+    var o = c.createOscillator(), g = c.createGain();
+    o.type = type || 'sine'; o.frequency.value = freq;
+    var t = c.currentTime + t0;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.02);
+    g.gain.setValueAtTime(vol, t + Math.max(0.03, dur - 0.05));
+    g.gain.linearRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(c.destination);
+    o.start(t); o.stop(t + dur + 0.03);
+  }
+  function stop(){
+    if(iv){ clearInterval(iv); iv = null; }
+    if(vib){ clearInterval(vib); vib = null; }
+    try{ if(navigator.vibrate) navigator.vibrate(0); }catch(e){}
+  }
+  /* نغمة الانتظار عند المتصل: طوط طوط ... طوط طوط */
+  function ringback(){
+    stop(); ensure();
+    function once(){ beep(425, 0, 0.4, 0.22); beep(425, 0.55, 0.4, 0.22); }
+    once(); iv = setInterval(once, 3200);
+  }
+  /* نغمة الرنين عند المستقبل (لحن قصير متكرر + اهتزاز) */
+  function ring(){
+    stop(); ensure();
+    function once(){
+      var seq = [[659, 0], [784, 0.16], [988, 0.32], [784, 0.48], [659, 0.9], [784, 1.06], [988, 1.22], [784, 1.38]];
+      seq.forEach(function(n){ beep(n[0], n[1], 0.14, 0.3, 'triangle'); });
+      try{ if(navigator.vibrate) navigator.vibrate([500, 250, 500]); }catch(e){}
+    }
+    once(); iv = setInterval(once, 3400);
+  }
+  function connected(){ beep(880, 0, 0.12, 0.2); }
+  function ended(){ beep(480, 0, 0.18, 0.22); beep(360, 0.22, 0.28, 0.22); }
+  /* فتح الصوت عند أول لمسة للمستخدم (شرط المتصفحات) */
+  ['touchstart', 'pointerdown', 'click', 'keydown'].forEach(function(ev){
+    document.addEventListener(ev, function(){ ensure(); }, { passive: true });
+  });
+  return { ringback: ringback, ring: ring, stop: stop, connected: connected, ended: ended };
+})();
+
+/* ------------------------------ الأيقونات ------------------------------ */
+var CALL_ICONS = {
+  mic: 'M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z',
+  micOff: 'M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z',
+  cam: 'M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z',
+  camOff: 'M21 6.5l-4 4V7c0-.55-.45-1-1-1H9.82L21 17.18V6.5zM3.27 2L2 3.27 4.73 6H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.21 0 .39-.08.54-.18L19.73 21 21 19.73 3.27 2z',
+  vol: 'M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z',
+  volOff: 'M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z',
+  more: 'M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z',
+  phone: 'M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z',
+  end: 'M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.73-1.68-1.36-2.66-1.85-.33-.16-.56-.51-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z',
+  flip: 'M20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 11.5V13H9v2.5L5.5 12 9 8.5V11h6V8.5l3.5 3.5-3.5 3.5z'
+};
+function callSvg(name, size){
+  size = size || 26;
+  return '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="currentColor" aria-hidden="true"><path d="' + CALL_ICONS[name] + '"/></svg>';
+}
+
+/* -------------------------------- الواجهة ------------------------------- */
+function callCss(){
+  if(document.getElementById('callCss')) return;
+  var s = document.createElement('style'); s.id = 'callCss';
+  s.textContent =
+    '#callModal{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;color:#fff;background:#0b141a;font-family:inherit;direction:rtl;user-select:none;-webkit-user-select:none}' +
+    '#callModal .cl-top{position:relative;z-index:5;text-align:center;padding:calc(env(safe-area-inset-top,0px) + 18px) 16px 10px;background:linear-gradient(180deg,rgba(0,0,0,.65),transparent)}' +
+    '#callModal .cl-name{font-size:20px;font-weight:700}' +
+    '#callModal .cl-st{font-size:14px;color:#cbd5e1;margin-top:4px;min-height:20px}' +
+    '#callModal .cl-enc{font-size:11px;color:#8696a0;margin-top:3px}' +
+    '#callModal .cl-stage{flex:1;position:relative;overflow:hidden}' +
+    '#callModal .cl-rv{position:absolute;inset:0;background:#000;z-index:1}' +
+    '#callModal .cl-rv video{width:100%;height:100%;object-fit:cover;background:#000}' +
+    '#callModal .cl-av{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 35%,#1b2a33,#0b141a)}' +
+    '#callModal .cl-avbox{transform:scale(3.6);margin:0 0 70px}' +
+    '#callModal .cl-pulse{animation:clPulse 1.6s ease-out infinite}' +
+    '@keyframes clPulse{0%{filter:drop-shadow(0 0 0 rgba(37,211,102,.6))}100%{filter:drop-shadow(0 0 22px rgba(37,211,102,0))}}' +
+    '#callModal .cl-pip{position:absolute;z-index:6;top:12px;left:12px;width:104px;height:150px;border-radius:14px;overflow:hidden;background:#222;box-shadow:0 4px 18px rgba(0,0,0,.5);border:2px solid rgba(255,255,255,.25);touch-action:none;cursor:grab}' +
+    '#callModal .cl-pip video{width:100%;height:100%;object-fit:cover}' +
+    '#callModal .cl-badge{position:absolute;z-index:6;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);padding:6px 14px;border-radius:20px;font-size:13px;white-space:nowrap}' +
+    '#callModal .cl-panel{position:relative;z-index:7;background:#1f2c34;border-radius:26px 26px 0 0;padding:20px 14px calc(env(safe-area-inset-bottom,0px) + 22px);display:flex;justify-content:space-around;align-items:flex-end;gap:6px}' +
+    '#callModal .cl-c{display:flex;flex-direction:column;align-items:center;gap:7px;font-size:12px;color:#aebac1;min-width:64px}' +
+    '#callModal .cl-btn{width:56px;height:56px;border-radius:50%;border:none;background:#374752;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,transform .1s;-webkit-tap-highlight-color:transparent}' +
+    '#callModal .cl-btn:active{transform:scale(.93)}' +
+    '#callModal .cl-btn.on{background:#fff;color:#111b21}' +
+    '#callModal .cl-btn.dis{opacity:.4;pointer-events:none}' +
+    '#callModal .cl-btn.end{background:#f15c6d;width:64px;height:64px}' +
+    '#callModal .cl-btn.end svg{transform:none}' +
+    '#callModal .cl-in{position:relative;z-index:7;background:#1f2c34;border-radius:26px 26px 0 0;padding:22px 30px calc(env(safe-area-inset-bottom,0px) + 30px);display:flex;justify-content:space-around;align-items:flex-end}' +
+    '#callModal .cl-in .cl-btn{width:72px;height:72px}' +
+    '#callModal .cl-in .acc{background:#25d366;animation:clAcc 1.4s infinite}' +
+    '#callModal .cl-in .rej{background:#f15c6d}' +
+    '@keyframes clAcc{0%{box-shadow:0 0 0 0 rgba(37,211,102,.7)}70%{box-shadow:0 0 0 18px rgba(37,211,102,0)}100%{box-shadow:0 0 0 0 rgba(37,211,102,0)}}' +
+    '#callSheet{position:absolute;z-index:20;left:0;right:0;bottom:0;background:#233138;border-radius:22px 22px 0 0;padding:10px 0 calc(env(safe-area-inset-bottom,0px) + 14px);box-shadow:0 -8px 30px rgba(0,0,0,.5)}' +
+    '#callSheet button{display:flex;align-items:center;gap:14px;width:100%;background:none;border:none;color:#fff;font:inherit;font-size:16px;padding:15px 22px;text-align:right;cursor:pointer}' +
+    '#callSheet button:active{background:rgba(255,255,255,.08)}' +
+    '#callSheet .cl-sep{height:1px;background:rgba(255,255,255,.08);margin:4px 0}';
+  document.head.appendChild(s);
+}
+
+function callBtn(id, cls, onclick, label){
+  return '<div class="cl-c"><button id="' + id + '" class="cl-btn ' + cls + '" onclick="' + onclick + '"></button><span id="' + id + 'L">' + label + '</span></div>';
+}
 
 function renderCallUI(){
-  var old = $("callModal"); if(old) old.remove();
+  callCss();
+  var old = document.getElementById('callModal'); if(old) old.remove();
   if(!RTC.callId) return;
-  var d = document.createElement("div"); d.id = "callModal";
-  var isVideo = RTC.callType === 'video';
-  var u = findUserByEmail(RTC.peerEmail) || {email: RTC.peerEmail};
-  var disp = u.name || u.username || RTC.peerEmail.split("@")[0];
-  
-  var waWp = 'background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'120\' height=\'120\' viewBox=\'0 0 120 120\'%3E%3Cg fill=\'none\' stroke=\'%23ffffff\' stroke-opacity=\'0.05\' stroke-width=\'1.6\' stroke-linecap=\'round\'%3E%3Ccircle cx=\'22\' cy=\'22\' r=\'8\'/%3E%3Cpath d=\'M60 15l8 14H52z\'/%3E%3Crect x=\'88\' y=\'14\' width=\'14\' height=\'14\' rx=\'3\'/%3E%3Cpath d=\'M16 66c6-6 14-6 20 0M54 62h18v12H54zM92 58l10 10-10 10-10-10z\'/%3E%3Ccircle cx=\'28\' cy=\'100\' r=\'6\'/%3E%3Cpath d=\'M58 96c4-5 12-5 16 0s12 5 16 0\'/%3E%3C/g%3E%3C/svg%3E");background-color:#0b141a;';
-
-  d.innerHTML = '<div style="position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;color:#fff;font-family:Cairo,sans-serif;' + waWp + '">' +
-    
-    // Top Bar
-    '<div style="display:flex;align-items:center;padding:env(safe-area-inset-top, 20px) 16px 10px;background:linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%);z-index:10">' +
-       '<button style="background:transparent;border:none;color:#fff;font-size:24px;padding:8px" onclick="endCall()">🡣</button>' +
-       '<div style="flex:1;text-align:center">' +
-          '<div style="font-size:18px;font-weight:700">' + esc(disp) + '</div>' +
-          '<div style="font-size:12px;color:#a8b3b9;display:flex;align-items:center;justify-content:center;gap:4px">🔒 مشفرة تماماً بين الطرفين</div>' +
-       '</div>' +
-       '<button style="background:transparent;border:none;color:#fff;font-size:24px;padding:8px">👥+</button>' +
+  var u = findUserByEmail(RTC.peerEmail) || { email: RTC.peerEmail };
+  var disp = u.name || u.username || String(RTC.peerEmail).split('@')[0];
+  var incoming = !RTC.isCaller && !RTC.answered;
+  var d = document.createElement('div'); d.id = 'callModal';
+  d.innerHTML =
+    '<div class="cl-top"><div class="cl-name">' + esc(disp) + '</div><div id="callStatus" class="cl-st"></div><div class="cl-enc">🔒 مكالمة مشفّرة</div></div>' +
+    '<div class="cl-stage">' +
+      '<div id="remoteVideoContainer" class="cl-rv" style="display:none"><video id="remoteVideo" autoplay playsinline muted></video></div>' +
+      '<div id="callAvatarCenter" class="cl-av"><div class="cl-avbox' + (incoming || RTC.isCaller ? ' cl-pulse' : '') + '" id="callAvBox">' + avatarHtml(disp, u.photo) + '</div></div>' +
+      '<div id="localVideoContainer" class="cl-pip" style="display:none"><video id="localVideo" autoplay playsinline muted></video></div>' +
+      '<div id="remoteStateBadge" class="cl-badge" style="display:none"></div>' +
     '</div>' +
-
-    // Video Containers
-    '<div style="flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center">' +
-      '<div id="remoteVideoContainer" style="position:absolute;inset:0;background:#000;display:'+(isVideo?'block':'none')+';z-index:1">' +
-         '<video id="remoteVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover"></video>' +
-      '</div>' +
-      
-      // Avatar Center (Hidden in active video)
-      '<div id="callAvatarCenter" style="position:relative;z-index:2;width:100%;text-align:center;transition:0.3s">' +
-        '<div style="transform:scale(3.5);margin:0 auto 40px">' + avatarHtml(disp, u.photo) + '</div>' +
-        '<div id="callStatus" style="font-size:16px;color:#cbd5e1;margin-top:20px;text-shadow:0 1px 4px rgba(0,0,0,0.8)">' + (RTC.isCaller ? 'جاري الاتصال...' : 'مكالمة واردة...') + '</div>' +
-      '</div>' +
-      
-      '<div id="localVideoContainer" style="position:absolute;bottom:20px;right:20px;width:110px;height:160px;background:#333;border-radius:12px;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.4);border:2px solid #333;display:'+(isVideo?'block':'none')+';z-index:3">' +
-         '<video id="localVideo" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1)"></video>' +
-      '</div>' +
+    '<div id="callControlPanel" class="cl-panel" style="' + (incoming ? 'display:none' : '') + '">' +
+      callBtn('btnSpeaker', '', 'toggleSpeaker()', 'السماعة') +
+      callBtn('btnVideo', '', 'toggleVideo()', 'الكاميرا') +
+      callBtn('btnMute', '', 'toggleMute()', 'كتم') +
+      callBtn('btnMore', '', 'openCallMore()', 'المزيد') +
+      '<div class="cl-c"><button class="cl-btn end" onclick="endCall()" aria-label="إنهاء">' + callSvg('end', 30) + '</button><span>إنهاء</span></div>' +
     '</div>' +
-    
-    // Bottom Controls Panel (WhatsApp Style)
-    '<div id="callControlPanel" style="background:#1f2c34;border-top-left-radius:24px;border-top-right-radius:24px;padding:24px 20px env(safe-area-inset-bottom, 24px);z-index:10;display:flex;flex-direction:column;gap:20px">' +
-       
-       // Row 1
-       '<div style="display:flex;justify-content:space-around;align-items:center">' +
-          '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">' +
-             '<button id="btnMute" style="width:52px;height:52px;border-radius:50%;background:#374045;color:#fff;border:none;font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="toggleMute()">🎙️</button>' +
-             '<span style="font-size:12px;color:#a8b3b9">كتم</span>' +
-          '</div>' +
-          '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">' +
-             '<button id="btnVideo" style="width:52px;height:52px;border-radius:50%;background:#374045;color:#fff;border:none;font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="toggleVideo()">'+(isVideo?'📹':'📷')+'</button>' +
-             '<span style="font-size:12px;color:#a8b3b9">فيديو</span>' +
-          '</div>' +
-          '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">' +
-             '<button id="btnSpeaker" style="width:52px;height:52px;border-radius:50%;background:#374045;color:#fff;border:none;font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="toggleSpeaker()">🔊</button>' +
-             '<span style="font-size:12px;color:#a8b3b9">السماعة</span>' +
-          '</div>' +
-       '</div>' +
-       
-       // Row 2
-       '<div style="display:flex;justify-content:space-around;align-items:center">' +
-          '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">' +
-             '<button style="width:52px;height:52px;border-radius:50%;background:#ef4444;color:#fff;border:none;font-size:28px;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="endCall()">📞</button>' +
-             '<span style="font-size:12px;color:#a8b3b9">إنهاء</span>' +
-          '</div>' +
-          '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">' +
-             '<button style="width:52px;height:52px;border-radius:50%;background:#374045;color:#fff;border:none;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer">⬆️</button>' +
-             '<span style="font-size:12px;color:#a8b3b9">المشاركة</span>' +
-          '</div>' +
-          '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">' +
-             '<button style="width:52px;height:52px;border-radius:50%;background:#374045;color:#fff;border:none;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer">⋯</button>' +
-             '<span style="font-size:12px;color:#a8b3b9">المزيد</span>' +
-          '</div>' +
-       '</div>' +
-
-       // Accept Button (Overlay for incoming)
-       '<div id="incomingControls" style="position:absolute;bottom:40px;left:0;right:0;display:none;justify-content:center;gap:40px;align-items:center">' +
-          '<button style="width:70px;height:70px;border-radius:50%;background:#ef4444;color:#fff;border:none;font-size:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 15px rgba(239,68,68,0.4);transform:rotate(135deg)" onclick="endCall()">📞</button>' +
-          '<button style="width:70px;height:70px;border-radius:50%;background:#22c55e;color:#fff;border:none;font-size:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 15px rgba(34,197,94,0.4);animation:pulse-green 1.5s infinite" onclick="answerCall()">📞</button>' +
-       '</div>' +
-
+    '<div id="incomingControls" class="cl-in" style="' + (incoming ? '' : 'display:none') + '">' +
+      '<div class="cl-c"><button class="cl-btn rej" onclick="endCall()" aria-label="رفض">' + callSvg('end', 34) + '</button><span>رفض</span></div>' +
+      '<div class="cl-c"><button class="cl-btn acc" onclick="answerCall()" aria-label="رد">' + callSvg(RTC.type === 'video' ? 'cam' : 'phone', 34) + '</button><span>رد</span></div>' +
     '</div>' +
-    '<audio id="ringbackTone" loop src="https://assets.mixkit.co/active_storage/sfx/2871/2871-preview.mp3"></audio>' +
-    '<audio id="ringtone" loop src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>' +
-    '<style>@keyframes pulse-green{0%{box-shadow:0 0 0 0 rgba(34,197,94,0.7)}70%{box-shadow:0 0 0 15px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}</style>' +
-  '</div>';
+    '<audio id="remoteAudio" autoplay playsinline></audio>';
   document.body.appendChild(d);
-  
-  if(!RTC.isCaller){
-      document.getElementById("callControlPanel").style.visibility = "hidden";
-      document.getElementById("incomingControls").style.display = "flex";
-  }
+  /* بعض المتصفحات تمنع التشغيل التلقائي: أول لمسة تشغّل الصوت والفيديو */
+  d.addEventListener('click', function(){
+    var ra = document.getElementById('remoteAudio'); if(ra && ra.srcObject && ra.paused) ra.play().catch(function(){});
+    var rv = document.getElementById('remoteVideo'); if(rv && rv.srcObject && rv.paused) rv.play().catch(function(){});
+  });
+  makePipDraggable();
+  updateCallButtons();
+  renderCallStatus();
+  updateRemoteUI();
 }
 
-var RTC = {
-  pc: null, localStream: null, remoteStream: null, callId: null, isCaller: false, peerEmail: null, callType: 'audio',
-  unsubs: [], isMuted: false, isVideoOff: false, startTime: 0
-};
-
-var iceServers = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' }
-  ]
-};
-
-function toggleMute(){
-  if(RTC.localStream){
-    RTC.isMuted = !RTC.isMuted;
-    RTC.localStream.getAudioTracks().forEach(function(t){ t.enabled = !RTC.isMuted; });
-    var b = document.getElementById("btnMute");
-    if(b) b.style.background = RTC.isMuted ? "#ef4444" : "#374045";
-  }
+function setCallStatus(t){ RTC.status = t; renderCallStatus(); }
+function setCallOverride(t){ RTC.override = t || ''; renderCallStatus(); }
+function renderCallStatus(){
+  var el = document.getElementById('callStatus'); if(!el) return;
+  var t;
+  if(RTC.override) t = RTC.override;
+  else if(RTC.connected && RTC.startTime){
+    var s = Math.floor((Date.now() - RTC.startTime) / 1000);
+    var m = Math.floor(s / 60), ss = s % 60;
+    t = (m < 10 ? '0' : '') + m + ':' + (ss < 10 ? '0' : '') + ss;
+  } else t = RTC.status;
+  el.textContent = t;
 }
-function toggleVideo(){
-  if(RTC.localStream){
-    RTC.isVideoOff = !RTC.isVideoOff;
-    RTC.localStream.getVideoTracks().forEach(function(t){ t.enabled = !RTC.isVideoOff; });
-    var b = document.getElementById("btnVideo");
-    if(b) b.style.background = RTC.isVideoOff ? "#ef4444" : "#374045";
-  }
+
+function updateCallButtons(){
+  var set = function(id, on, icon, label, dis){
+    var b = document.getElementById(id); if(!b) return;
+    b.className = 'cl-btn' + (on ? ' on' : '') + (dis ? ' dis' : '');
+    b.innerHTML = callSvg(icon, 26);
+    var l = document.getElementById(id + 'L'); if(l && label) l.textContent = label;
+  };
+  set('btnMute', RTC.muted, RTC.muted ? 'micOff' : 'mic', RTC.muted ? 'تشغيل المايك' : 'كتم', !RTC.local);
+  set('btnVideo', RTC.camOn, RTC.camOn ? 'cam' : 'camOff', RTC.camOn ? 'إيقاف' : 'الكاميرا', !RTC.local);
+  set('btnSpeaker', RTC.speakerOn, RTC.speakerOn ? 'vol' : 'volOff', RTC.speakerOn ? 'السماعة' : 'مكتومة');
+  set('btnMore', false, 'more', 'المزيد');
 }
-function toggleSpeaker(){
-  var rv = document.getElementById("remoteVideo");
-  if(rv && rv.srcObject){
-    // Web Audio speaker toggle is tricky on mobile web, but we can visually toggle the button
-    var b = document.getElementById("btnSpeaker");
-    if(b){
-      if(b.style.background === "rgb(239, 68, 68)") b.style.background = "#374045";
-      else b.style.background = "#ef4444";
+
+function attachLocal(){
+  var box = document.getElementById('localVideoContainer'), lv = document.getElementById('localVideo');
+  if(!box || !lv) return;
+  var show = !!(RTC.local && RTC.camOn && !RTC.hidePip);
+  if(show){
+    if(!lv.srcObject || lv._cam !== RTC.facing + RTC.local.id + (RTC.local.getVideoTracks()[0] || {}).id){
+      lv.srcObject = new MediaStream(RTC.local.getVideoTracks());
+      lv._cam = RTC.facing + RTC.local.id + (RTC.local.getVideoTracks()[0] || {}).id;
     }
+    lv.style.transform = RTC.facing === 'user' ? 'scaleX(-1)' : 'none';
+    lv.play().catch(function(){});
+  }
+  box.style.display = show ? 'block' : 'none';
+}
+
+function attachRemote(){
+  var ra = document.getElementById('remoteAudio'), rv = document.getElementById('remoteVideo');
+  if(!RTC.remote) return;
+  if(ra){
+    if(ra.srcObject !== RTC.remote) ra.srcObject = RTC.remote;
+    ra.muted = !RTC.speakerOn;
+    ra.play().catch(function(){});
+  }
+  if(rv){
+    if(rv.srcObject !== RTC.remote) rv.srcObject = RTC.remote;
+    rv.play().catch(function(){});
+  }
+  updateRemoteUI();
+}
+
+function updateRemoteUI(){
+  var rc = document.getElementById('remoteVideoContainer'), av = document.getElementById('callAvatarCenter'), badge = document.getElementById('remoteStateBadge');
+  if(!rc || !av) return;
+  var hasVid = !!(RTC.remote && RTC.remote.getVideoTracks().length);
+  var camOn = RTC.remoteCam === null ? (RTC.type === 'video') : RTC.remoteCam;
+  var showVideo = RTC.connected && hasVid && camOn;
+  rc.style.display = showVideo ? 'block' : 'none';
+  av.style.display = showVideo ? 'none' : 'flex';
+  var av2 = document.getElementById('callAvBox'); if(av2) av2.className = 'cl-avbox' + (RTC.connected ? '' : ' cl-pulse');
+  if(badge){
+    var txt = '';
+    if(RTC.connected && RTC.remoteMic === false) txt = '🔇 الطرف الآخر كاتم المايكروفون';
+    badge.textContent = txt; badge.style.display = txt ? 'block' : 'none';
   }
 }
 
-function startCall(peerEmail, isVideo){
-  if(!gate()) return;
-  RTC.peerEmail = peerEmail;
-  RTC.callType = isVideo ? 'video' : 'audio';
-  RTC.isCaller = true;
-  RTC.isMuted = false;
-  RTC.isVideoOff = false;
-  RTC.callId = "call_" + Date.now() + "_" + Math.random().toString(36).slice(2,8);
-  
-  renderCallUI();
-  var rb = document.getElementById("ringbackTone"); if(rb) rb.play().catch(function(){});
-  
-  navigator.mediaDevices.getUserMedia({ video: isVideo, audio: true }).then(function(stream){
-    RTC.localStream = stream;
-    if(isVideo){
-      var lv = document.getElementById("localVideo");
-      if(lv) lv.srcObject = stream;
+function makePipDraggable(){
+  var box = document.getElementById('localVideoContainer'); if(!box) return;
+  var sx, sy, ox, oy, drag = false;
+  box.addEventListener('pointerdown', function(e){
+    drag = true; sx = e.clientX; sy = e.clientY;
+    var r = box.getBoundingClientRect(), pr = box.parentElement.getBoundingClientRect();
+    ox = r.left - pr.left; oy = r.top - pr.top;
+    try{ box.setPointerCapture(e.pointerId); }catch(err){}
+  });
+  box.addEventListener('pointermove', function(e){
+    if(!drag) return;
+    var pr = box.parentElement.getBoundingClientRect();
+    var nx = Math.min(Math.max(0, ox + e.clientX - sx), pr.width - box.offsetWidth);
+    var ny = Math.min(Math.max(0, oy + e.clientY - sy), pr.height - box.offsetHeight);
+    box.style.left = nx + 'px'; box.style.top = ny + 'px'; box.style.right = 'auto';
+  });
+  var up = function(){ drag = false; };
+  box.addEventListener('pointerup', up); box.addEventListener('pointercancel', up);
+}
+
+/* ------------------------------ الوسائط ------------------------------ */
+function callVideoConstraints(){
+  return { facingMode: { ideal: RTC.facing }, width: { ideal: 960 }, height: { ideal: 540 }, frameRate: { ideal: 24, max: 30 } };
+}
+function getCallMedia(wantVideo){
+  var audio = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
+  return navigator.mediaDevices.getUserMedia({ audio: audio, video: wantVideo ? callVideoConstraints() : false }).catch(function(e){
+    var n = e && e.name;
+    if(wantVideo && (n === 'NotFoundError' || n === 'OverconstrainedError' || n === 'NotReadableError')){
+      toast('الكاميرا غير متاحة، سيستمر الاتصال بالصوت فقط');
+      return navigator.mediaDevices.getUserMedia({ audio: audio });
     }
-    
-    var callDoc = window.fbGetDocRef("calls", RTC.callId);
-    window.fbSetDoc(callDoc, {
-      caller: S.email,
-      callee: RTC.peerEmail,
-      type: RTC.callType,
-      status: 'ringing',
-      at: Date.now()
+    throw e;
+  });
+}
+function mediaErrMsg(e){
+  var n = e && e.name;
+  if(n === 'NotAllowedError' || n === 'SecurityError') return 'اسمح للتطبيق باستخدام المايكروفون والكاميرا من إعدادات الهاتف';
+  if(n === 'NotFoundError') return 'لا يوجد مايكروفون في هذا الجهاز';
+  if(n === 'NotReadableError') return 'المايكروفون أو الكاميرا مستخدمة من تطبيق آخر';
+  return 'تعذر تشغيل المايكروفون/الكاميرا';
+}
+function stopStream(s){ if(s) s.getTracks().forEach(function(t){ try{ t.stop(); }catch(e){} }); }
+function videoTransceiver(){
+  if(!RTC.pc) return null;
+  var list = RTC.pc.getTransceivers();
+  for(var i = 0; i < list.length; i++){
+    var t = list[i];
+    if(t.receiver && t.receiver.track && t.receiver.track.kind === 'video') return t;
+  }
+  return null;
+}
+
+/* ------------------------------- الإشارة ------------------------------- */
+function callRef(){ return window.fbGetDocRef('calls', RTC.callId); }
+function sigCol(){ return window.fbGetColRef(callRef(), 'signals'); }
+function sendSignal(o){
+  if(!RTC.callId) return Promise.resolve();
+  o.from = S.email; o.at = Date.now(); o.seq = Date.now() * 100 + (RTC.seqN++ % 100);
+  return window.fbAddDoc(sigCol(), o).catch(function(e){ console.log('signal send error', e); });
+}
+function sendCallState(){
+  if(RTC.pc) sendSignal({ type: 'state', cam: !!RTC.camOn, mic: !RTC.muted });
+}
+function setCallDoc(data){
+  if(!RTC.callId) return Promise.resolve();
+  return window.fbUpdateDoc(callRef(), data).catch(function(e){ console.log('call doc update error', e); });
+}
+
+function callIceServers(){
+  var list = [
+    { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+    { urls: ['stun:stun2.l.google.com:19302', 'stun:stun3.l.google.com:19302'] }
+  ];
+  return { iceServers: list.concat(CALL_CFG.turn || []), bundlePolicy: 'max-bundle', iceCandidatePoolSize: 2 };
+}
+
+function createPeer(){
+  var pc = new RTCPeerConnection(callIceServers());
+  RTC.pc = pc;
+  pc.onicecandidate = function(e){
+    if(e.candidate) sendSignal({ type: 'cand', data: JSON.stringify(e.candidate.toJSON ? e.candidate.toJSON() : e.candidate) });
+  };
+  pc.ontrack = function(e){
+    if(e.streams && e.streams[0]) RTC.remote = e.streams[0];
+    else { if(!RTC.remote) RTC.remote = new MediaStream(); RTC.remote.addTrack(e.track); }
+    attachRemote();
+  };
+  pc.onnegotiationneeded = function(){ if(RTC.negReady) makeOffer(false); };
+  pc.oniceconnectionstatechange = onIceState;
+  RTC.unsubs.push(window.fbOnSnapshot(sigCol(), onSignals));
+}
+
+function makeOffer(restart){
+  var pc = RTC.pc;
+  if(!pc || pc.signalingState === 'closed') return Promise.resolve();
+  RTC.makingOffer = true;
+  return pc.createOffer(restart ? { iceRestart: true } : undefined).then(function(o){
+    if(pc.signalingState !== 'stable') return;
+    return pc.setLocalDescription(o).then(function(){
+      return sendSignal({ type: 'offer', sdp: pc.localDescription.sdp });
+    });
+  }).catch(function(e){ console.log('offer error', e); }).then(function(){ RTC.makingOffer = false; });
+}
+
+function onSignals(snap){
+  var list = [];
+  snap.docChanges().forEach(function(ch){
+    if(ch.type !== 'added') return;
+    var d = ch.doc.data();
+    if(d && d.from !== S.email) list.push(d);
+  });
+  list.sort(function(a, b){ return (a.seq || 0) - (b.seq || 0); });
+  list.forEach(function(d){
+    RTC.chain = RTC.chain.then(function(){ return handleSignal(d); }).catch(function(e){ console.log('signal error', e); });
+  });
+}
+
+function flushPending(){
+  var pc = RTC.pc; if(!pc || !pc.remoteDescription) return Promise.resolve();
+  var q = RTC.pending; RTC.pending = [];
+  return Promise.all(q.map(function(c){ return pc.addIceCandidate(c).catch(function(){}); }));
+}
+
+function handleSignal(d){
+  var pc = RTC.pc; if(!pc || pc.signalingState === 'closed') return Promise.resolve();
+  if(d.type === 'cand'){
+    var cand; try{ cand = new RTCIceCandidate(JSON.parse(d.data)); }catch(e){ return Promise.resolve(); }
+    if(!pc.remoteDescription){ RTC.pending.push(cand); return Promise.resolve(); }
+    return pc.addIceCandidate(cand).catch(function(){});
+  }
+  if(d.type === 'state'){
+    RTC.remoteCam = !!d.cam; RTC.remoteMic = d.mic !== false; updateRemoteUI();
+    return Promise.resolve();
+  }
+  if(d.type === 'offer'){
+    var collision = RTC.makingOffer || pc.signalingState !== 'stable';
+    if(collision && !RTC.polite) return Promise.resolve();
+    var p = Promise.resolve();
+    if(collision) p = pc.setLocalDescription({ type: 'rollback' }).catch(function(){});
+    return p.then(function(){
+      return pc.setRemoteDescription({ type: 'offer', sdp: d.sdp });
     }).then(function(){
-      RTC.unsubs.push(window.fbOnSnapshot(callDoc, function(docSnap){
-        var data = docSnap.exists() ? docSnap.data() : null;
-        if(!data || data.status === 'ended' || data.status === 'rejected'){
-           endCall(true);
-        } else if(data.status === 'answered' && data.answer){
-           if(!RTC.startTime) RTC.startTime = Date.now();
-           if(RTC.pc && RTC.pc.signalingState !== "stable" && RTC.pc.signalingState !== "closed"){
-             RTC.pc.setRemoteDescription(new RTCSessionDescription(data.answer)).catch(function(e){ console.log("SetRemote error", e); });
-           }
-        }
-      }));
-      setupWebRTC();
-    }).catch(function(e){ toast("فشل بدء المكالمة"); endCall(true); });
-  }).catch(function(e){ toast("تعذر الوصول للمايكروفون/الكاميرا"); endCall(true); });
+      if(!RTC.isCaller && !RTC.tracksAdded && RTC.local){
+        RTC.tracksAdded = true;
+        RTC.local.getTracks().forEach(function(t){ pc.addTrack(t, RTC.local); });
+      }
+      return flushPending();
+    }).then(function(){ return pc.createAnswer(); })
+      .then(function(a){ return pc.setLocalDescription(a); })
+      .then(function(){
+        RTC.negReady = true;
+        return sendSignal({ type: 'answer', sdp: pc.localDescription.sdp });
+      });
+  }
+  if(d.type === 'answer'){
+    if(pc.signalingState !== 'have-local-offer') return Promise.resolve();
+    return pc.setRemoteDescription({ type: 'answer', sdp: d.sdp }).then(flushPending);
+  }
+  return Promise.resolve();
 }
 
-function handleIncomingCall(callId, data){
-  if(RTC.callId) return; // Already in a call
-  RTC.callId = callId;
-  RTC.peerEmail = data.caller;
-  RTC.callType = data.type;
-  RTC.isCaller = false;
-  RTC.isMuted = false;
-  RTC.isVideoOff = false;
-  
+/* ---------------------------- حالة الاتصال ---------------------------- */
+function onIceState(){
+  var pc = RTC.pc; if(!pc) return;
+  var st = pc.iceConnectionState;
+  if(st === 'connected' || st === 'completed'){
+    clearTimeout(RTC.reconT); clearTimeout(RTC.failT);
+    if(!RTC.connected) onCallConnected(); else setCallOverride('');
+  } else if(st === 'disconnected'){
+    if(RTC.connected) setCallOverride('ضعف في الاتصال...');
+    clearTimeout(RTC.reconT);
+    RTC.reconT = setTimeout(restartIceNow, 3500);
+  } else if(st === 'failed'){
+    if(RTC.connected) setCallOverride('جاري إعادة الاتصال...');
+    restartIceNow();
+    clearTimeout(RTC.failT);
+    RTC.failT = setTimeout(function(){
+      var s2 = RTC.pc && RTC.pc.iceConnectionState;
+      if(s2 !== 'connected' && s2 !== 'completed') finalizeCall('ended', false, 'انقطع الاتصال');
+    }, 15000);
+  }
+}
+function restartIceNow(){
+  if(!RTC.pc || RTC.polite) return; /* المتصل فقط يبدأ إعادة المحاولة */
+  try{
+    if(RTC.pc.restartIce) RTC.pc.restartIce(); else makeOffer(true);
+  }catch(e){}
+}
+
+function onCallConnected(){
+  RTC.connected = true; RTC.startTime = Date.now();
+  clearTimeout(RTC.ringT); clearTimeout(RTC.connT);
+  CallTones.stop(); CallTones.connected();
+  setCallOverride('');
+  if(RTC.timer) clearInterval(RTC.timer);
+  RTC.timer = setInterval(renderCallStatus, 1000);
+  renderCallStatus();
+  attachRemote(); attachLocal(); updateCallButtons();
+  sendCallState();
+  if(RTC.isCaller) setCallDoc({ status: 'connected', connectedAt: Date.now() });
+  try{
+    if(navigator.wakeLock && navigator.wakeLock.request) navigator.wakeLock.request('screen').then(function(w){ RTC.wake = w; }).catch(function(){});
+  }catch(e){}
+}
+
+function onCallDoc(snap){
+  var d = (snap && snap.exists()) ? snap.data() : null;
+  if(!RTC.callId || RTC.finishing) return;
+  if(!d){ finalizeCall('ended', true, 'انتهت المكالمة'); return; }
+  var st = d.status;
+  if(RTC.isCaller){
+    if(st === 'ringing' && !RTC.offerStarted) setCallStatus('يرن...');
+    else if(st === 'accepted' && !RTC.offerStarted) startNegotiation();
+    else if(st === 'rejected') finalizeCall(st, true, 'رفض المكالمة');
+    else if(st === 'busy') finalizeCall(st, true, 'الخط مشغول');
+    else if(st === 'ended') finalizeCall(st, true, 'انتهت المكالمة');
+  } else {
+    if(st === 'canceled' || st === 'missed') finalizeCall(st, true, 'مكالمة فائتة');
+    else if(st === 'ended') finalizeCall(st, true, 'انتهت المكالمة');
+  }
+}
+
+/* المتصل: بعد قبول الطرف الآخر نبدأ التفاوض بمرشحات ICE جديدة */
+function startNegotiation(){
+  if(RTC.offerStarted || !RTC.local) return;
+  RTC.offerStarted = true;
+  clearTimeout(RTC.ringT);
+  CallTones.stop();
+  setCallStatus('جاري الاتصال...');
+  createPeer();
+  RTC.negReady = true;
+  RTC.local.getTracks().forEach(function(t){ RTC.pc.addTrack(t, RTC.local); });
+  RTC.tracksAdded = true;
+  RTC.connT = setTimeout(function(){
+    if(!RTC.connected) finalizeCall('ended', false, 'تعذر الاتصال بين الجهازين');
+  }, CALL_CFG.connectTimeout);
+}
+
+/* ------------------------------ بدء/رد/إنهاء ------------------------------ */
+function startCall(peerEmail, wantVideo){
+  if(RTC.callId){ toast('أنت في مكالمة حالياً'); return; }
+  peerEmail = String(peerEmail || '').toLowerCase();
+  if(!peerEmail || peerEmail === S.email){ toast('لا يمكن الاتصال بهذا الحساب'); return; }
+  if(S.blocked && S.blocked.indexOf(peerEmail) > -1){ toast('هذا الشخص محظور، فك الحظر أولاً'); return; }
+  if(!window.fbSetDoc || !window.fbGetDocRef){ toast('الاتصال بالسيرفر غير جاهز، جرّب بعد لحظة'); return; }
+  if(!window.RTCPeerConnection || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    toast('هذا المتصفح لا يدعم المكالمات (يلزم رابط https)'); return;
+  }
+  resetRTC();
+  var myId = 'call_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  RTC.callId = myId; RTC.isCaller = true; RTC.polite = false; RTC.peerEmail = peerEmail;
+  RTC.type = wantVideo ? 'video' : 'audio';
   renderCallUI();
-  var rt = document.getElementById("ringtone"); if(rt) rt.play().catch(function(){});
-  
-  var callDoc = window.fbGetDocRef("calls", RTC.callId);
-  RTC.unsubs.push(window.fbOnSnapshot(callDoc, function(docSnap){
-    var d = docSnap.exists() ? docSnap.data() : null;
-    if(!d || d.status === 'ended' || d.status === 'canceled'){
-      endCall(true);
+  setCallStatus('جاري الاتصال...');
+
+  getCallMedia(wantVideo).then(function(stream){
+    if(RTC.callId !== myId){ stopStream(stream); return; }
+    RTC.local = stream;
+    RTC.camOn = stream.getVideoTracks().length > 0;
+    if(!RTC.camOn) RTC.type = 'audio';
+    attachLocal(); updateCallButtons();
+    return window.fbSetDoc(callRef(), {
+      caller: S.email, callee: peerEmail, type: RTC.type, status: 'calling', at: Date.now(),
+      callerName: S.dispName || S.email.split('@')[0]
+    }).then(function(){
+      if(RTC.callId !== myId) return;
+      RTC.unsubs.push(window.fbOnSnapshot(callRef(), onCallDoc));
+      CallTones.ringback();
+      RTC.ringT = setTimeout(function(){
+        if(!RTC.connected && !RTC.offerStarted) finalizeCall('missed', false, 'لم يرد');
+      }, CALL_CFG.ringTimeout);
+    });
+  }).catch(function(e){
+    if(RTC.callId !== myId) return;
+    var denied = e && (e.code === 'permission-denied' || /permission/i.test(String(e.message || '')));
+    toast(denied ? '⚠️ المكالمات تحتاج تحديث قواعد Firestore (ملف firestore.rules)' : mediaErrMsg(e));
+    finalizeCall('canceled', false, '', true);
+  });
+}
+
+function handleIncomingCall(callId, d){
+  var ref = window.fbGetDocRef('calls', callId);
+  if(S.blocked && S.blocked.indexOf(d.caller) > -1){ window.fbUpdateDoc(ref, { status: 'rejected' }).catch(function(){}); return; }
+  if(RTC.callId){ window.fbUpdateDoc(ref, { status: 'busy' }).catch(function(){}); return; }
+  resetRTC();
+  RTC.callId = callId; RTC.isCaller = false; RTC.polite = true; RTC.peerEmail = d.caller;
+  RTC.type = d.type === 'video' ? 'video' : 'audio';
+  renderCallUI();
+  setCallStatus(RTC.type === 'video' ? 'مكالمة فيديو واردة...' : 'مكالمة صوتية واردة...');
+  CallTones.ring();
+  try{
+    if(document.hidden && window.Notification && Notification.permission === 'granted'){
+      new Notification('مسبار AI', { body: (d.callerName || 'مكالمة واردة') + ' يتصل بك' });
     }
-  }));
+  }catch(e){}
+  window.fbUpdateDoc(ref, { status: 'ringing' }).catch(function(){});
+  RTC.unsubs.push(window.fbOnSnapshot(ref, onCallDoc));
+  RTC.ringT = setTimeout(function(){ if(!RTC.answered) finalizeCall('missed', false, 'مكالمة فائتة'); }, CALL_CFG.ringTimeout + 8000);
 }
 
 function answerCall(){
-  var rt = document.getElementById("ringtone"); if(rt) { rt.pause(); rt.currentTime=0; }
-  RTC.startTime = Date.now();
-  document.getElementById("incomingControls").style.display = "none";
-  document.getElementById("callControlPanel").style.visibility = "visible";
-  document.getElementById("callStatus").innerText = "جاري الاتصال...";
-  
-  navigator.mediaDevices.getUserMedia({ video: RTC.callType === 'video', audio: true }).then(function(stream){
-    RTC.localStream = stream;
-    if(RTC.callType === 'video'){
-      var lv = document.getElementById("localVideo");
-      if(lv) lv.srcObject = stream;
-    }
-    setupWebRTC();
-  }).catch(function(e){ toast("تعذر الوصول للمايكروفون/الكاميرا"); endCall(); });
-}
-
-var callTimerInt = null;
-var callSeconds = 0;
-function updateCallTimer(){
-  var cs = document.getElementById("callStatus");
-  if(cs){
-    var min = Math.floor(callSeconds / 60);
-    var sec = callSeconds % 60;
-    cs.innerText = (min<10?'0':'') + min + ":" + (sec<10?'0':'') + sec;
-    callSeconds++;
-  }
-}
-
-function setupWebRTC(){
-  RTC.pc = new RTCPeerConnection(iceServers);
-  
-  RTC.localStream.getTracks().forEach(function(track){
-    RTC.pc.addTrack(track, RTC.localStream);
-  });
-  
-  RTC.pc.ontrack = function(event){
-    var rv = document.getElementById("remoteVideo");
-    var isVid = RTC.callType === 'video';
-    
-    if(rv){
-       rv.srcObject = event.streams[0];
-       if(isVid) {
-           document.getElementById("callAvatarCenter").style.display = "none";
-           rv.parentElement.style.display = "block";
-       }
-       if(!callTimerInt){
-           callSeconds = 0;
-           callTimerInt = setInterval(updateCallTimer, 1000);
-       }
-    }
-    
-    var rb = document.getElementById("ringbackTone"); if(rb) { rb.pause(); rb.currentTime=0; }
-    var rt = document.getElementById("ringtone"); if(rt) { rt.pause(); rt.currentTime=0; }
-  };
-  
-  var callDoc = window.fbGetDocRef("calls", RTC.callId);
-  var candCol = window.fbGetColRef(callDoc, RTC.isCaller ? "callerCandidates" : "calleeCandidates");
-  var remoteCandCol = window.fbGetColRef(callDoc, RTC.isCaller ? "calleeCandidates" : "callerCandidates");
-  
-  RTC.pc.onicecandidate = function(event){
-    if(event.candidate){
-      window.fbAddDoc(candCol, event.candidate.toJSON()).catch(function(){});
-    }
-  };
-  
-  if(RTC.isCaller){
-    RTC.pc.createOffer().then(function(offer){
-      return RTC.pc.setLocalDescription(offer);
-    }).then(function(){
-      return window.fbUpdateDoc(callDoc, { offer: { type: RTC.pc.localDescription.type, sdp: RTC.pc.localDescription.sdp } });
-    }).catch(function(e){ console.log("Offer err", e); });
-  } else {
-    window.fbGetDoc(callDoc).then(function(snap){
-      var data = snap.data();
-      if(!data || !data.offer) return;
-      return RTC.pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-    }).then(function(){
-      return RTC.pc.createAnswer();
-    }).then(function(answer){
-      return RTC.pc.setLocalDescription(answer);
-    }).then(function(){
-      return window.fbUpdateDoc(callDoc, { 
-        answer: { type: RTC.pc.localDescription.type, sdp: RTC.pc.localDescription.sdp },
-        status: 'answered'
-      });
-    }).catch(function(e){ console.log("Answer err", e); });
-  }
-  
-  RTC.unsubs.push(window.fbOnSnapshot(remoteCandCol, function(snap){
-    snap.docChanges().forEach(function(change){
-      if(change.type === "added"){
-        var cand = new RTCIceCandidate(change.doc.data());
-        if(RTC.pc && RTC.pc.signalingState !== "closed"){
-           RTC.pc.addIceCandidate(cand).catch(function(e){ console.log("Ice err", e); });
-        }
-      }
+  if(!RTC.callId || RTC.isCaller || RTC.answered) return;
+  var myId = RTC.callId;
+  RTC.answered = true;
+  clearTimeout(RTC.ringT);
+  CallTones.stop();
+  var inc = document.getElementById('incomingControls'); if(inc) inc.style.display = 'none';
+  var pan = document.getElementById('callControlPanel'); if(pan) pan.style.display = 'flex';
+  setCallStatus('جاري الاتصال...');
+  getCallMedia(RTC.type === 'video').then(function(stream){
+    if(RTC.callId !== myId){ stopStream(stream); return; }
+    RTC.local = stream;
+    RTC.camOn = stream.getVideoTracks().length > 0;
+    attachLocal(); updateCallButtons();
+    createPeer();
+    return window.fbUpdateDoc(callRef(), { status: 'accepted', answeredAt: Date.now() }).then(function(){
+      RTC.connT = setTimeout(function(){
+        if(!RTC.connected) finalizeCall('ended', false, 'تعذر الاتصال بين الجهازين');
+      }, CALL_CFG.connectTimeout + 5000);
     });
-  }));
+  }).catch(function(e){
+    if(RTC.callId !== myId) return;
+    toast(mediaErrMsg(e));
+    finalizeCall('rejected', false, '');
+  });
 }
 
-function endCall(isRemote){
+/* زر الإنهاء/الرفض من المستخدم */
+function endCall(){
   if(!RTC.callId) return;
-  var rb = document.getElementById("ringbackTone"); if(rb) { rb.pause(); rb.currentTime=0; }
-  var rt = document.getElementById("ringtone"); if(rt) { rt.pause(); rt.currentTime=0; }
-  clearInterval(callTimerInt);
-  callTimerInt = null;
-  
-  if(RTC.localStream){
-    RTC.localStream.getTracks().forEach(function(track){ track.stop(); });
-    RTC.localStream = null;
-  }
-  if(RTC.pc){
-    RTC.pc.close();
-    RTC.pc = null;
-  }
-  RTC.unsubs.forEach(function(f){ try{f()}catch(e){} });
-  RTC.unsubs = [];
-  
-  var wasCaller = RTC.isCaller;
-  var peer = RTC.peerEmail;
-  var cType = RTC.callType;
-  var sTime = RTC.startTime;
-  var cId = RTC.callId;
-
-  if(!isRemote && cId){
-     var callDoc = window.fbGetDocRef("calls", cId);
-     window.fbUpdateDoc(callDoc, { status: wasCaller && document.getElementById("incomingControls") && document.getElementById("incomingControls").style.display === "none" ? 'canceled' : 'ended' }).catch(function(){});
-  }
-  
-  if (wasCaller && peer) {
-      var dmId = "dm_" + [S.email, peer].sort().join("__");
-      var c = S.cv.find(function(x){ return x.id === dmId; });
-      if(!c) {
-          c = { id: dmId, n: peer.split("@")[0], peerEmail: peer, photo: "", g: 0, members: [S.email, peer], msgs: [], updatedAt: Date.now() };
-          S.cv.unshift(c);
-      }
-      var durTxt = "";
-      if(sTime){
-          var s = Math.floor((Date.now() - sTime)/1000);
-          var m = Math.floor(s/60);
-          var ss = s%60;
-          durTxt = m + ":" + (ss<10?"0"+ss:ss);
-      }
-      var msgId = "m_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
-      var txt = (cType === 'video' ? '📹 مكالمة فيديو' : '📞 مكالمة صوتية');
-      if(!sTime) txt += " (لم يرد عليها)";
-      else txt += " (" + durTxt + ")";
-      
-      var msg = {
-          id: msgId, e: S.email, sender: S.dispName || S.email.split("@")[0],
-          t: txt, isCall: true, callType: cType, missed: !sTime, dur: durTxt, at: Date.now()
-      };
-      c.msgs = c.msgs || [];
-      c.msgs.push(msg);
-      c.lastPreview = txt;
-      c.updatedAt = msg.at;
-      c.lastFrom = S.email;
-      if(window.fbSendRoomMessage) window.fbSendRoomMessage(c, msg);
-      saveAllUserStorage();
-      if(S.curChatId === c.id) setTimeout(draw, 100);
-  }
-  
-  RTC.startTime = 0;
-  RTC.callId = null;
-  var mod = document.getElementById("callModal"); if(mod) mod.remove();
+  var st;
+  if(RTC.connected) st = 'ended';
+  else if(RTC.isCaller) st = RTC.offerStarted ? 'ended' : 'canceled';
+  else st = RTC.answered ? 'ended' : 'rejected';
+  finalizeCall(st, false, '');
 }
+
+/* الإنهاء الموحّد: يغلق كل شيء ويكتب سجل المكالمة بالمحادثة */
+function finalizeCall(status, remote, msg, silent){
+  if(!RTC.callId || RTC.finishing) return;
+  RTC.finishing = true;
+  var wasConnected = RTC.connected, wasCaller = RTC.isCaller, peer = RTC.peerEmail, cType = RTC.type;
+  var sTime = RTC.startTime, cId = RTC.callId, ref = window.fbGetDocRef('calls', cId);
+  ['ringT', 'connT', 'reconT', 'failT'].forEach(function(k){ clearTimeout(RTC[k]); });
+  if(RTC.timer){ clearInterval(RTC.timer); RTC.timer = null; }
+  CallTones.stop();
+  if(!silent && (wasConnected || msg)) CallTones.ended();
+
+  RTC.unsubs.forEach(function(f){ try{ f(); }catch(e){} }); RTC.unsubs = [];
+  if(!remote) window.fbUpdateDoc(ref, { status: status, endedAt: Date.now() }).catch(function(){});
+
+  var pc = RTC.pc, local = RTC.local, wake = RTC.wake;
+  RTC.pc = null; RTC.local = null;
+  try{ if(pc){ pc.ontrack = null; pc.onicecandidate = null; pc.oniceconnectionstatechange = null; pc.close(); } }catch(e){}
+  stopStream(local);
+  try{ if(wake) wake.release(); }catch(e){}
+  var ra = document.getElementById('remoteAudio'); if(ra) ra.srcObject = null;
+
+  /* سجل المكالمة في المحادثة (يكتبه المتصل فقط) */
+  if(wasCaller && peer && !silent){
+    var dmId = 'dm_' + [S.email, peer].sort().join('__');
+    var c = S.cv.find(function(x){ return x.id === dmId; });
+    if(!c){
+      c = { id: dmId, n: peer.split('@')[0], peerEmail: peer, photo: '', g: 0, members: [S.email, peer], msgs: [], updatedAt: Date.now() };
+      S.cv.unshift(c);
+    }
+    var durTxt = '';
+    if(wasConnected && sTime){
+      var s = Math.floor((Date.now() - sTime) / 1000), m = Math.floor(s / 60), ss = s % 60;
+      durTxt = m + ':' + (ss < 10 ? '0' + ss : ss);
+    }
+    var reason = status === 'rejected' ? 'رفض المكالمة' : status === 'busy' ? 'الخط مشغول' : (msg === 'تعذر الاتصال بين الجهازين' || msg === 'انقطع الاتصال') ? msg : 'لم يرد عليها';
+    var txt = (cType === 'video' ? '📹 مكالمة فيديو' : '📞 مكالمة صوتية') + (wasConnected ? ' (' + durTxt + ')' : ' (' + reason + ')');
+    var msgObj = {
+      id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), e: S.email,
+      sender: S.dispName || S.email.split('@')[0], t: txt, isCall: true, callType: cType,
+      missed: !wasConnected, reason: wasConnected ? '' : reason, dur: durTxt, at: Date.now()
+    };
+    c.msgs = c.msgs || []; c.msgs.push(msgObj);
+    c.lastPreview = txt; c.updatedAt = msgObj.at; c.lastFrom = S.email;
+    if(window.fbSendRoomMessage) window.fbSendRoomMessage(c, msgObj);
+    saveAllUserStorage();
+    if(S.curChatId === c.id) setTimeout(draw, 100);
+  }
+
+  var closeNow = function(){
+    var mod = document.getElementById('callModal'); if(mod) mod.remove();
+    if(RTC.callId === cId) resetRTC();
+  };
+  if(msg && !silent){
+    var el = document.getElementById('callStatus'); if(el) el.textContent = msg;
+    var sheet = document.getElementById('callSheet'); if(sheet) sheet.remove();
+    setTimeout(closeNow, 1300);
+  } else closeNow();
+}
+
+/* ------------------------------ الأزرار ------------------------------ */
+function toggleMute(){
+  if(!RTC.local) return;
+  RTC.muted = !RTC.muted;
+  RTC.local.getAudioTracks().forEach(function(t){ t.enabled = !RTC.muted; });
+  updateCallButtons(); sendCallState();
+}
+
+function toggleSpeaker(){
+  RTC.speakerOn = !RTC.speakerOn;
+  var ra = document.getElementById('remoteAudio'); if(ra) ra.muted = !RTC.speakerOn;
+  updateCallButtons();
+  toast(RTC.speakerOn ? 'تم تشغيل صوت المكالمة' : 'تم كتم صوت الطرف الآخر');
+}
+
+function toggleVideo(){ setCamera(!RTC.camOn); }
+
+function setCamera(on){
+  if(!RTC.local || RTC.camBusy) return Promise.resolve();
+  RTC.camBusy = true;
+  var done = function(){ RTC.camBusy = false; attachLocal(); updateCallButtons(); sendCallState(); };
+  if(!on){
+    RTC.local.getVideoTracks().forEach(function(t){ t.stop(); RTC.local.removeTrack(t); });
+    RTC.camOn = false;
+    var tr = videoTransceiver();
+    var p = (tr && tr.sender) ? tr.sender.replaceTrack(null).catch(function(){}) : Promise.resolve();
+    return p.then(done);
+  }
+  return navigator.mediaDevices.getUserMedia({ video: callVideoConstraints() }).then(function(s){
+    var t = s.getVideoTracks()[0];
+    RTC.local.addTrack(t);
+    RTC.camOn = true;
+    var tr = videoTransceiver();
+    if(tr && tr.sender){
+      return tr.sender.replaceTrack(t).then(function(){
+        if(tr.direction === 'recvonly' || tr.direction === 'inactive') tr.direction = 'sendrecv';
+      });
+    }
+    if(RTC.pc) RTC.pc.addTrack(t, RTC.local);
+  }).catch(function(e){ toast(mediaErrMsg(e)); }).then(done);
+}
+
+function flipCamera(){
+  if(!RTC.local || !RTC.camOn || RTC.camBusy) return;
+  RTC.camBusy = true;
+  var old = RTC.facing;
+  RTC.facing = old === 'user' ? 'environment' : 'user';
+  RTC.local.getVideoTracks().forEach(function(t){ t.stop(); RTC.local.removeTrack(t); });
+  navigator.mediaDevices.getUserMedia({ video: callVideoConstraints() }).then(function(s){
+    var t = s.getVideoTracks()[0];
+    RTC.local.addTrack(t);
+    var tr = videoTransceiver();
+    if(tr && tr.sender) return tr.sender.replaceTrack(t);
+  }).catch(function(){
+    RTC.facing = old; RTC.camOn = false;
+    var tr = videoTransceiver(); if(tr && tr.sender) tr.sender.replaceTrack(null).catch(function(){});
+    toast('تعذر قلب الكاميرا');
+  }).then(function(){ RTC.camBusy = false; attachLocal(); updateCallButtons(); sendCallState(); });
+}
+
+function toggleCallPip(){ RTC.hidePip = !RTC.hidePip; attachLocal(); }
+
+function closeCallSheet(){ var s = document.getElementById('callSheet'); if(s) s.remove(); }
+function openCallMore(){
+  if(document.getElementById('callSheet')){ closeCallSheet(); return; }
+  var modal = document.getElementById('callModal'); if(!modal) return;
+  var items = [];
+  if(RTC.camOn) items.push(['flip', 'قلب الكاميرا', 'flipCamera()']);
+  if(RTC.camOn) items.push(['cam', RTC.hidePip ? 'إظهار صورتي' : 'إخفاء صورتي', 'toggleCallPip()']);
+  var ra = document.getElementById('remoteAudio');
+  if(ra && typeof ra.setSinkId === 'function') items.push(['vol', 'اختيار مخرج الصوت', 'pickCallOutput()']);
+  items.push(['phone', 'معلومات جودة الاتصال', 'showCallInfo()']);
+  var sh = document.createElement('div'); sh.id = 'callSheet';
+  sh.innerHTML = items.map(function(it){
+    return '<button onclick="closeCallSheet();' + it[2] + '">' + callSvg(it[0], 24) + '<span>' + it[1] + '</span></button>';
+  }).join('') + '<div class="cl-sep"></div><button onclick="closeCallSheet()"><span style="color:#aebac1">إغلاق</span></button>';
+  modal.appendChild(sh);
+}
+
+function pickCallOutput(){
+  var ra = document.getElementById('remoteAudio');
+  if(!ra || !navigator.mediaDevices.enumerateDevices) return;
+  navigator.mediaDevices.enumerateDevices().then(function(devs){
+    var outs = devs.filter(function(x){ return x.kind === 'audiooutput'; });
+    if(outs.length < 2){ toast('لا توجد مخارج صوت أخرى متاحة على هذا الجهاز'); return; }
+    var modal = document.getElementById('callModal'); if(!modal) return;
+    var sh = document.createElement('div'); sh.id = 'callSheet';
+    sh.innerHTML = outs.map(function(o, i){
+      return '<button data-i="' + i + '">' + callSvg('vol', 24) + '<span>' + esc(o.label || ('مخرج ' + (i + 1))) + '</span></button>';
+    }).join('') + '<div class="cl-sep"></div><button data-i="x"><span style="color:#aebac1">إغلاق</span></button>';
+    sh.addEventListener('click', function(ev){
+      var b = ev.target.closest('button'); if(!b) return;
+      var i = b.getAttribute('data-i');
+      if(i !== 'x'){
+        ra.setSinkId(outs[Number(i)].deviceId).then(function(){ toast('تم تغيير مخرج الصوت'); }).catch(function(){ toast('تعذر تغيير مخرج الصوت'); });
+      }
+      sh.remove();
+    });
+    modal.appendChild(sh);
+  });
+}
+
+function showCallInfo(){
+  if(!RTC.pc){ toast('الاتصال لم يبدأ بعد'); return; }
+  RTC.pc.getStats().then(function(stats){
+    var pair = null, locals = {};
+    stats.forEach(function(r){
+      if(r.type === 'local-candidate') locals[r.id] = r;
+      if(r.type === 'candidate-pair' && (r.nominated || r.selected) && r.state === 'succeeded') pair = r;
+    });
+    if(!pair){ toast('لم يكتمل الاتصال بعد'); return; }
+    var rtt = pair.currentRoundTripTime != null ? Math.round(pair.currentRoundTripTime * 1000) : null;
+    var lc = locals[pair.localCandidateId];
+    var route = lc && lc.candidateType === 'relay' ? 'عبر سيرفر وسيط' : 'اتصال مباشر';
+    var q = rtt == null ? '' : (rtt < 150 ? 'ممتازة' : rtt < 350 ? 'جيدة' : 'ضعيفة');
+    toast((q ? 'الجودة: ' + q + ' · ' : '') + (rtt != null ? 'التأخير ' + rtt + 'ms · ' : '') + route);
+  }).catch(function(){ toast('تعذر قراءة معلومات الاتصال'); });
+}
+
+window.addEventListener('pagehide', function(){ if(RTC.callId) { try{ endCall(); }catch(e){} } });
 /* ==================== دمج الذكاء الاصطناعي ومختبر النص في أيقونة واحدة ==================== */
 function aiAndTextV(){
   var sub = S.aiSubTab || "ai";
@@ -4438,7 +4839,7 @@ function roomV(){
         var clickHandler = ' onclick="showMsgMenu(\''+c.id+'\',\''+esc(m.id)+'\','+me+',\''+safeText+'\')"';
         return '<div class="wa-bub '+(me?'out':'in')+'"'+clickHandler+' style="cursor:pointer" title="انقر لخيارات الرسالة">' +
           (c.g && !me ? '<div style="font-size:11px;font-weight:800;color:var(--ac);margin-bottom:2px">'+esc(m.sender)+'</div>' : '') +
-          (m.isCall ? '<div style=\"display:flex;align-items:center;gap:10px;font-size:15px\"><div style=\"font-size:24px;background:var(--bg);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:'+(m.missed?'#ef4444':(me?'#059669':'#10b981'))+'\">' + (m.callType==='video'?'📹':'📞') + '</div><div><b style=\"display:block\">' + (m.callType==='video'?'مكالمة فيديو':'مكالمة صوتية') + '</b><div style=\"font-size:12px;color:var(--mu)\">' + (me?'↗':'↙') + ' ' + (m.missed ? 'لم يرد عليها' : m.dur) + '</div></div></div>' : (m.t ? '<div style=\"white-space:pre-wrap\">'+esc(m.t)+'</div>' : '')) +
+          (m.isCall ? '<div style=\"display:flex;align-items:center;gap:10px;font-size:15px\"><div style=\"font-size:24px;background:var(--bg);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:'+(m.missed?'#ef4444':(me?'#059669':'#10b981'))+'\">' + (m.callType==='video'?'📹':'📞') + '</div><div><b style=\"display:block\">' + (m.callType==='video'?'مكالمة فيديو':'مكالمة صوتية') + '</b><div style=\"font-size:12px;color:var(--mu)\">' + (me?'↗':'↙') + ' ' + (m.missed ? (m.reason || 'لم يرد عليها') : m.dur) + '</div></div></div>' : (m.t ? '<div style=\"white-space:pre-wrap\">'+esc(m.t)+'</div>' : '')) +
           fileHtml +
           (function(){
             if(!me) return '<div style="font-size:10px;opacity:.75;text-align:end;margin-top:3px">'+timeStr+'</div>';
@@ -5090,6 +5491,7 @@ window.fbConnectDrive=function(cb){
 };
 
 window.fbLogout=function(){
+  try{ if(RTC && RTC.callId) endCall(); }catch(e){}
   unsubs.forEach(function(f){try{f()}catch(e){}});unsubs=[];
   var oldUid=S.uid;
   S.uid=null;S.email="";S.dispName="";S.role=null;S.isOwner=false;S.userAiKey="";
@@ -5167,19 +5569,19 @@ onAuthStateChanged(auth,function(u){
   }
 
 
-  var callsUnsub = null;
-  unsubs.push(onSnapshot(query(collection(db,"calls"),where("callee","==",S.email)),function(s){
+  /* المكالمات الواردة: فقط التي حالتها "calling" وموجهة لهذا الحساب */
+  unsubs.push(onSnapshot(query(collection(db,"calls"),where("callee","==",S.email),where("status","==","calling")),function(s){
     s.docChanges().forEach(function(ch){
-      if(ch.type === "added"){
-         var d = ch.doc.data();
-         if(d.status === 'ringing' && d.at > Date.now() - 30000){ // Only ring if call is less than 30s old
-             if(typeof handleIncomingCall === "function"){
-                 handleIncomingCall(ch.doc.id, d);
-             }
-         }
+      if(ch.type !== "added") return;
+      var d = ch.doc.data();
+      if(Math.abs(Date.now() - (d.at || 0)) < 90000 && typeof handleIncomingCall === "function"){
+        handleIncomingCall(ch.doc.id, d);
       }
     });
-  },function(e){}));
+  },function(e){
+    console.log("calls listener error", e && e.code);
+    if(e && e.code === "permission-denied" && !S._callPd){ S._callPd = 1; toast("⚠️ المكالمات تحتاج تحديث قواعد Firestore (ملف firestore.rules)"); }
+  }));
 
   var msgUnsub = null, watchedChatId = null;
   var chatFail=function(e){
