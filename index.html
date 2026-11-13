@@ -81,15 +81,18 @@ nav button.on{color:var(--ac)}nav i{display:block;font-style:normal;font-size:19
 .portal-ico{width:52px;height:52px;border-radius:14px;background:var(--acs);color:var(--ac);font-size:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .ai-prov-card{background:var(--sf);border:2px solid var(--ln);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer;transition:.15s}
 .ai-prov-card.on{border-color:var(--ac);background:var(--acs)}
-.wa-room{background:var(--bg);border:1px solid var(--ln);border-radius:16px;overflow:hidden;margin-top:8px}
-.wa-head{background:var(--ac);color:#fff;padding:10px 12px;display:flex;align-items:center;gap:10px}
-.wa-body{padding:12px;max-height:54vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
-.wa-bub{max-width:82%;padding:9px 12px;border-radius:14px;font-size:14px;line-height:1.65;position:relative;word-wrap:break-word}
-.wa-bub.in{background:var(--sf);border:1px solid var(--ln);align-self:flex-start;border-top-right-radius:4px}
-.wa-bub.out{background:var(--ac);color:#fff;align-self:flex-end;border-top-left-radius:4px}
+.wa-room{position:fixed;inset:0;z-index:22;display:flex;flex-direction:column;background:#efeae2;overflow:hidden;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.wa-head{background:#075e54;color:#fff;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:3}
+.wa-body{flex:1;padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;position:relative;background-size:cover;background-position:center}
+.wa-doodle-layer{position:absolute;inset:0;pointer-events:none;opacity:.07;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='22' cy='22' r='8'/%3E%3Cpath d='M60 15l8 14H52z'/%3E%3Crect x='88' y='14' width='14' height='14' rx='3'/%3E%3Cpath d='M16 66c6-6 14-6 20 0M54 62h18v12H54zM92 58l10 10-10 10-10-10z'/%3E%3Ccircle cx='28' cy='100' r='6'/%3E%3Cpath d='M58 96c4-5 12-5 16 0s12 5 16 0'/%3E%3C/g%3E%3C/svg%3E");background-repeat:repeat}
+.wa-bub{max-width:82%;padding:9px 12px;border-radius:12px;font-size:14px;line-height:1.65;position:relative;word-wrap:break-word;box-shadow:0 1px 2px rgba(0,0,0,.12);z-index:1}
+.wa-bub.in{background:#ffffff;color:#111b21;align-self:flex-start;border-top-right-radius:3px}
+.wa-bub.out{background:#d9fdd3;color:#111b21;align-self:flex-end;border-top-left-radius:3px}
 .wa-file-box{background:rgba(0,0,0,.06);border:1px solid rgba(128,128,128,.25);border-radius:10px;padding:8px;margin-top:6px}
-.wa-bub.out .wa-file-box{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.3)}
-.wa-foot{background:var(--sf);border-top:1px solid var(--ln);padding:8px;display:flex;align-items:center;gap:6px}
+.wa-foot{background:var(--sf);border-top:1px solid var(--ln);padding:8px;display:flex;align-items:center;gap:6px;z-index:3}
+.wa-wp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:230px;overflow-y:auto;padding:4px 0}
+.wa-wp-tile{height:80px;border-radius:10px;cursor:pointer;position:relative;border:2.5px solid var(--ln);overflow:hidden;display:flex;align-items:flex-end;justify-content:center;padding:4px;font-size:10px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.85);background-size:cover;background-position:center}
+.wa-wp-tile.on{border-color:#25d366;box-shadow:0 0 0 2px #25d36655}
 .avatar-ci{width:38px;height:38px;border-radius:50%;background:var(--acs);color:var(--ac);font-weight:800;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:15px}
 .avatar-ci img{width:100%;height:100%;object-fit:cover}
 nav button{position:relative}
@@ -123,7 +126,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.12.0";
+var APP_VERSION = "2.13.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -158,16 +161,41 @@ async function checkForLiveUpdate() {
   } catch (e) {}
 }
 
-/* دعم زر الرجوع في الجهاز (Back Button) داخل التطبيق بدلاً من الخروج */
+/* دعم زر الرجوع في الجهاز (Back Button) خطوة بخطوة داخل التطبيق بدلاً من الخروج */
+var _fromPopState = false;
+var _lastHistKey = "";
+function getNavStateKey(){
+  return [S.role||"", S.tab||0, S.curChatId||"", S.proPortal||"", S.scnDocId||"", S.profileOpen?1:0, S.subv?1:0, S.gw?S.gw.view:"", S.openMat?1:0, S.scnEd?1:0, S.scnPrintDoc?1:0].join("|");
+}
+function syncHistoryState(){
+  var k = getNavStateKey();
+  if(_fromPopState){ _lastHistKey = k; return; }
+  if(!_lastHistKey){
+    _lastHistKey = k;
+    try{ history.replaceState({k:k}, ""); }catch(e){}
+    return;
+  }
+  if(k !== _lastHistKey){
+    _lastHistKey = k;
+    try{ history.pushState({k:k}, ""); }catch(e){}
+  }
+}
 window.addEventListener("popstate", function(e){
-  if(S.profileOpen){ S.profileOpen = false; draw(); return; }
-  if(S.curChatId !== null){ S.curChatId = null; draw(); return; }
-  if(S.proPortal !== null){ S.proPortal = null; draw(); return; }
-  if(S.scnDocId !== null){ S.scnDocId = null; draw(); return; }
-  if(S.pp !== null){ S.pp = null; S.gw = null; draw(); return; }
-  if(S.bk !== null){ S.bk = null; S.gw = null; draw(); return; }
-  if(S.role !== null && S.tab > 0){ S.tab = 0; draw(); return; }
-  if(S.role !== null){ S.role = null; draw(); return; }
+  _fromPopState = true;
+  var md = document.getElementById("md");
+  if(md){ md.remove(); S.chatModal = null; _fromPopState = false; syncHistoryState(); return; }
+  if(S.scnEd){ S.scnEd = null; draw(); _fromPopState = false; return; }
+  if(S.scnPrintDoc){ S.scnPrintDoc = null; draw(); _fromPopState = false; return; }
+  if(S.profileOpen){ S.profileOpen = false; draw(); _fromPopState = false; return; }
+  if(S.subv){ S.subv = 0; draw(); _fromPopState = false; return; }
+  if(S.curChatId !== null){ S.curChatId = null; draw(); _fromPopState = false; return; }
+  if(S.openMat !== null){ S.openMat = null; S.out = ""; S.quiz = null; draw(); _fromPopState = false; return; }
+  if(S.pp !== null || S.bk !== null || S.gw !== null){ S.pp = null; S.bk = null; S.gw = null; draw(); _fromPopState = false; return; }
+  if(S.proPortal !== null){ S.proPortal = null; draw(); _fromPopState = false; return; }
+  if(S.scnDocId !== null){ setOpenScnDoc(null); draw(); _fromPopState = false; return; }
+  if(S.role !== null && S.tab > 0){ S.tab = 0; draw(); _fromPopState = false; return; }
+  if(S.role !== null){ S.role = null; draw(); _fromPopState = false; return; }
+  _fromPopState = false;
 });
 
 
@@ -3552,11 +3580,185 @@ function confirmGroupCreateOrAdd(){
 }
 
 /* واجهة غرفة الدردشة بسلاسة واتساب وتليجرام + رفع وتحميل الملفات */
+/* خلفيات محادثة واتساب الأصلية (ساطعة، داكنة، ألوان ثابتة، وصورة من الجهاز + نقشة واتساب + تعتيم) */
+var WA_BRIGHT_WPS = [
+  {id:"b1", name:"كلاسيكي واتساب", css:"#efeae2", doodle:true},
+  {id:"b2", name:"سماء صافية", css:"linear-gradient(135deg,#bae6fd 0%,#e0f2fe 50%,#f0f9ff 100%)", doodle:true},
+  {id:"b3", name:"نعناع هادئ", css:"linear-gradient(135deg,#bbf7d0 0%,#dcfce7 55%,#f0fdf4 100%)", doodle:true},
+  {id:"b4", name:"غروب دافئ", css:"linear-gradient(135deg,#fed7aa 0%,#ffedd5 55%,#fff7ed 100%)", doodle:true},
+  {id:"b5", name:"خزامى ناعم", css:"linear-gradient(135deg,#e9d5ff 0%,#f3e8ff 55%,#faf5ff 100%)", doodle:true},
+  {id:"b6", name:"وردي مشرق", css:"linear-gradient(135deg,#fbcfe8 0%,#fce7f3 55%,#fdf2f8 100%)", doodle:true}
+];
+var WA_DARK_WPS = [
+  {id:"d1", name:"داكن واتساب", css:"#0b141a", doodle:true, dark:true},
+  {id:"d2", name:"ليلي زمردي", css:"linear-gradient(135deg,#042f2e 0%,#064e3b 50%,#022c22 100%)", doodle:true, dark:true},
+  {id:"d3", name:"محيط عميق", css:"linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#090d16 100%)", doodle:true, dark:true},
+  {id:"d4", name:"فضاء بنفسجي", css:"linear-gradient(135deg,#1e1b4b 0%,#2e1065 50%,#0f0728 100%)", doodle:true, dark:true},
+  {id:"d5", name:"فحمي أنيق", css:"linear-gradient(135deg,#18181b 0%,#27272a 55%,#09090b 100%)", doodle:true, dark:true},
+  {id:"d6", name:"عنابي ليلي", css:"linear-gradient(135deg,#3b0764 0%,#4c0519 60%,#1c040d 100%)", doodle:true, dark:true}
+];
+var WA_SOLID_WPS = [
+  {id:"s1", name:"بيج أصلي", css:"#efeae2"},
+  {id:"s2", name:"أخضر فاتح", css:"#d1fae5"},
+  {id:"s3", name:"أزرق ثلجي", css:"#dbeafe"},
+  {id:"s4", name:"ذهبي رملي", css:"#fef3c7"},
+  {id:"s5", name:"وردي هادئ", css:"#fce7f3"},
+  {id:"s6", name:"بنفسجي فاتح", css:"#ede9fe"},
+  {id:"s7", name:"تركواز", css:"#ccfbf1"},
+  {id:"s8", name:"رمادي فضي", css:"#e2e8f0"},
+  {id:"s9", name:"أخضر غامق", css:"#064e3b", dark:true},
+  {id:"s10", name:"كحلي ملكي", css:"#1e3a8a", dark:true},
+  {id:"s11", name:"بني داكن", css:"#3f2305", dark:true},
+  {id:"s12", name:"أسود ليلي", css:"#0b141a", dark:true}
+];
+
+function getChatWallConfig(chatId){
+  var p = storagePrefix();
+  try{
+    var perChat = localStorage.getItem(p + "wa_wp_" + chatId);
+    if(perChat) return JSON.parse(perChat);
+    var globalWp = localStorage.getItem(p + "wa_wp_global");
+    if(globalWp) return JSON.parse(globalWp);
+  }catch(e){}
+  return { css:"#efeae2", img:"", doodle:true, dim:0, id:"b1" };
+}
+
+function saveChatWallConfig(cfg, applyScope, chatId){
+  var p = storagePrefix();
+  try{
+    if(applyScope === "chat" && chatId){
+      localStorage.setItem(p + "wa_wp_" + chatId, JSON.stringify(cfg));
+    }else{
+      localStorage.setItem(p + "wa_wp_global", JSON.stringify(cfg));
+      if(chatId) localStorage.removeItem(p + "wa_wp_" + chatId);
+    }
+  }catch(e){}
+}
+
+function openWaWallpaperModal(){
+  var old = $("md"); if(old) old.remove();
+  var cur = getChatWallConfig(S.curChatId);
+  var tab = S._wpTab || "bright";
+  var scope = S._wpScope || "all";
+  var d = document.createElement("div"); d.id = "md";
+
+  var list = tab === "bright" ? WA_BRIGHT_WPS : (tab === "dark" ? WA_DARK_WPS : WA_SOLID_WPS);
+  var gridHtml = list.map(function(item){
+    var isSel = cur.id === item.id && !cur.img;
+    return '<div class="wa-wp-tile '+(isSel?'on':'')+'" style="background:'+item.css+'" onclick="pickPresetWaWp(\''+item.id+'\')">' +
+      (item.doodle || tab==="solid" ? '<div class="wa-doodle-layer" style="opacity:.14"></div>' : '') +
+      '<span style="position:relative;z-index:2">'+esc(item.name)+'</span>' +
+    '</div>';
+  }).join("");
+
+  d.innerHTML = '<div class="mc" style="width:min(410px,95%);max-height:88vh;display:flex;flex-direction:column">' +
+    '<div class="row" style="margin-bottom:8px"><b class="grow">🎨 خلفية المحادثة (مثل واتساب)</b><button class="b d" style="min-height:32px;padding:3px 9px" onclick="document.getElementById(\'md\').remove()">×</button></div>' +
+    '<div class="row" style="gap:4px;margin-bottom:8px;flex-wrap:wrap">' +
+      '<button type="button" class="chip '+(tab==="bright"?"on":"")+'" onclick="S._wpTab=\'bright\';openWaWallpaperModal()">☀️ ساطعة</button>' +
+      '<button type="button" class="chip '+(tab==="dark"?"on":"")+'" onclick="S._wpTab=\'dark\';openWaWallpaperModal()">🌙 داكنة</button>' +
+      '<button type="button" class="chip '+(tab==="solid"?"on":"")+'" onclick="S._wpTab=\'solid\';openWaWallpaperModal()">🎨 ألوان ثابتة</button>' +
+      '<button type="button" class="chip" onclick="uploadCustomWaWp()">🖼️ من المعرض</button>' +
+    '</div>' +
+    '<div class="wa-wp-grid">' + gridHtml + '</div>' +
+    '<div style="border-top:1px solid var(--ln);padding-top:8px;margin-top:6px">' +
+      '<label class="row" style="cursor:pointer;color:var(--tx);margin-bottom:6px">' +
+        '<input type="checkbox" style="width:auto;margin:0" '+(cur.doodle?'checked':'')+' onchange="toggleWaDoodle(this.checked)"> إظهار رسومات واتساب الخفيفة (Doodles)' +
+      '</label>' +
+      '<label>تعتيم الخلفية ('+(cur.dim||0)+'%)</label>' +
+      '<input type="range" min="0" max="70" value="'+(cur.dim||0)+'" oninput="changeWaDim(this.value)" style="margin:2px 0 8px">' +
+      '<div class="row" style="gap:6px;margin-bottom:8px">' +
+        '<button type="button" class="chip grow '+(scope==="all"?"on":"")+'" onclick="S._wpScope=\'all\';openWaWallpaperModal()">تطبيق لكل المحادثات</button>' +
+        '<button type="button" class="chip grow '+(scope==="chat"?"on":"")+'" onclick="S._wpScope=\'chat\';openWaWallpaperModal()">لهذه المحادثة فقط</button>' +
+      '</div>' +
+      '<div class="grid">' +
+        '<button type="button" class="b s" onclick="resetDefaultWaWp()">↺ الافتراضية</button>' +
+        '<button type="button" class="b" style="background:#15803d" onclick="document.getElementById(\'md\').remove();toast(\'✅ تم حفظ خلفية المحادثة\')">✅ تم</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+  document.body.appendChild(d);
+}
+
+function pickPresetWaWp(id){
+  var all = WA_BRIGHT_WPS.concat(WA_DARK_WPS).concat(WA_SOLID_WPS);
+  var found = all.find(function(x){ return x.id === id; });
+  if(!found) return;
+  var cur = getChatWallConfig(S.curChatId);
+  var cfg = {
+    id: found.id,
+    css: found.css,
+    img: "",
+    doodle: cur.doodle !== undefined ? cur.doodle : true,
+    dim: cur.dim || 0,
+    dark: !!found.dark
+  };
+  saveChatWallConfig(cfg, S._wpScope || "all", S.curChatId);
+  draw();
+  openWaWallpaperModal();
+}
+
+function toggleWaDoodle(on){
+  var cur = getChatWallConfig(S.curChatId);
+  cur.doodle = !!on;
+  saveChatWallConfig(cur, S._wpScope || "all", S.curChatId);
+  draw();
+}
+
+function changeWaDim(val){
+  var cur = getChatWallConfig(S.curChatId);
+  cur.dim = Number(val) || 0;
+  saveChatWallConfig(cur, S._wpScope || "all", S.curChatId);
+  draw();
+}
+
+function resetDefaultWaWp(){
+  var cfg = { id:"b1", css:"#efeae2", img:"", doodle:true, dim:0, dark:false };
+  saveChatWallConfig(cfg, "all", S.curChatId);
+  draw();
+  openWaWallpaperModal();
+  toast("تمت استعادة خلفية واتساب الافتراضية");
+}
+
+function uploadCustomWaWp(){
+  var f = document.createElement("input");
+  f.type = "file";
+  f.accept = "image/*";
+  f.onchange = function(){
+    var x = f.files[0]; if(!x) return;
+    var r = new FileReader();
+    r.onload = function(){
+      var im = new Image();
+      im.onload = function(){
+        var k = Math.min(1, 1080 / Math.max(im.width, im.height));
+        var c = document.createElement("canvas");
+        c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+        c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+        var dataUrl = c.toDataURL("image/jpeg", 0.80);
+        var cur = getChatWallConfig(S.curChatId);
+        var cfg = { id:"custom", css:"#0b141a", img:dataUrl, doodle:false, dim:cur.dim||15 };
+        saveChatWallConfig(cfg, S._wpScope || "all", S.curChatId);
+        var md = $("md"); if(md) md.remove();
+        draw();
+        toast("✅ تم تعيين صورتك خلفية للمحادثة");
+      };
+      im.src = r.result;
+    };
+    r.readAsDataURL(x);
+  };
+  f.click();
+}
+
 function roomV(){
   var c = S.cv.find(function(x){ return x.id === S.curChatId; }); if(!c){ S.curChatId = null; return cListV(); }
   if(window.fbWatchRoomMessages) window.fbWatchRoomMessages(c.id);
   markChatRead(c);
   var ms = c.msgs || [];
+  var wp = getChatWallConfig(c.id);
+  var bgStyle = wp.img
+    ? ("background-image:url('" + wp.img + "');background-size:cover;background-position:center;")
+    : ("background:" + (wp.css || "#efeae2") + ";");
+  var doodleFilter = wp.dark ? "filter:invert(1);" : "";
+
   return '<div class="wa-room">' +
     '<div class="wa-head">' +
       '<button class="b s" style="min-height:34px;padding:4px 10px" onclick="S.curChatId=null;draw()">←</button>' +
@@ -3565,11 +3767,14 @@ function roomV(){
         '<div style="font-size:11px;opacity:.88">'+(c.g ? ((c.members?c.members.length:1)+' أعضاء · اضغط 📎 لمشاركة ملف') : (chatPeerHandle(c) || 'مراسلة مباشرة'))+'</div>' +
       '</div>' +
       (c.g ? '<button class="b s" style="min-height:34px;padding:4px 9px" onclick="openChatPicker(\'add_member\')">+ عضو</button>' : '') +
+      '<button class="b s" style="min-height:34px;padding:4px 9px" onclick="openWaWallpaperModal()" title="تغيير خلفية المحادثة">🎨 خلفية</button>' +
     '</div>' +
-    '<div class="wa-body" id="waBody">' +
+    '<div class="wa-body" id="waBody" style="' + bgStyle + '">' +
+      (wp.doodle && !wp.img ? '<div class="wa-doodle-layer" style="' + doodleFilter + '"></div>' : '') +
+      (wp.dim > 0 ? '<div style="position:fixed;inset:0;background:rgba(0,0,0,' + (wp.dim/100) + ');pointer-events:none;z-index:0"></div>' : '') +
       (ms.length ? ms.map(function(m, mi){
         if(m.isSys || m.e === "sys"){
-          return '<div style="text-align:center;font-size:11px;color:var(--mu);background:var(--sf);padding:3px 10px;border-radius:99px;align-self:center;margin:4px 0">'+esc(m.t)+'</div>';
+          return '<div style="text-align:center;font-size:11px;color:var(--mu);background:var(--sf);padding:3px 10px;border-radius:99px;align-self:center;margin:4px 0;z-index:1">'+esc(m.t)+'</div>';
         }
         var me = m.e === S.email;
         var timeStr = m.at ? new Date(m.at).toLocaleTimeString("ar-IQ",{hour:"2-digit",minute:"2-digit"}) : "";
@@ -3594,7 +3799,7 @@ function roomV(){
           fileHtml +
           '<div style="font-size:10px;opacity:.75;text-align:end;margin-top:3px">'+timeStr+(me?(m._fail?' ⚠️ لم تصل':(m._pend?' 🕓':' ✓')):'')+'</div>' +
         '</div>';
-      }).join("") : '<div class="mu" style="text-align:center;margin:24px 0">ابدأ المحادثة الآن أو أرسل ملفاً/صورة للجميع 📎</div>') +
+      }).join("") : '<div class="mu" style="text-align:center;margin:24px 0;background:var(--sf);padding:8px 14px;border-radius:10px;align-self:center;z-index:1">ابدأ المحادثة الآن أو أرسل ملفاً/صورة للجميع 📎</div>') +
     '</div>' +
     '<div class="wa-foot">' +
       '<button type="button" class="b s" style="min-height:40px;padding:0 11px;font-size:18px" title="رفع ملف أو صورة" onclick="attachChatFile()">📎</button>' +
@@ -3878,6 +4083,7 @@ function restoreAppStateFromSession(){
 
 function draw(){
   saveAppStateToSession();
+  syncHistoryState();
   /* تم إزالة الدائرة العائمة بالكامل بناءً على طلبك ليبقى التطبيق نظيفاً وسلساً */
   var oldFab=$("fab");if(oldFab)oldFab.remove();
   if(!S.authReady)return;
@@ -3915,6 +4121,7 @@ function draw(){
   $("app").className=r=="pro"?"pro":"";
   $("app").innerHTML=h;
   var _nm=$("mt");if(_nm&&_mtv!==null){_nm.value=_mtv;if(_mtf)_nm.focus();}
+  if(S.curChatId!==null){var _wb=$("waBody");if(_wb)_wb.scrollTop=_wb.scrollHeight;}
 }
 
 
