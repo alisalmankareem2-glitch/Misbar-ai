@@ -1,5 +1,5 @@
 /* Service Worker - مسبار AI (تحديث تلقائي فوري + عمل بدون إنترنت) */
-const CACHE_NAME = 'misbar-ai-v2.2.0';
+const CACHE_NAME = 'misbar-ai-v2.4.0';
 const CORE_ASSETS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', (event) => {

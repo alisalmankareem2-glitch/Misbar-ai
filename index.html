@@ -60,6 +60,19 @@ nav button.on{color:var(--ac)}nav i{display:block;font-style:normal;font-size:19
 .quiz-opt.bad{border-color:#b91c1c;background:#fee2e2;color:#7f1d1d}
 #md{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:30}.mc{background:var(--sf);padding:16px;border-radius:14px;width:min(360px,92%)}
 #toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#14213d;color:#fff;padding:10px 16px;border-radius:10px;display:none;z-index:25;font-size:13px;text-align:center;max-width:90%}
+/* CamScanner Pro Studio Styles */
+.scn-stage{position:relative;background:#0b101b;border-radius:14px;overflow:hidden;touch-action:none;user-select:none;display:flex;align-items:center;justify-content:center;min-height:300px;max-height:62vh;border:1px solid var(--ln)}
+.scn-stage canvas,.scn-stage img{max-width:100%;max-height:62vh;display:block}
+.flt-bar{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 10px;scrollbar-width:none}
+.flt-bar::-webkit-scrollbar{display:none}
+.flt-btn{flex:0 0 auto;width:86px;padding:6px;border-radius:12px;border:2px solid var(--ln);background:var(--sf);color:var(--tx);font:600 11px Cairo,sans-serif;text-align:center;cursor:pointer;transition:.15s}
+.flt-btn.on{border-color:var(--ac);background:var(--acs);color:var(--ac);transform:translateY(-2px)}
+.flt-thumb{width:100%;height:68px;object-fit:cover;border-radius:7px;margin-bottom:4px;background:#111;border:1px solid rgba(0,0,0,.12);display:block}
+.scn-page-card{background:var(--sf);border:1.5px solid var(--ln);border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:6px;position:relative;box-shadow:0 2px 6px rgba(0,0,0,.04)}
+.scn-page-thumb{width:100%;aspect-ratio:3/4;object-fit:contain;background:#eef1f6;border-radius:8px;cursor:pointer}
+.scn-add-bar{position:sticky;bottom:78px;z-index:7;background:var(--sf);border:2px solid var(--ac);border-radius:16px;padding:10px;box-shadow:0 6px 20px rgba(0,0,0,.15);margin-top:12px}
+.pos-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0;max-height:220px;overflow-y:auto}
+
 /* A4 Sheet & Booklet Print Styles */
 .sheet-wrap{overflow-x:auto;padding-bottom:8px}
 .sheet{background:#fff;color:#000;padding:18px 20px;border-radius:6px;line-height:1.85;min-height:360px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
@@ -72,6 +85,7 @@ nav button.on{color:var(--ac)}nav i{display:block;font-style:normal;font-size:19
   main{padding:0;max-width:none}
   .sheet-wrap{overflow:visible;padding:0}
   .sheet,.bk-page{border-radius:0;box-shadow:none;margin:0;min-height:275mm}
+  .scn-print-page{width:100%;height:275mm;object-fit:contain;display:block;page-break-after:always;break-after:page}
   @page{size:A4;margin:10mm}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -87,7 +101,7 @@ nav button.on{color:var(--ac)}nav i{display:block;font-style:normal;font-size:19
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.2.0";
+var APP_VERSION = "2.4.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -138,7 +152,7 @@ var S={
   bank:[],bi:"",bt:"",ai:[],free:5,prov:"Gemini",
   plans:[{n:"أسبوعي",p:2000,v:1,u:"أسبوع"},{n:"شهري",p:5000,v:1,u:"شهر"},{n:"6 أشهر",p:25000,v:6,u:"شهر"},{n:"سنوي",p:45000,v:12,u:"شهر"}],
   subs:[],req:[],allUsers:[],rt:0,rs:"new",rq:"",pick:null,subv:0,
-  fl:[{n:"ملفاتي",it:[]}],fo:0,use:{},
+  fl:[{n:"ملفاتي",it:[]}],fo:0,scnAutoCrop:true,scnQuery:"",scnDocId:null,scnEd:null,scnPrintDoc:null,scnSelectMode:false,scnSelected:{},use:{},
   cv:[{n:"ملاحظاتي السريعة",g:0,msgs:[]}],curChat:null,
   gw:null,pp:null,bk:null,docs:[],
   planRows:null,pi:"",per:"أسبوعية",pv:0
@@ -164,7 +178,26 @@ function loadUserDeviceData(){
     S.userAiKey = (localStorage.getItem("misbar_gkey_"+(S.uid||"anon"))||"").trim();
     S.driveToken = sessionStorage.getItem("misbar_dtoken_"+(S.uid||"")) || "";
     S.driveLastSync = localStorage.getItem(p+"driveLastSync") || "";
+    var acPref = localStorage.getItem(p+"scnAutoCrop");
+    if(acPref !== null) S.scnAutoCrop = acPref === "1";
+    S.scnDocId = localStorage.getItem(p+"scnDocId") || null;
+    migrateScannerFolders();
   }catch(e){}
+}
+function migrateScannerFolders(){
+  if(!Array.isArray(S.fl) || !S.fl.length) S.fl = [{n:"ملفاتي",it:[]}];
+  S.fl.forEach(function(folder){
+    if(!Array.isArray(folder.it)) folder.it = [];
+    folder.it = folder.it.map(function(item, idx){
+      if(item && Array.isArray(item.pages)) return item;
+      return {
+        id: item.id || ("scn_" + Date.now() + "_" + idx),
+        title: item.n || ("مستند " + (idx+1)),
+        at: item.at || Date.now(),
+        pages: item.d ? [{d: item.d, filter: "magic", corners: [[0,0],[1,0],[1,1],[0,1]], rot: 0, bright: 0, contrast: 15}] : []
+      };
+    });
+  });
 }
 
 function saveDeviceOnly(){
@@ -1409,13 +1442,1151 @@ function sendBagItem(bi,fi){
   saveAllUserStorage();toast("تم الإرسال إلى كلاس: "+S.classes[0].n);
 }
 
-function filesV(){var f=S.fl[S.fo]||S.fl[0];return '<h2>ملفاتي المصورة</h2><div class="card"><div class="row" style="flex-wrap:wrap">'+S.fl.map(function(x,i){return '<button class="b '+(i==S.fo?'':'s')+'" onclick="S.fo='+i+';draw()">📁 '+esc(x.n)+' ('+x.it.length+')</button>'}).join("")+'<button class="b s" onclick="newFo()">+ مجلد</button></div></div><div class="grid" style="margin-bottom:10px"><button class="b" onclick="scan()">📷 مسح ملزمة بالكاميرا</button><button class="b s" onclick="upF()">📎 رفع ملف أو صورة</button></div>'+(f.it.length?f.it.map(function(it,i){return '<div class="card"><div class="row"><b class="grow">'+esc(it.n)+'</b><button class="b d" onclick="delF('+i+')">حذف</button></div>'+(it.d?'<img src="'+it.d+'" alt="" style="max-width:100%;border-radius:10px;margin-top:8px">':'')+'<div class="mu">'+esc(it.t)+'</div></div>'}).join(""):'<div class="card mu">المجلد فارغ. صوّر ملزمة أو ارفع ملفاً لتحفظه هنا وعلى Google Drive.</div>')+(S.fl.length>1?'<button class="b d" onclick="delFo()">حذف هذا المجلد</button>':'')}
-function addImg(file){var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){var k=Math.min(1,1200/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=im.width*k;c.height=im.height*k;c.getContext("2d").drawImage(im,0,0,c.width,c.height);S.fl[S.fo].it.unshift({n:"مسح "+fd(Date.now()),d:c.toDataURL("image/jpeg",0.78),t:"صورة ممسوحة"});saveAllUserStorage();draw()};im.onerror=function(){toast("تعذرت قراءة الصورة")};im.src=r.result};r.readAsDataURL(file)}
-function scan(){var f=document.createElement("input");f.type="file";f.accept="image/*";f.setAttribute("capture","environment");f.onchange=function(){if(f.files[0])addImg(f.files[0])};f.click()}
-function upF(){var f=document.createElement("input");f.type="file";f.accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.txt";f.onchange=function(){var x=f.files[0];if(!x)return;if(/^image\//.test(x.type))addImg(x);else{S.fl[S.fo].it.unshift({n:x.name,d:"",t:"ملف "+Math.round(x.size/1024)+" ك.ب"});saveAllUserStorage();draw()}};f.click()}
-function newFo(){ask("اسم المجلد",function(n){S.fl.push({n:n,it:[]});S.fo=S.fl.length-1;saveAllUserStorage();draw()})}
-function delF(i){S.fl[S.fo].it.splice(i,1);saveAllUserStorage();draw()}
-function delFo(){S.fl.splice(S.fo,1);S.fo=0;saveAllUserStorage();draw()}
+/* ============================================================================
+   [الأساس ٧] محرك السكنر الاحترافي المبسط (CamScanner Pro v2.4):
+   - تجذيب تلقائي للحواف (تشغيل/إيقاف بضغطة) + تشذيب يدوي سلس مع عدسة مكبرة
+   - معاينة حية للصورة نفسها بكل فلاتر السكنر الحقيقية (سحري، أبيض وأسود، إزالة ظل، رمادي، تباين، أصلية)
+   - بقاء الملف مفتوحاً لإضافة صور بالكاميرا أو بالجملة من المعرض بأي وقت
+   - تعديل تسلسل الصفحات بلمسة واحدة (نقل الصفحة ٣ إلى ١ أو ١ إلى ١٠ مباشرة)
+   - توليد ملف PDF حقيقي (.pdf) وإرساله مباشرة عبر واتساب/تليغرام أو حفظه بالجهاز و Google Drive
+   - دمج عدة ملفات في المجلد وتصديرها معاً بملف PDF واحد
+   ============================================================================ */
+
+var SCN_FILTERS = [
+  {id:"magic", name:"سحري ملون"},
+  {id:"bw",    name:"أبيض وأسود"},
+  {id:"light", name:"تفتيح صافي"},
+  {id:"gray",  name:"رمادي ناعم"},
+  {id:"high",  name:"تباين بارز"},
+  {id:"orig",  name:"الصورة الأصلية"}
+];
+
+function setOpenScnDoc(docId){
+  S.scnDocId = docId || null;
+  try{
+    if(docId) localStorage.setItem(storagePrefix()+"scnDocId", docId);
+    else localStorage.removeItem(storagePrefix()+"scnDocId");
+  }catch(e){}
+}
+
+function toggleScnAutoCrop(){
+  S.scnAutoCrop = !S.scnAutoCrop;
+  try{ localStorage.setItem(storagePrefix()+"scnAutoCrop", S.scnAutoCrop ? "1" : "0"); }catch(e){}
+  if(S.scnEd && S.scnEd.rawImg){
+    if(S.scnAutoCrop){
+      S.scnEd.corners = detectDocumentCorners(S.scnEd.rawImg);
+      toast("🎯 التجذيب التلقائي: مفعّل (تم تحديد الورقة)");
+    }else{
+      S.scnEd.corners = [[0,0],[1,0],[1,1],[0,1]];
+      toast("⬜ التجذيب التلقائي: متوقف (كامل الصورة)");
+    }
+    if(S.scnEd.step === "crop") drawCropOverlay();
+    else { generateFilterThumbnails(); renderFilteredPreview(); draw(); }
+  }else{
+    toast(S.scnAutoCrop ? "🎯 التجذيب التلقائي: مفعّل" : "⬜ التجذيب التلقائي: متوقف");
+    draw();
+  }
+}
+
+/* كشف حدود الورقة تلقائياً */
+function detectDocumentCorners(img){
+  try{
+    var maxD = 260;
+    var scale = Math.min(1, maxD / Math.max(img.width, img.height));
+    var w = Math.max(40, Math.round(img.width * scale));
+    var h = Math.max(40, Math.round(img.height * scale));
+    var c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    var ctx = c.getContext("2d");
+    ctx.drawImage(img, 0, 0, w, h);
+    var d = ctx.getImageData(0, 0, w, h).data;
+
+    var gray = new Float32Array(w * h);
+    for(var i = 0, p = 0; i < gray.length; i++, p += 4){
+      gray[i] = 0.299 * d[p] + 0.587 * d[p+1] + 0.114 * d[p+2];
+    }
+
+    var edges = new Float32Array(w * h);
+    var maxE = 1;
+    for(var y = 1; y < h - 1; y++){
+      for(var x = 1; x < w - 1; x++){
+        var idx = y * w + x;
+        var gx = -gray[idx - w - 1] + gray[idx - w + 1] - 2*gray[idx - 1] + 2*gray[idx + 1] - gray[idx + w - 1] + gray[idx + w + 1];
+        var gy = -gray[idx - w - 1] - 2*gray[idx - w] - gray[idx - w + 1] + gray[idx + w - 1] + 2*gray[idx + w] + gray[idx + w + 1];
+        var mag = Math.sqrt(gx*gx + gy*gy);
+        edges[idx] = mag;
+        if(mag > maxE) maxE = mag;
+      }
+    }
+
+    var thresh = maxE * 0.24;
+    var tl = [0.06, 0.06], tr = [0.94, 0.06], br = [0.94, 0.94], bl = [0.06, 0.94];
+    var bestTL = 1e9, bestTR = -1e9, bestBR = -1e9, bestBL = -1e9;
+    var found = 0;
+    var marginX = Math.round(w * 0.03), marginY = Math.round(h * 0.03);
+
+    for(var y2 = marginY; y2 < h - marginY; y2++){
+      for(var x2 = marginX; x2 < w - marginX; x2++){
+        var id2 = y2 * w + x2;
+        if(edges[id2] > thresh){
+          found++;
+          var nx = x2 / w, ny = y2 / h;
+          var s1 = nx + ny, s2 = nx - ny;
+          if(s1 < bestTL){ bestTL = s1; tl = [nx, ny]; }
+          if(s1 > bestBR){ bestBR = s1; br = [nx, ny]; }
+          if(s2 > bestTR){ bestTR = s2; tr = [nx, ny]; }
+          if(-s2 > bestBL){ bestBL = -s2; bl = [nx, ny]; }
+        }
+      }
+    }
+
+    var area = 0.5 * Math.abs(
+      tl[0]*tr[1] - tr[0]*tl[1] + tr[0]*br[1] - br[0]*tr[1] +
+      br[0]*bl[1] - bl[0]*br[1] + bl[0]*tl[1] - tl[0]*bl[1]
+    );
+    if(found < 25 || area < 0.22){
+      return [[0.05, 0.05], [0.95, 0.05], [0.95, 0.95], [0.05, 0.95]];
+    }
+    return [tl, tr, br, bl];
+  }catch(e){
+    return [[0.05, 0.05], [0.95, 0.05], [0.95, 0.95], [0.05, 0.95]];
+  }
+}
+
+/* مصفوفة تعديل المنظور وتصحيح ميلان الورقة */
+function computeHomography(srcPts, dstW, dstH){
+  var dstPts = [[0,0],[dstW,0],[dstW,dstH],[0,dstH]];
+  var A = [], B = [];
+  for(var i = 0; i < 4; i++){
+    var u = dstPts[i][0], v = dstPts[i][1];
+    var x = srcPts[i][0], y = srcPts[i][1];
+    A.push([u, v, 1, 0, 0, 0, -x*u, -x*v]); B.push(x);
+    A.push([0, 0, 0, u, v, 1, -y*u, -y*v]); B.push(y);
+  }
+  var n = 8;
+  for(var col = 0; col < n; col++){
+    var maxRow = col;
+    for(var row = col + 1; row < n; row++){
+      if(Math.abs(A[row][col]) > Math.abs(A[maxRow][col])) maxRow = row;
+    }
+    var tmpA = A[col]; A[col] = A[maxRow]; A[maxRow] = tmpA;
+    var tmpB = B[col]; B[col] = B[maxRow]; B[maxRow] = tmpB;
+    if(Math.abs(A[col][col]) < 1e-9) continue;
+    for(var row2 = col + 1; row2 < n; row2++){
+      var f = A[row2][col] / A[col][col];
+      for(var k = col; k < n; k++) A[row2][k] -= f * A[col][k];
+      B[row2] -= f * B[col];
+    }
+  }
+  var H = new Array(9);
+  for(var i2 = n - 1; i2 >= 0; i2--){
+    var sum = B[i2];
+    for(var j = i2 + 1; j < n; j++) sum -= A[i2][j] * H[j];
+    H[i2] = sum / (A[i2][i2] || 1);
+  }
+  H[8] = 1;
+  return H;
+}
+
+/* معالجة الصفحة وتطبيق الفلاتر الحقيقية (مع إمكانية تحديد حجم مصغر للمعاينة السريعة) */
+function processScannedPage(img, corners, filterId, rotDeg, brightAdj, contrastAdj, maxLimit){
+  var sw = img.width, sh = img.height;
+  var pts = corners.map(function(c){ return [c[0]*sw, c[1]*sh]; });
+  var topW = Math.hypot(pts[1][0]-pts[0][0], pts[1][1]-pts[0][1]);
+  var botW = Math.hypot(pts[2][0]-pts[3][0], pts[2][1]-pts[3][1]);
+  var leftH = Math.hypot(pts[3][0]-pts[0][0], pts[3][1]-pts[0][1]);
+  var rightH = Math.hypot(pts[2][0]-pts[1][0], pts[2][1]-pts[1][1]);
+
+  var outW = Math.max(60, Math.round(Math.max(topW, botW)));
+  var outH = Math.max(60, Math.round(Math.max(leftH, rightH)));
+  var maxDim = maxLimit || 1280;
+  if(Math.max(outW, outH) > maxDim){
+    var sc = maxDim / Math.max(outW, outH);
+    outW = Math.max(40, Math.round(outW * sc));
+    outH = Math.max(40, Math.round(outH * sc));
+  }
+
+  var srcCanvas = document.createElement("canvas");
+  srcCanvas.width = sw; srcCanvas.height = sh;
+  var sCtx = srcCanvas.getContext("2d");
+  sCtx.drawImage(img, 0, 0, sw, sh);
+  var sData = sCtx.getImageData(0, 0, sw, sh).data;
+
+  var warpCanvas = document.createElement("canvas");
+  warpCanvas.width = outW; warpCanvas.height = outH;
+  var wCtx = warpCanvas.getContext("2d");
+  var dstImgData = wCtx.createImageData(outW, outH);
+  var dData = dstImgData.data;
+
+  var isFullFrame = (
+    Math.abs(corners[0][0]) < 0.005 && Math.abs(corners[0][1]) < 0.005 &&
+    Math.abs(corners[1][0]-1) < 0.005 && Math.abs(corners[1][1]) < 0.005 &&
+    Math.abs(corners[2][0]-1) < 0.005 && Math.abs(corners[2][1]-1) < 0.005 &&
+    Math.abs(corners[3][0]) < 0.005 && Math.abs(corners[3][1]-1) < 0.005
+  );
+
+  if(isFullFrame){
+    wCtx.drawImage(img, 0, 0, outW, outH);
+    dstImgData = wCtx.getImageData(0, 0, outW, outH);
+    dData = dstImgData.data;
+  }else{
+    var H = computeHomography(pts, outW, outH);
+    for(var v = 0; v < outH; v++){
+      for(var u = 0; u < outW; u++){
+        var denom = H[6]*u + H[7]*v + 1;
+        var sx = (H[0]*u + H[1]*v + H[2]) / denom;
+        var sy = (H[3]*u + H[4]*v + H[5]) / denom;
+        var di = (v * outW + u) * 4;
+        if(sx >= 0 && sx < sw - 1 && sy >= 0 && sy < sh - 1){
+          var x0 = sx | 0, y0 = sy | 0;
+          var fx = sx - x0, fy = sy - y0;
+          var i00 = (y0 * sw + x0) * 4;
+          var i10 = i00 + 4;
+          var i01 = i00 + sw * 4;
+          var i11 = i01 + 4;
+          var w00 = (1-fx)*(1-fy), w10 = fx*(1-fy), w01 = (1-fx)*fy, w11 = fx*fy;
+          dData[di]   = sData[i00]*w00 + sData[i10]*w10 + sData[i01]*w01 + sData[i11]*w11;
+          dData[di+1] = sData[i00+1]*w00 + sData[i10+1]*w10 + sData[i01+1]*w01 + sData[i11+1]*w11;
+          dData[di+2] = sData[i00+2]*w00 + sData[i10+2]*w10 + sData[i01+2]*w01 + sData[i11+2]*w11;
+          dData[di+3] = 255;
+        }else{
+          dData[di] = dData[di+1] = dData[di+2] = dData[di+3] = 255;
+        }
+      }
+    }
+  }
+
+  var bOffset = (Number(brightAdj) || 0) * 1.4;
+  var cVal = (Number(contrastAdj) || 0);
+  var cFactor = (259 * (cVal + 255)) / (255 * (259 - cVal));
+
+  var bgMap = null;
+  if(filterId === "magic" || filterId === "bw" || filterId === "light"){
+    var bw = Math.max(12, Math.round(outW / 16));
+    var bh = Math.max(12, Math.round(outH / 16));
+    var smallC = document.createElement("canvas");
+    smallC.width = bw; smallC.height = bh;
+    var tmpC = document.createElement("canvas");
+    tmpC.width = outW; tmpC.height = outH;
+    tmpC.getContext("2d").putImageData(dstImgData, 0, 0);
+    var smCtx = smallC.getContext("2d");
+    smCtx.drawImage(tmpC, 0, 0, bw, bh);
+    var smD = smCtx.getImageData(0, 0, bw, bh).data;
+    var dilD = new Uint8ClampedArray(smD.length);
+    for(var sy2 = 0; sy2 < bh; sy2++){
+      for(var sx2 = 0; sx2 < bw; sx2++){
+        var mr = 0, mg = 0, mb = 0;
+        for(var dy = -1; dy <= 1; dy++){
+          for(var dx = -1; dx <= 1; dx++){
+            var ny2 = Math.min(bh-1, Math.max(0, sy2+dy));
+            var nx2 = Math.min(bw-1, Math.max(0, sx2+dx));
+            var si = (ny2*bw + nx2)*4;
+            if(smD[si] > mr) mr = smD[si];
+            if(smD[si+1] > mg) mg = smD[si+1];
+            if(smD[si+2] > mb) mb = smD[si+2];
+          }
+        }
+        var oi = (sy2*bw + sx2)*4;
+        dilD[oi] = Math.max(90, mr);
+        dilD[oi+1] = Math.max(90, mg);
+        dilD[oi+2] = Math.max(90, mb);
+        dilD[oi+3] = 255;
+      }
+    }
+    smCtx.putImageData(new ImageData(dilD, bw, bh), 0, 0);
+    var upCtx = tmpC.getContext("2d");
+    upCtx.clearRect(0, 0, outW, outH);
+    upCtx.drawImage(smallC, 0, 0, outW, outH);
+    bgMap = upCtx.getImageData(0, 0, outW, outH).data;
+  }
+
+  for(var idx2 = 0; idx2 < dData.length; idx2 += 4){
+    var r = dData[idx2], g = dData[idx2+1], b = dData[idx2+2];
+    if(filterId === "magic"){
+      var br = bgMap[idx2], bg = bgMap[idx2+1], bb = bgMap[idx2+2];
+      r = Math.min(255, (r / br) * 252);
+      g = Math.min(255, (g / bg) * 252);
+      b = Math.min(255, (b / bb) * 252);
+      r = ((r / 255 - 0.5) * 1.38 + 0.5) * 255;
+      g = ((g / 255 - 0.5) * 1.38 + 0.5) * 255;
+      b = ((b / 255 - 0.5) * 1.38 + 0.5) * 255;
+      var avg = (r + g + b) / 3;
+      r = avg + (r - avg) * 1.25;
+      g = avg + (g - avg) * 1.25;
+      b = avg + (b - avg) * 1.25;
+      if(r > 232 && g > 232 && b > 232){ r = g = b = 255; }
+    }else if(filterId === "bw"){
+      var lum = 0.299*r + 0.587*g + 0.114*b;
+      var bgLum = 0.299*bgMap[idx2] + 0.587*bgMap[idx2+1] + 0.114*bgMap[idx2+2];
+      var ratio = lum / Math.max(80, bgLum);
+      var val = ratio < 0.78 ? 0 : (ratio > 0.90 ? 255 : ((ratio - 0.78) / 0.12) * 255);
+      r = g = b = val;
+    }else if(filterId === "gray"){
+      var gr = 0.299*r + 0.587*g + 0.114*b;
+      gr = ((gr / 255 - 0.5) * 1.35 + 0.53) * 255;
+      r = g = b = gr;
+    }else if(filterId === "light"){
+      r = (r / bgMap[idx2]) * 250;
+      g = (g / bgMap[idx2+1]) * 250;
+      b = (b / bgMap[idx2+2]) * 250;
+    }else if(filterId === "high"){
+      r = ((r / 255 - 0.5) * 1.55 + 0.52) * 255;
+      g = ((g / 255 - 0.5) * 1.55 + 0.52) * 255;
+      b = ((b / 255 - 0.5) * 1.55 + 0.52) * 255;
+    }
+
+    r = cFactor * (r + bOffset - 128) + 128;
+    g = cFactor * (g + bOffset - 128) + 128;
+    b = cFactor * (b + bOffset - 128) + 128;
+
+    dData[idx2]   = r < 0 ? 0 : (r > 255 ? 255 : r);
+    dData[idx2+1] = g < 0 ? 0 : (g > 255 ? 255 : g);
+    dData[idx2+2] = b < 0 ? 0 : (b > 255 ? 255 : b);
+  }
+
+  wCtx.putImageData(dstImgData, 0, 0);
+
+  var rot = ((Number(rotDeg) || 0) % 360 + 360) % 360;
+  if(rot === 0){
+    return warpCanvas.toDataURL("image/jpeg", maxLimit ? 0.70 : 0.82);
+  }
+  var rCanvas = document.createElement("canvas");
+  if(rot === 90 || rot === 270){ rCanvas.width = outH; rCanvas.height = outW; }
+  else{ rCanvas.width = outW; rCanvas.height = outH; }
+  var rCtx = rCanvas.getContext("2d");
+  rCtx.translate(rCanvas.width/2, rCanvas.height/2);
+  rCtx.rotate(rot * Math.PI / 180);
+  rCtx.drawImage(warpCanvas, -outW/2, -outH/2);
+  return rCanvas.toDataURL("image/jpeg", maxLimit ? 0.70 : 0.82);
+}
+
+/* توليد مصغرات حقيقية لنفس صورة المستخدم بكل الفلاتر (مثل CamScanner تماماً) */
+function generateFilterThumbnails(){
+  if(!S.scnEd || !S.scnEd.rawImg) return;
+  var thumbs = {};
+  SCN_FILTERS.forEach(function(fl){
+    thumbs[fl.id] = processScannedPage(S.scnEd.rawImg, S.scnEd.corners, fl.id, S.scnEd.rot, 0, fl.id === "orig" ? 0 : 10, 120);
+  });
+  S.scnEd.thumbs = thumbs;
+}
+
+/* مسح صورة بالكاميرا أو استيراد صورة/عدة صور دفعة واحدة من المعرض */
+function startNewScan(useCamera, targetDocId, editPageIdx){
+  var inp = document.createElement("input");
+  inp.type = "file";
+  inp.accept = "image/*";
+  if(useCamera){
+    inp.setAttribute("capture", "environment");
+  }else if(editPageIdx == null || editPageIdx < 0){
+    inp.multiple = true; // يسمح باختيار مجموعة صور دفعة واحدة من المعرض!
+  }
+  inp.onchange = function(){
+    var files = Array.from(inp.files || []);
+    if(!files.length) return;
+    if(files.length === 1){
+      openSingleFileInCropper(files[0], targetDocId, editPageIdx);
+    }else{
+      batchImportMultipleImages(files, targetDocId);
+    }
+  };
+  inp.click();
+}
+
+function openSingleFileInCropper(file, targetDocId, editPageIdx){
+  var reader = new FileReader();
+  reader.onload = function(){
+    var im = new Image();
+    im.onload = function(){
+      var k = Math.min(1, 1400 / Math.max(im.width, im.height));
+      var c = document.createElement("canvas");
+      c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+      c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+      var rawUrl = c.toDataURL("image/jpeg", 0.86);
+      var cleanImg = new Image();
+      cleanImg.onload = function(){
+        var autoCorners = S.scnAutoCrop
+          ? detectDocumentCorners(cleanImg)
+          : [[0,0],[1,0],[1,1],[0,1]];
+        S.scnEd = {
+          step: "crop",
+          rawImg: cleanImg,
+          rawSrc: rawUrl,
+          corners: autoCorners,
+          filter: "magic",
+          rot: 0,
+          bright: 0,
+          contrast: 10,
+          dragIdx: -1,
+          dragPt: null,
+          targetDocId: targetDocId || null,
+          editPageIdx: (editPageIdx != null) ? editPageIdx : -1,
+          thumbs: {},
+          previewUrl: ""
+        };
+        draw();
+      };
+      cleanImg.src = rawUrl;
+    };
+    im.onerror = function(){ toast("تعذرت قراءة الصورة"); };
+    im.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+/* استيراد مجموعة صور دفعة واحدة مع تجذيب تلقائي وفلتر السكنر السحري */
+async function batchImportMultipleImages(files, targetDocId){
+  var folder = S.fl[S.fo] || S.fl[0];
+  var doc = targetDocId ? folder.it.find(function(x){ return x.id === targetDocId; }) : null;
+  if(!doc){
+    targetDocId = "scn_" + Date.now();
+    doc = { id: targetDocId, title: "ملزمة ممسوحة " + fd(Date.now()), at: Date.now(), pages: [] };
+    folder.it.unshift(doc);
+  }
+  toast("⏳ جاري معالجة وتجذيب " + files.length + " صور تلقائياً...");
+  for(var i = 0; i < files.length; i++){
+    await new Promise(function(resolve){
+      var r = new FileReader();
+      r.onload = function(){
+        var im = new Image();
+        im.onload = function(){
+          var k = Math.min(1, 1300 / Math.max(im.width, im.height));
+          var c = document.createElement("canvas");
+          c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+          c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+          var rawUrl = c.toDataURL("image/jpeg", 0.84);
+          var cleanIm = new Image();
+          cleanIm.onload = function(){
+            var crn = S.scnAutoCrop ? detectDocumentCorners(cleanIm) : [[0,0],[1,0],[1,1],[0,1]];
+            var processed = processScannedPage(cleanIm, crn, "magic", 0, 0, 10);
+            doc.pages.push({ d: processed, raw: rawUrl, filter: "magic", corners: crn, rot: 0, bright: 0, contrast: 10 });
+            resolve();
+          };
+          cleanIm.src = rawUrl;
+        };
+        im.onerror = resolve;
+        im.src = r.result;
+      };
+      r.readAsDataURL(files[i]);
+    });
+  }
+  doc.at = Date.now();
+  setOpenScnDoc(targetDocId);
+  saveAllUserStorage();
+  toast("✅ أُضيفت " + files.length + " صفحات للملف بنجاح!");
+  draw();
+}
+
+function reEditExistingPage(docId, pageIdx){
+  var folder = S.fl[S.fo] || S.fl[0];
+  var doc = folder.it.find(function(x){ return x.id === docId; });
+  if(!doc || !doc.pages[pageIdx]) return;
+  var pg = doc.pages[pageIdx];
+  var im = new Image();
+  im.onload = function(){
+    S.scnEd = {
+      step: "filter",
+      rawImg: im,
+      rawSrc: pg.raw || pg.d,
+      corners: pg.raw ? (pg.corners || [[0,0],[1,0],[1,1],[0,1]]) : [[0,0],[1,0],[1,1],[0,1]],
+      filter: pg.filter || "magic",
+      rot: pg.rot || 0,
+      bright: pg.bright || 0,
+      contrast: (pg.contrast != null) ? pg.contrast : 10,
+      dragIdx: -1,
+      dragPt: null,
+      targetDocId: docId,
+      editPageIdx: pageIdx,
+      thumbs: {},
+      previewUrl: pg.d
+    };
+    generateFilterThumbnails();
+    draw();
+  };
+  im.src = pg.raw || pg.d;
+}
+
+/* شاشة محرر السكنر (القص الذكي + عدسة التكبير + شريط الفلاتر بصورة المستخدم نفسها) */
+function scnEditorScr(){
+  var f = $("fab"); if(f) f.remove();
+  $("app").className = "pro";
+  var ed = S.scnEd;
+  if(ed.step === "crop"){
+    $("app").innerHTML =
+      '<header><h1>✂️ تشذيب حواف الورقة</h1><button class="b s" onclick="S.scnEd=null;draw()">إلغاء</button></header>' +
+      '<main>' +
+        '<div class="card" style="padding:10px 12px">' +
+          '<div class="row">' +
+            '<span class="grow"><b>🎯 التجذيب التلقائي</b><div class="mu">'+(S.scnAutoCrop?'شغّال — يحدد الورقة تلقائياً وتقدر تعدلها بيدك':'متوقف — يأخذ كامل الصورة بدون قص')+'</div></span>' +
+            '<button class="tog'+(S.scnAutoCrop?' on':'')+'" aria-label="التجذيب التلقائي" onclick="toggleScnAutoCrop()"></button>' +
+          '</div>' +
+          '<div class="grid" style="margin-top:8px">' +
+            '<button class="b s" onclick="S.scnEd.corners=detectDocumentCorners(S.scnEd.rawImg);drawCropOverlay();toast(\'تم التحسس التلقائي للحواف\')">🎯 تحسس الورقة</button>' +
+            '<button class="b s" onclick="S.scnEd.corners=[[0,0],[1,0],[1,1],[0,1]];drawCropOverlay();toast(\'تم اختيار كامل الصورة\')">⬜ كامل الصورة</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="scn-stage" id="cropStage"><canvas id="cropCanvas"></canvas></div>' +
+        '<div class="mu" style="text-align:center;margin:6px 0">اسحب النقاط الأربع لتعديل الزوايا يدوياً (مع عدسة مكبرة تلقائية)</div>' +
+        '<button class="b" style="width:100%;font-size:15px;min-height:48px" onclick="proceedToScannerFilters()">التالي: فلاتر السكنر الحقيقية ←</button>' +
+      '</main>';
+    setTimeout(initCropCanvasEvents, 20);
+  }else{
+    var thumbs = ed.thumbs || {};
+    $("app").innerHTML =
+      '<header><h1>🎨 فلاتر السكنر</h1><button class="b s" onclick="S.scnEd.step=\'crop\';draw()">✂️ تعديل القص</button><button class="b s" onclick="S.scnEd=null;draw()">إلغاء</button></header>' +
+      '<main>' +
+        '<div class="scn-stage"><img id="scnPrevImg" src="'+ed.previewUrl+'" alt="معاينة السكنر"></div>' +
+        '<div class="flt-bar" style="margin-top:8px">' +
+          SCN_FILTERS.map(function(fl){
+            var th = thumbs[fl.id] || ed.previewUrl;
+            return '<button type="button" class="flt-btn '+(ed.filter===fl.id?'on':'')+'" onclick="setScannerFilter(\''+fl.id+'\')">' +
+              '<img class="flt-thumb" src="'+th+'" alt="'+fl.name+'">' +
+              '<div>'+fl.name+'</div>' +
+            '</button>';
+          }).join("") +
+        '</div>' +
+        '<div class="card" style="padding:10px 12px">' +
+          '<div class="grid">' +
+            '<div><label>☀️ الإضاءة ('+ed.bright+')</label><input type="range" min="-40" max="40" value="'+ed.bright+'" onchange="S.scnEd.bright=+this.value;renderFilteredPreview()"></div>' +
+            '<div><label>🌓 التباين ('+ed.contrast+')</label><input type="range" min="-30" max="50" value="'+ed.contrast+'" onchange="S.scnEd.contrast=+this.value;renderFilteredPreview()"></div>' +
+          '</div>' +
+          '<div class="grid">' +
+            '<button class="b s" onclick="S.scnEd.rot=(S.scnEd.rot+90)%360;generateFilterThumbnails();renderFilteredPreview();draw()">↻ تدوير 90°</button>' +
+            '<button class="b s" onclick="S.scnEd.bright=0;S.scnEd.contrast=10;S.scnEd.rot=0;renderFilteredPreview();draw()">↺ الوضع القياسي</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="grid">' +
+          '<button class="b" style="background:#15803d;min-height:48px" onclick="commitScannedPage(false)">✅ حفظ بالملف</button>' +
+          '<button class="b s" style="min-height:48px" onclick="commitScannedPage(true)">📷 حفظ وتصوير تالية</button>' +
+        '</div>' +
+      '</main>';
+  }
+}
+
+function initCropCanvasEvents(){
+  var cv = $("cropCanvas"); if(!cv || !S.scnEd) return;
+  drawCropOverlay();
+
+  function getPos(e){
+    var rect = cv.getBoundingClientRect();
+    var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    var nx = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    var ny = Math.min(1, Math.max(0, (clientY - rect.top) / rect.height));
+    return [nx, ny];
+  }
+  function onDown(e){
+    var p = getPos(e), cs = S.scnEd.corners, best = -1, minD = 0.15;
+    for(var i = 0; i < 4; i++){
+      var d = Math.hypot(cs[i][0]-p[0], cs[i][1]-p[1]);
+      if(d < minD){ minD = d; best = i; }
+    }
+    if(best > -1){
+      S.scnEd.dragIdx = best;
+      S.scnEd.dragPt = cs[best];
+      e.preventDefault();
+      drawCropOverlay();
+    }
+  }
+  function onMove(e){
+    if(S.scnEd.dragIdx < 0) return;
+    e.preventDefault();
+    var pt = getPos(e);
+    S.scnEd.corners[S.scnEd.dragIdx] = pt;
+    S.scnEd.dragPt = pt;
+    drawCropOverlay();
+  }
+  function onUp(){
+    S.scnEd.dragIdx = -1;
+    S.scnEd.dragPt = null;
+    drawCropOverlay();
+  }
+
+  cv.onmousedown = onDown; cv.onmousemove = onMove; window.onmouseup = onUp;
+  cv.ontouchstart = onDown; cv.ontouchmove = onMove; cv.ontouchend = onUp;
+}
+
+function drawCropOverlay(){
+  var cv = $("cropCanvas"); if(!cv || !S.scnEd) return;
+  var im = S.scnEd.rawImg;
+  var maxW = Math.min(580, window.innerWidth - 44);
+  var sc = Math.min(1, maxW / im.width);
+  var cw = Math.round(im.width * sc), ch = Math.round(im.height * sc);
+  cv.width = cw; cv.height = ch;
+  var ctx = cv.getContext("2d");
+  ctx.drawImage(im, 0, 0, cw, ch);
+
+  var cs = S.scnEd.corners.map(function(c){ return [c[0]*cw, c[1]*ch]; });
+
+  // تظليل خارج الورقة
+  ctx.save();
+  ctx.fillStyle = "rgba(0, 0, 0, 0.48)";
+  ctx.beginPath();
+  ctx.rect(0, 0, cw, ch);
+  ctx.moveTo(cs[0][0], cs[0][1]);
+  ctx.lineTo(cs[3][0], cs[3][1]);
+  ctx.lineTo(cs[2][0], cs[2][1]);
+  ctx.lineTo(cs[1][0], cs[1][1]);
+  ctx.closePath();
+  ctx.fill("evenodd");
+  ctx.restore();
+
+  // إطار أخضر ساطع مع شبكة محاذاة
+  ctx.strokeStyle = "#22c55e";
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(cs[0][0], cs[0][1]);
+  for(var i = 1; i < 4; i++) ctx.lineTo(cs[i][0], cs[i][1]);
+  ctx.closePath();
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(255,255,255,0.38)";
+  ctx.lineWidth = 1;
+  for(var g = 1; g <= 2; g++){
+    var t = g / 3;
+    ctx.beginPath();
+    ctx.moveTo(cs[0][0]*(1-t)+cs[1][0]*t, cs[0][1]*(1-t)+cs[1][1]*t);
+    ctx.lineTo(cs[3][0]*(1-t)+cs[2][0]*t, cs[3][1]*(1-t)+cs[2][1]*t);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cs[0][0]*(1-t)+cs[3][0]*t, cs[0][1]*(1-t)+cs[3][1]*t);
+    ctx.lineTo(cs[1][0]*(1-t)+cs[2][0]*t, cs[1][1]*(1-t)+cs[2][1]*t);
+    ctx.stroke();
+  }
+
+  // مقابض الزوايا الأربع + مقابض منتصف الأضلاع
+  for(var j = 0; j < 4; j++){
+    ctx.beginPath();
+    ctx.arc(cs[j][0], cs[j][1], 13, 0, Math.PI * 2);
+    ctx.fillStyle = (S.scnEd.dragIdx === j) ? "#22c55e" : "rgba(37, 99, 235, 0.92)";
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#ffffff";
+    ctx.stroke();
+  }
+
+  // عدسة مكبرة ذكية (Magnifier Loupe) عند سحب أي زاوية بالإصبع مثل CamScanner
+  if(S.scnEd.dragPt){
+    var px = S.scnEd.dragPt[0] * im.width;
+    var py = S.scnEd.dragPt[1] * im.height;
+    var rLoupe = 42;
+    var lx = (S.scnEd.dragPt[0] > 0.5) ? (rLoupe + 12) : (cw - rLoupe - 12);
+    var ly = rLoupe + 12;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(lx, ly, rLoupe, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.fillStyle = "#000";
+    ctx.fillRect(lx - rLoupe, ly - rLoupe, rLoupe*2, rLoupe*2);
+    var zoomCrop = 46;
+    ctx.drawImage(im, px - zoomCrop, py - zoomCrop, zoomCrop*2, zoomCrop*2, lx - rLoupe, ly - rLoupe, rLoupe*2, rLoupe*2);
+    // علامة الزائد الدقيقة بالوسط
+    ctx.strokeStyle = "#22c55e";
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(lx - 14, ly); ctx.lineTo(lx + 14, ly);
+    ctx.moveTo(lx, ly - 14); ctx.lineTo(lx, ly + 14);
+    ctx.stroke();
+    ctx.restore();
+    ctx.beginPath();
+    ctx.arc(lx, ly, rLoupe, 0, Math.PI * 2);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#ffffff";
+    ctx.stroke();
+  }
+}
+
+function proceedToScannerFilters(){
+  S.scnEd.step = "filter";
+  generateFilterThumbnails();
+  renderFilteredPreview();
+  draw();
+}
+
+function setScannerFilter(fid){
+  S.scnEd.filter = fid;
+  renderFilteredPreview();
+  draw();
+}
+
+function renderFilteredPreview(){
+  if(!S.scnEd) return;
+  var url = processScannedPage(S.scnEd.rawImg, S.scnEd.corners, S.scnEd.filter, S.scnEd.rot, S.scnEd.bright, S.scnEd.contrast);
+  S.scnEd.previewUrl = url;
+  var imEl = $("scnPrevImg");
+  if(imEl) imEl.src = url;
+}
+
+function commitScannedPage(scanAnother){
+  var ed = S.scnEd; if(!ed) return;
+  var finalUrl = ed.previewUrl || processScannedPage(ed.rawImg, ed.corners, ed.filter, ed.rot, ed.bright, ed.contrast);
+  var folder = S.fl[S.fo] || S.fl[0];
+  var pageObj = {
+    d: finalUrl,
+    raw: ed.rawSrc || finalUrl,
+    filter: ed.filter,
+    corners: ed.corners,
+    rot: ed.rot,
+    bright: ed.bright,
+    contrast: ed.contrast
+  };
+
+  var docId = ed.targetDocId;
+  var doc = docId ? folder.it.find(function(x){ return x.id === docId; }) : null;
+  if(!doc){
+    docId = "scn_" + Date.now();
+    doc = {
+      id: docId,
+      title: "مستند ممسوح " + fd(Date.now()),
+      at: Date.now(),
+      pages: []
+    };
+    folder.it.unshift(doc);
+  }
+  if(ed.editPageIdx >= 0 && doc.pages[ed.editPageIdx]){
+    doc.pages[ed.editPageIdx] = pageObj;
+  }else{
+    doc.pages.push(pageObj);
+  }
+  doc.at = Date.now();
+  setOpenScnDoc(docId);
+  S.scnEd = null;
+  saveAllUserStorage();
+  toast("✅ حُفظت الصفحة (" + doc.pages.length + ") وبقي الملف مفتوحاً للإضافة");
+  draw();
+  if(scanAnother){
+    setTimeout(function(){ startNewScan(true, docId, -1); }, 250);
+  }
+}
+
+/* ==================== تعديل تسلسل الصفحات بلمسة واحدة (مثلاً: ٣ تصير ١ أو ١ تصير ١٠) ==================== */
+function openPageReorderModal(docId, fromIdx){
+  var doc = docById(docId); if(!doc) return;
+  var total = doc.pages.length;
+  if(total <= 1){ toast("الملف يحتوي على صفحة واحدة فقط"); return; }
+  var d = document.createElement("div"); d.id = "md";
+  d.innerHTML = '<div class="mc">' +
+    '<b>⇅ تغيير تسلسل الصفحة ('+(fromIdx+1)+')</b>' +
+    '<div class="mu" style="margin-top:4px">اختر الموقع الجديد الذي تريد نقل الصفحة رقم <b>'+(fromIdx+1)+'</b> إليه:</div>' +
+    '<div class="pos-grid">' +
+      doc.pages.map(function(_, idx){
+        var isCur = idx === fromIdx;
+        return '<button type="button" class="b '+(isCur?'':'s')+'" onclick="moveScnPageTo(\''+docId+'\','+fromIdx+','+idx+')">'+(idx+1)+'</button>';
+      }).join("") +
+    '</div>' +
+    '<div class="grid">' +
+      '<button class="b s" onclick="moveScnPageTo(\''+docId+'\','+fromIdx+',0)">⏮️ جعلها الأولى (1)</button>' +
+      '<button class="b s" onclick="moveScnPageTo(\''+docId+'\','+fromIdx+','+(total-1)+')">⏭️ جعلها الأخيرة ('+total+')</button>' +
+    '</div>' +
+    '<button class="b s" style="width:100%;margin-top:8px" onclick="document.getElementById(\'md\').remove()">إلغاء</button>' +
+  '</div>';
+  document.body.appendChild(d);
+}
+
+function moveScnPageTo(docId, fromIdx, toIdx){
+  var md = $("md"); if(md) md.remove();
+  var doc = docById(docId); if(!doc) return;
+  if(fromIdx === toIdx || toIdx < 0 || toIdx >= doc.pages.length) return;
+  var moved = doc.pages.splice(fromIdx, 1)[0];
+  doc.pages.splice(toIdx, 0, moved);
+  doc.at = Date.now();
+  saveAllUserStorage();
+  toast("✅ تم نقل الصفحة من ("+(fromIdx+1)+") إلى التسلسل ("+(toIdx+1)+")");
+  draw();
+}
+
+function stepScnPage(docId, idx, dir){
+  var doc = docById(docId); if(!doc) return;
+  var nIdx = idx + dir;
+  if(nIdx < 0 || nIdx >= doc.pages.length) return;
+  moveScnPageTo(docId, idx, nIdx);
+}
+
+/* ==================== مولّد ملفات PDF الحقيقية المباشر (Pure JS A4 PDF Binary Generator) ==================== */
+async function buildRealPdfBlob(pages){
+  // يحول مصفوفة صفحات JPEG إلى ملف PDF قياسي حقيقي متعدد الصفحات بحجم A4
+  var pageW = 595.28, pageH = 841.89; // A4 in PDF points (72 dpi)
+  var imgInfos = [];
+  for(var i = 0; i < pages.length; i++){
+    var dataUrl = pages[i].d || pages[i];
+    var info = await new Promise(function(resolve){
+      var im = new Image();
+      im.onload = function(){
+        var c = document.createElement("canvas");
+        c.width = im.width; c.height = im.height;
+        var ctx = c.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(im, 0, 0);
+        var jpegUrl = c.toDataURL("image/jpeg", 0.84);
+        var b64 = jpegUrl.split(",")[1];
+        var binStr = atob(b64);
+        var bytes = new Uint8Array(binStr.length);
+        for(var k = 0; k < binStr.length; k++) bytes[k] = binStr.charCodeAt(k);
+        resolve({ w: im.width, h: im.height, bytes: bytes });
+      };
+      im.src = dataUrl;
+    });
+    imgInfos.push(info);
+  }
+
+  var chunks = [];
+  var offsets = [];
+  var byteLen = 0;
+  var enc = new TextEncoder();
+
+  function pushStr(s){
+    var b = enc.encode(s);
+    chunks.push(b);
+    byteLen += b.length;
+  }
+  function pushBytes(b){
+    chunks.push(b);
+    byteLen += b.length;
+  }
+  function startObj(id){
+    offsets[id] = byteLen;
+    pushStr(id + " 0 obj\n");
+  }
+  function endObj(){
+    pushStr("\nendobj\n");
+  }
+
+  pushStr("%PDF-1.4\n%\xFF\xFF\xFF\xFF\n");
+
+  // Object 1: Catalog, Object 2: Pages
+  var numPages = imgInfos.length;
+  var kidsRefs = [];
+  for(var p = 0; p < numPages; p++){
+    kidsRefs.push((3 + p * 3) + " 0 R");
+  }
+
+  startObj(1);
+  pushStr("<< /Type /Catalog /Pages 2 0 R >>");
+  endObj();
+
+  startObj(2);
+  pushStr("<< /Type /Pages /Kids [ " + kidsRefs.join(" ") + " ] /Count " + numPages + " >>");
+  endObj();
+
+  for(var idx = 0; idx < numPages; idx++){
+    var pageObjId = 3 + idx * 3;
+    var contentObjId = pageObjId + 1;
+    var imgObjId = pageObjId + 2;
+    var inf = imgInfos[idx];
+
+    // Fit image inside A4 with 18pt margin
+    var margin = 18;
+    var availW = pageW - margin * 2, availH = pageH - margin * 2;
+    var sc = Math.min(availW / inf.w, availH / inf.h);
+    var drawW = (inf.w * sc).toFixed(2), drawH = (inf.h * sc).toFixed(2);
+    var drawX = ((pageW - inf.w * sc) / 2).toFixed(2);
+    var drawY = ((pageH - inf.h * sc) / 2).toFixed(2);
+
+    var streamCmd = "q\n" + drawW + " 0 0 " + drawH + " " + drawX + " " + drawY + " cm\n/Im" + idx + " Do\nQ";
+
+    startObj(pageObjId);
+    pushStr("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im" + idx + " " + imgObjId + " 0 R >> >> /Contents " + contentObjId + " 0 R >>");
+    endObj();
+
+    startObj(contentObjId);
+    pushStr("<< /Length " + streamCmd.length + " >>\nstream\n" + streamCmd + "\nendstream");
+    endObj();
+
+    startObj(imgObjId);
+    pushStr("<< /Type /XObject /Subtype /Image /Width " + inf.w + " /Height " + inf.h + " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " + inf.bytes.length + " >>\nstream\n");
+    pushBytes(inf.bytes);
+    pushStr("\nendstream");
+    endObj();
+  }
+
+  var totalObjs = 2 + numPages * 3;
+  var xrefOffset = byteLen;
+  pushStr("xref\n0 " + (totalObjs + 1) + "\n0000000000 65535 f \n");
+  for(var oid = 1; oid <= totalObjs; oid++){
+    var offStr = String(offsets[oid] || 0).padStart(10, "0");
+    pushStr(offStr + " 00000 n \n");
+  }
+  pushStr("trailer\n<< /Size " + (totalObjs + 1) + " /Root 1 0 R >>\nstartxref\n" + xrefOffset + "\n%%EOF");
+
+  return new Blob(chunks, { type: "application/pdf" });
+}
+
+/* تصدير وإرسال ملف PDF حقيقي لأي شخص (واتساب / تليغرام / إيميل) أو تنزيله للجهاز */
+async function shareOrDownloadScnPdf(doc, forceDownload){
+  if(!doc || !doc.pages || !doc.pages.length){ toast("لا توجد صفحات في هذا الملف"); return; }
+  toast("⏳ جاري تجهيز ملف PDF (" + doc.pages.length + " صفحات)...");
+  try{
+    var blob = await buildRealPdfBlob(doc.pages);
+    var cleanName = (doc.title || "مستند_مسبار").replace(/[^\w\u0600-\u06FF\- ]/g, "").trim() + ".pdf";
+    var file = new File([blob], cleanName, { type: "application/pdf" });
+
+    if(!forceDownload && navigator.canShare && navigator.canShare({ files: [file] })){
+      await navigator.share({
+        files: [file],
+        title: doc.title || "مستند مسبار",
+        text: doc.title + " (" + doc.pages.length + " صفحات)"
+      });
+      toast("✅ تم فتح نافذة إرسال ملف PDF");
+      return;
+    }
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = cleanName;
+    document.body.appendChild(a); a.click(); a.remove();
+    toast("✅ تم تنزيل ملف PDF: " + cleanName);
+  }catch(e){
+    if(e && e.name !== "AbortError") toast("خطأ أثناء التصدير: " + e.message);
+  }
+}
+
+/* رفع ملف PDF الحقيقي مباشرة إلى مجلد الزبون على Google Drive */
+async function uploadScnPdfToDrive(doc){
+  if(!doc || !doc.pages || !doc.pages.length) return;
+  if(!S.driveToken){
+    showDriveGuideModal(
+      function(){ window.fbConnectDrive(function(){ uploadScnPdfToDrive(doc); }); },
+      function(){ shareOrDownloadScnPdf(doc, false); }
+    );
+    return;
+  }
+  toast("☁️ جاري رفع ملف PDF إلى مجلدك في Google Drive...");
+  try{
+    var pdfBlob = await buildRealPdfBlob(doc.pages);
+    var folderId = await ensureMisbarDriveFolder();
+    var cleanName = (doc.title || "مستند_مسبار").replace(/[^\w\u0600-\u06FF\- ]/g, "").trim() + ".pdf";
+    var meta = { name: cleanName, parents: [folderId], mimeType: "application/pdf" };
+
+    var form = new FormData();
+    form.append("metadata", new Blob([JSON.stringify(meta)], { type: "application/json" }));
+    form.append("file", pdfBlob, cleanName);
+
+    var res = await driveFetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
+      method: "POST",
+      body: form
+    });
+    if(res.ok) toast("✅ تم حفظ «" + cleanName + "» في مجلد مسبار على Google Drive");
+  }catch(e){
+    toast("تعذر الرفع على Drive: " + e.message);
+  }
+}
+
+/* دمج عدة ملفات محددة في المجلد بملف واحد أو تصديرها معاً كـ PDF */
+function toggleSelectDoc(id){
+  S.scnSelected[id] = !S.scnSelected[id];
+  draw();
+}
+
+async function mergeSelectedDocs(exportPdfImmediately){
+  var folder = S.fl[S.fo] || S.fl[0];
+  var picked = folder.it.filter(function(d){ return S.scnSelected[d.id]; });
+  if(picked.length < 2 && !exportPdfImmediately){
+    toast("حدد ملفين أو أكثر لدمجهما معاً"); return;
+  }
+  if(!picked.length){ toast("حدد ملفاً واحداً على الأقل"); return; }
+
+  var allPages = [];
+  picked.forEach(function(d){
+    (d.pages || []).forEach(function(pg){ allPages.push(JSON.parse(JSON.stringify(pg))); });
+  });
+
+  if(exportPdfImmediately){
+    var tempDoc = { title: picked[0].title + " (مجمّع)", pages: allPages };
+    await shareOrDownloadScnPdf(tempDoc, false);
+    return;
+  }
+
+  ask("اسم الملف المدمج الجديد (" + allPages.length + " صفحة)", function(newTitle){
+    var mergedId = "scn_" + Date.now();
+    folder.it.unshift({ id: mergedId, title: newTitle, at: Date.now(), pages: allPages });
+    S.scnSelectMode = false; S.scnSelected = {};
+    setOpenScnDoc(mergedId);
+    saveAllUserStorage();
+    toast("✅ تم دمج " + picked.length + " ملفات في ملف واحد (" + allPages.length + " صفحة)");
+    draw();
+  }, false, "ملف مدمج - " + folder.n);
+}
+
+/* طباعة / معاينة A4 */
+function scnPrintScr(){
+  var f = $("fab"); if(f) f.remove();
+  var doc = S.scnPrintDoc;
+  $("app").className = "pro";
+  $("app").innerHTML =
+    '<header class="noprint"><h1>معاينة A4 ('+doc.pages.length+' صفحات)</h1>' +
+      '<button class="b" onclick="window.print()">🖨️ طباعة</button>' +
+      '<button class="b s" onclick="S.scnPrintDoc=null;draw()">رجوع</button>' +
+    '</header>' +
+    '<main>' +
+      doc.pages.map(function(pg, idx){
+        return '<div class="card noprint" style="padding:6px;text-align:center"><div class="mu">صفحة '+(idx+1)+' من '+doc.pages.length+'</div></div>' +
+          '<img class="scn-print-page" src="'+pg.d+'" alt="صفحة '+(idx+1)+'" style="max-width:100%;display:block;margin:0 auto 12px;border:1px solid #ddd">';
+      }).join("") +
+    '</main>';
+}
+
+/* استخراج النص من الصفحة الممسوحة بالذكاء الاصطناعي (OCR) */
+async function ocrScannedPage(dataUrl){
+  if(!gate()) return;
+  if(!getUserKey()){ openAutoKeyConnect(); return; }
+  toast("🤖 جاري استخراج النص من الصورة...");
+  try{
+    var txt = await callUserGemini("استخرج جميع النصوص المكتوبة في هذه الصورة الممسوحة بدقة تامة وبنفس الترتيب واللغة بدون أي إضافات من عندك:", "أنت محرك OCR دقيق لاستخراج النصوص العربية والإنجليزية من المستندات.", dataUrl, false);
+    if(txt){
+      S.tx = txt;
+      toast("✅ تم استخراج النص ووضعه في «مختبر النص»");
+      tab(S.role === "pro" ? 4 : 2);
+    }
+  }catch(e){
+    toast("تعذر استخراج النص: " + e.message);
+  }
+}
+
+/* ==================== واجهة السكنر والفولدرات والمستندات السهلة ==================== */
+function filesV(){
+  migrateScannerFolders();
+  var folder = S.fl[S.fo] || S.fl[0];
+
+  /* ١) حالة الملف المفتوح: تبقى الصور موجودة وتقدر تضيف صور بأي وقت أو تعدل تسلسلها أو تصدرها PDF */
+  if(S.scnDocId){
+    var doc = folder.it.find(function(x){ return x.id === S.scnDocId; });
+    if(!doc){ setOpenScnDoc(null); return filesV(); }
+    return '<div class="card" style="border-inline-start:4px solid var(--ac)">' +
+        '<div class="row" style="flex-wrap:wrap">' +
+          '<button class="b s" onclick="setOpenScnDoc(null);draw()">← كل الملفات</button>' +
+          '<b class="grow" style="font-size:15px">📄 '+esc(doc.title)+' ('+doc.pages.length+')</b>' +
+          '<button class="b s" onclick="renameScnDoc(\''+doc.id+'\')">✏️ تسمية</button>' +
+          (S.fl.length > 1 ? '<button class="b s" onclick="moveScnDoc(\''+doc.id+'\')">📁 نقل</button>' : '') +
+        '</div>' +
+        '<div class="grid" style="margin-top:10px">' +
+          '<button class="b" style="background:#15803d" onclick="shareOrDownloadScnPdf(docById(\''+doc.id+'\'),false)">📤 إرسال / مشاركة PDF</button>' +
+          '<button class="b" onclick="shareOrDownloadScnPdf(docById(\''+doc.id+'\'),true)">⬇️ تنزيل PDF للجهاز</button>' +
+        '</div>' +
+        '<div class="grid" style="margin-top:6px">' +
+          '<button class="b s" onclick="uploadScnPdfToDrive(docById(\''+doc.id+'\'))">☁️ حفظ PDF في Drive</button>' +
+          '<button class="b s" onclick="S.scnPrintDoc=docById(\''+doc.id+'\');draw()">🖨️ طباعة ورقية A4</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="mu" style="margin:6px 2px">💡 اضغط على رقم أي صفحة <b>(ترتيب # ⇅)</b> لتغيير مكانها مباشرة (مثلاً نقل ٣ إلى ١ أو ١ إلى ١٠):</div>' +
+      '<div class="grid">' +
+        doc.pages.map(function(pg, pi){
+          var flObj = SCN_FILTERS.find(function(f){ return f.id === pg.filter; });
+          return '<div class="scn-page-card">' +
+            '<div class="row">' +
+              '<button type="button" class="b s" style="min-height:28px;padding:2px 8px;font-size:12px" onclick="openPageReorderModal(\''+doc.id+'\','+pi+')" title="اضغط لتغيير تسلسل الصفحة">ترتيب '+(pi+1)+' ⇅</button>' +
+              '<span class="mu grow" style="font-size:11px;text-align:center">'+(flObj?flObj.name:'')+'</span>' +
+              '<button class="b d" style="min-height:28px;padding:2px 7px" onclick="delScnPage(\''+doc.id+'\','+pi+')">×</button>' +
+            '</div>' +
+            '<img class="scn-page-thumb" src="'+pg.d+'" alt="صفحة '+(pi+1)+'" onclick="reEditExistingPage(\''+doc.id+'\','+pi+')">' +
+            '<div class="row">' +
+              '<button class="b s" style="min-height:30px;padding:2px 7px" '+(pi===0?'disabled':'')+' onclick="stepScnPage(\''+doc.id+'\','+pi+',-1)">◀</button>' +
+              '<button class="b s grow" style="min-height:30px;padding:2px 4px;font-size:12px" onclick="reEditExistingPage(\''+doc.id+'\','+pi+')">🎨 فلتر / قص</button>' +
+              '<button class="b s" style="min-height:30px;padding:2px 6px;font-size:12px" onclick="ocrScannedPage(docById(\''+doc.id+'\').pages['+pi+'].d)" title="استخراج النص">🤖</button>' +
+              '<button class="b s" style="min-height:30px;padding:2px 7px" '+(pi===doc.pages.length-1?'disabled':'')+' onclick="stepScnPage(\''+doc.id+'\','+pi+',1)">▶</button>' +
+            '</div>' +
+          '</div>';
+        }).join("") +
+      '</div>' +
+      /* شريط إضافة الصور الثابت أسفل الملف المفتوح */
+      '<div class="scn-add-bar">' +
+        '<div style="font-weight:700;font-size:13px;margin-bottom:6px;text-align:center;color:var(--ac)">➕ إضافة صور جديدة لهذا الملف المفتوح</div>' +
+        '<div class="grid">' +
+          '<button class="b" onclick="startNewScan(true,\''+doc.id+'\',-1)">📷 + إضافة صورة (كاميرا)</button>' +
+          '<button class="b s" onclick="startNewScan(false,\''+doc.id+'\',-1)">🖼️ + إضافة صور (معرض)</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  /* ٢) الواجهة الرئيسية للفولدرات والملفات */
+  var q = (S.scnQuery || "").toLowerCase();
+  var items = folder.it.filter(function(d){ return !q || (d.title||"").toLowerCase().indexOf(q) > -1; });
+  var selCount = Object.keys(S.scnSelected).filter(function(k){ return S.scnSelected[k]; }).length;
+
+  return '<h2>📷 السكنر الذكي والفولدرات</h2>' +
+    '<div class="card">' +
+      '<div class="row" style="margin-bottom:10px">' +
+        '<span class="grow"><b>🎯 التجذيب التلقائي للحواف</b><div class="mu">'+(S.scnAutoCrop?'شغّال — يقص الورقة تلقائياً مع إمكانية التعديل اليدوي':'متوقف — يأخذ كامل الصورة بدون قص تلقائي')+'</div></span>' +
+        '<button class="tog'+(S.scnAutoCrop?' on':'')+'" aria-label="التجذيب التلقائي" onclick="toggleScnAutoCrop()"></button>' +
+      '</div>' +
+      '<div class="grid">' +
+        '<button class="b" style="min-height:48px;font-size:14px" onclick="startNewScan(true,null,-1)">📷 مسح جديد بالكاميرا</button>' +
+        '<button class="b s" style="min-height:48px;font-size:14px" onclick="startNewScan(false,null,-1)">🖼️ استيراد صور (المعرض)</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div class="row" style="flex-wrap:wrap">' +
+        S.fl.map(function(x, i){
+          return '<button class="b '+(i==S.fo?'':'s')+'" onclick="S.fo='+i+';setOpenScnDoc(null);draw()">📁 '+esc(x.n)+' ('+x.it.length+')</button>';
+        }).join("") +
+        '<button class="b s" onclick="newFo()">+ فولدر جديد</button>' +
+        '<button class="b s" onclick="renameFo()" title="تغيير اسم الفولدر">✏️</button>' +
+        (S.fl.length > 1 ? '<button class="b d" onclick="delFo()" title="حذف الفولدر">🗑️</button>' : '') +
+      '</div>' +
+      '<div class="row" style="margin-top:8px">' +
+        '<input placeholder="🔍 ابحث في ملفات الفولدر..." value="'+esc(S.scnQuery||"")+'" oninput="S.scnQuery=this.value;draw()" class="grow" style="margin:0">' +
+        (folder.it.length > 1 ? '<button class="b '+(S.scnSelectMode?'':'s')+'" onclick="S.scnSelectMode=!S.scnSelectMode;S.scnSelected={};draw()">🔗 دمج/تحديد</button>' : '') +
+      '</div>' +
+      (S.scnSelectMode ? '<div class="row" style="margin-top:8px;flex-wrap:wrap;background:var(--acs);padding:8px;border-radius:10px">' +
+        '<span class="grow" style="font-size:13px"><b>المحدد: '+selCount+' ملفات</b></span>' +
+        '<button class="b" onclick="mergeSelectedDocs(false)">🔗 دمج بملف واحد</button>' +
+        '<button class="b s" onclick="mergeSelectedDocs(true)">📤 تصدير المحدد PDF</button>' +
+      '</div>' : '') +
+    '</div>' +
+    (items.length ? items.map(function(doc){
+      var thumb = doc.pages && doc.pages[0] ? doc.pages[0].d : "";
+      var isSel = !!S.scnSelected[doc.id];
+      return '<div class="card row" style="align-items:stretch;'+(isSel?'border:2px solid var(--ac)':'')+'">' +
+        (S.scnSelectMode ? '<input type="checkbox" style="width:22px;height:22px;align-self:center;margin:0 4px" '+(isSel?'checked':'')+' onchange="toggleSelectDoc(\''+doc.id+'\')">' : '') +
+        (thumb ? '<img src="'+thumb+'" alt="" onclick="setOpenScnDoc(\''+doc.id+'\');draw()" style="width:70px;height:92px;object-fit:cover;border-radius:8px;border:1px solid var(--ln);cursor:pointer;flex-shrink:0">' : '') +
+        '<div class="grow" style="display:flex;flex-direction:column;justify-content:space-between">' +
+          '<div onclick="setOpenScnDoc(\''+doc.id+'\');draw()" style="cursor:pointer">' +
+            '<b>'+esc(doc.title)+'</b>' +
+            '<div class="mu">'+doc.pages.length+' صفحة · آخر تعديل '+fd(doc.at)+'</div>' +
+          '</div>' +
+          '<div class="row" style="flex-wrap:wrap;margin-top:6px">' +
+            '<button class="b" style="min-height:34px;padding:4px 10px" onclick="setOpenScnDoc(\''+doc.id+'\');draw()">فتح وإضافة صور</button>' +
+            '<button class="b s" style="min-height:34px;padding:4px 10px" onclick="shareOrDownloadScnPdf(docById(\''+doc.id+'\'),false)">📤 إرسال PDF</button>' +
+            '<button class="b s" style="min-height:34px;padding:4px 9px" onclick="uploadScnPdfToDrive(docById(\''+doc.id+'\'))">☁️ Drive</button>' +
+            '<button class="b d" style="min-height:34px;padding:4px 9px" onclick="delScnDoc(\''+doc.id+'\')">حذف</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join("") : '<div class="card mu">هذا الفولدر فارغ حالياً. اضغط «📷 مسح جديد بالكاميرا» أو «🖼️ استيراد صور» للبدء.</div>');
+}
+
+function docById(id){
+  var folder = S.fl[S.fo] || S.fl[0];
+  return folder.it.find(function(x){ return x.id === id; });
+}
+function newFo(){ ask("اسم الفولدر الجديد", function(n){ S.fl.push({n:n, it:[]}); S.fo = S.fl.length - 1; setOpenScnDoc(null); saveAllUserStorage(); draw(); }); }
+function renameFo(){ ask("الاسم الجديد للفولدر", function(n){ S.fl[S.fo].n = n; saveAllUserStorage(); draw(); }, false, S.fl[S.fo].n); }
+function delFo(){ S.fl.splice(S.fo, 1); S.fo = 0; setOpenScnDoc(null); saveAllUserStorage(); toast("تم حذف الفولدر"); draw(); }
+function renameScnDoc(id){
+  var doc = docById(id); if(!doc) return;
+  ask("اسم الملف الجديد", function(n){ doc.title = n; saveAllUserStorage(); draw(); }, false, doc.title);
+}
+function moveScnDoc(id){
+  var folder = S.fl[S.fo];
+  var idx = folder.it.findIndex(function(x){ return x.id === id; });
+  if(idx < 0) return;
+  var targetIdx = (S.fo + 1) % S.fl.length;
+  var doc = folder.it.splice(idx, 1)[0];
+  S.fl[targetIdx].it.unshift(doc);
+  S.fo = targetIdx;
+  saveAllUserStorage();
+  toast("تم النقل إلى فولدر: " + S.fl[targetIdx].n);
+  draw();
+}
+function delScnDoc(id){
+  var folder = S.fl[S.fo];
+  var idx = folder.it.findIndex(function(x){ return x.id === id; });
+  if(idx > -1){ folder.it.splice(idx, 1); saveAllUserStorage(); toast("تم حذف الملف"); draw(); }
+}
+function delScnPage(docId, pageIdx){
+  var doc = docById(docId); if(!doc) return;
+  doc.pages.splice(pageIdx, 1);
+  if(!doc.pages.length){ delScnDoc(docId); setOpenScnDoc(null); return; }
+  saveAllUserStorage(); draw();
+}
 
 /* ==================== الكلاسات ==================== */
 function clsV(){
@@ -1824,6 +2995,8 @@ function draw(){
   if(!S.authReady)return;
   if(!S.uid){loginV();return}
   if(S.subv&&(S.role=="pro"||S.role=="stu")){subScr();return}
+  if(S.scnPrintDoc){scnPrintScr();return}
+  if(S.scnEd){scnEditorScr();return}
   if(S.role=="pro"&&S.gw){
     if(S.gw.view=="ed_q"&&S.pp){ppEdScr();return}
     if(S.gw.view=="ed_b"&&S.bk){bkEdScr();return}
