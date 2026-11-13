@@ -126,7 +126,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.30.0";
+var APP_VERSION = "2.31.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -3349,8 +3349,8 @@ function renderCallUI(){
        '</div>' +
 
     '</div>' +
-    '<audio id="ringbackTone" loop src="https://assets.mixkit.co/active_storage/sfx/2188/2188-preview.mp3"></audio>' +
-    '<audio id="ringtone" loop src="https://assets.mixkit.co/active_storage/sfx/2187/2187-preview.mp3"></audio>' +
+    '<audio id="ringbackTone" loop src="https://assets.mixkit.co/active_storage/sfx/2871/2871-preview.mp3"></audio>' +
+    '<audio id="ringtone" loop src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>' +
     '<style>@keyframes pulse-green{0%{box-shadow:0 0 0 0 rgba(34,197,94,0.7)}70%{box-shadow:0 0 0 15px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}</style>' +
   '</div>';
   document.body.appendChild(d);
@@ -3363,7 +3363,7 @@ function renderCallUI(){
 
 var RTC = {
   pc: null, localStream: null, remoteStream: null, callId: null, isCaller: false, peerEmail: null, callType: 'audio',
-  unsubs: [], isMuted: false, isVideoOff: false
+  unsubs: [], isMuted: false, isVideoOff: false, startTime: 0
 };
 
 var iceServers = {
@@ -3436,6 +3436,7 @@ function startCall(peerEmail, isVideo){
         if(!data || data.status === 'ended' || data.status === 'rejected'){
            endCall(true);
         } else if(data.status === 'answered' && data.answer){
+           if(!RTC.startTime) RTC.startTime = Date.now();
            if(RTC.pc && RTC.pc.signalingState !== "stable" && RTC.pc.signalingState !== "closed"){
              RTC.pc.setRemoteDescription(new RTCSessionDescription(data.answer)).catch(function(e){ console.log("SetRemote error", e); });
            }
@@ -3469,6 +3470,7 @@ function handleIncomingCall(callId, data){
 
 function answerCall(){
   var rt = document.getElementById("ringtone"); if(rt) { rt.pause(); rt.currentTime=0; }
+  RTC.startTime = Date.now();
   document.getElementById("incomingControls").style.display = "none";
   document.getElementById("callControlPanel").style.visibility = "visible";
   document.getElementById("callStatus").innerText = "جاري الاتصال...";
@@ -3585,11 +3587,51 @@ function endCall(isRemote){
   RTC.unsubs.forEach(function(f){ try{f()}catch(e){} });
   RTC.unsubs = [];
   
-  if(!isRemote && RTC.callId){
-     var callDoc = window.fbGetDocRef("calls", RTC.callId);
-     window.fbUpdateDoc(callDoc, { status: RTC.isCaller && document.getElementById("incomingControls") && document.getElementById("incomingControls").style.display === "none" ? 'canceled' : 'ended' }).catch(function(){});
+  var wasCaller = RTC.isCaller;
+  var peer = RTC.peerEmail;
+  var cType = RTC.callType;
+  var sTime = RTC.startTime;
+  var cId = RTC.callId;
+
+  if(!isRemote && cId){
+     var callDoc = window.fbGetDocRef("calls", cId);
+     window.fbUpdateDoc(callDoc, { status: wasCaller && document.getElementById("incomingControls") && document.getElementById("incomingControls").style.display === "none" ? 'canceled' : 'ended' }).catch(function(){});
   }
   
+  if (wasCaller && peer) {
+      var dmId = "dm_" + [S.email, peer].sort().join("__");
+      var c = S.cv.find(function(x){ return x.id === dmId; });
+      if(!c) {
+          c = { id: dmId, n: peer.split("@")[0], peerEmail: peer, photo: "", g: 0, members: [S.email, peer], msgs: [], updatedAt: Date.now() };
+          S.cv.unshift(c);
+      }
+      var durTxt = "";
+      if(sTime){
+          var s = Math.floor((Date.now() - sTime)/1000);
+          var m = Math.floor(s/60);
+          var ss = s%60;
+          durTxt = m + ":" + (ss<10?"0"+ss:ss);
+      }
+      var msgId = "m_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
+      var txt = (cType === 'video' ? '📹 مكالمة فيديو' : '📞 مكالمة صوتية');
+      if(!sTime) txt += " (لم يرد عليها)";
+      else txt += " (" + durTxt + ")";
+      
+      var msg = {
+          id: msgId, e: S.email, sender: S.dispName || S.email.split("@")[0],
+          t: txt, isCall: true, callType: cType, missed: !sTime, dur: durTxt, at: Date.now()
+      };
+      c.msgs = c.msgs || [];
+      c.msgs.push(msg);
+      c.lastPreview = txt;
+      c.updatedAt = msg.at;
+      c.lastFrom = S.email;
+      if(window.fbSendRoomMessage) window.fbSendRoomMessage(c, msg);
+      saveAllUserStorage();
+      if(S.curChatId === c.id) setTimeout(draw, 100);
+  }
+  
+  RTC.startTime = 0;
   RTC.callId = null;
   var mod = document.getElementById("callModal"); if(mod) mod.remove();
 }
@@ -4396,7 +4438,7 @@ function roomV(){
         var clickHandler = ' onclick="showMsgMenu(\''+c.id+'\',\''+esc(m.id)+'\','+me+',\''+safeText+'\')"';
         return '<div class="wa-bub '+(me?'out':'in')+'"'+clickHandler+' style="cursor:pointer" title="انقر لخيارات الرسالة">' +
           (c.g && !me ? '<div style="font-size:11px;font-weight:800;color:var(--ac);margin-bottom:2px">'+esc(m.sender)+'</div>' : '') +
-          (m.t ? '<div>'+esc(m.t)+'</div>' : '') +
+          (m.isCall ? '<div style=\"display:flex;align-items:center;gap:10px;font-size:15px\"><div style=\"font-size:24px;background:var(--bg);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:'+(m.missed?'#ef4444':(me?'#059669':'#10b981'))+'\">' + (m.callType==='video'?'📹':'📞') + '</div><div><b style=\"display:block\">' + (m.callType==='video'?'مكالمة فيديو':'مكالمة صوتية') + '</b><div style=\"font-size:12px;color:var(--mu)\">' + (me?'↗':'↙') + ' ' + (m.missed ? 'لم يرد عليها' : m.dur) + '</div></div></div>' : (m.t ? '<div style=\"white-space:pre-wrap\">'+esc(m.t)+'</div>' : '')) +
           fileHtml +
           (function(){
             if(!me) return '<div style="font-size:10px;opacity:.75;text-align:end;margin-top:3px">'+timeStr+'</div>';
