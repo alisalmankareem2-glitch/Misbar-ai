@@ -177,6 +177,7 @@ var S={
   plans:[{n:"أسبوعي",p:2000,v:1,u:"أسبوع"},{n:"شهري",p:5000,v:1,u:"شهر"},{n:"6 أشهر",p:25000,v:6,u:"شهر"},{n:"سنوي",p:45000,v:12,u:"شهر"}],
   subs:[],req:[],allUsers:[],rt:0,rs:"new",rq:"",pick:null,subv:0,
   fl:[{n:"ملفاتي",it:[]}],fo:0,scnAutoCrop:true,scnQuery:"",scnDocId:null,scnEd:null,scnPrintDoc:null,scnSelectMode:false,scnSelected:{},scnMoreOpen:false,use:{},
+  username:"",
   cv:[{id:"local_notes",n:"ملاحظاتي السريعة",g:0,members:[],msgs:[]}],curChatId:null,chatModal:null,chatSearch:"",chatPickEmails:{},chatGroupName:"",
   gw:null,pp:null,bk:null,docs:[],
   planRows:null,pi:"",per:"أسبوعية",pv:0
@@ -205,6 +206,7 @@ function loadUserDeviceData(){
     var acPref = localStorage.getItem(p+"scnAutoCrop");
     if(acPref !== null) S.scnAutoCrop = acPref === "1";
     S.scnDocId = localStorage.getItem(p+"scnDocId") || null;
+    S.username = localStorage.getItem(p+"username") || (S.email ? S.email.split("@")[0] : "");
     migrateScannerFolders();
   }catch(e){}
 }
@@ -229,6 +231,7 @@ function saveDeviceOnly(){
   S.updatedAt = Date.now();
   try{
     localStorage.setItem(p+"updatedAt", String(S.updatedAt));
+    localStorage.setItem(p+"username", S.username || "");
     localStorage.setItem(p+"docs", JSON.stringify(S.docs));
     localStorage.setItem(p+"gr", JSON.stringify(S.gr));
     localStorage.setItem(p+"joined", JSON.stringify(S.joined));
@@ -511,38 +514,6 @@ function ask(l,cb,pw,defVal){
 }
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 
-function openProfileModal(){
-  var d=document.createElement("div");d.id="md";
-  d.innerHTML='<div class="mc" style="width:min(340px,90%)">'+
-    '<div style="text-align:center;margin-bottom:12px;font-size:40px">👤</div>'+
-    '<h2 style="text-align:center;margin-top:0">إدارة حسابي</h2>'+
-    '<label>الاسم أو اليوزر نيم (يظهر للآخرين)</label>'+
-    '<input id="prfName" value="'+esc(S.dispName)+'" placeholder="اكتب اسمك هنا">'+
-    '<div class="mu" style="font-size:11px;margin-bottom:14px;background:var(--bg);padding:8px;border-radius:8px;border:1px solid var(--ln)">الإيميل الخاص بك (مخفي ومحمي تماماً عن بقية المستخدمين):<br><b dir="ltr" style="display:block;margin-top:4px;color:var(--tx)">'+esc(S.email)+'</b></div>'+
-    '<button class="b" style="width:100%;margin-bottom:8px;background:#15803d" onclick="saveProfile()">💾 حفظ التغييرات</button>'+
-    '<button class="b s" style="width:100%" onclick="document.getElementById(\'md\').remove()">إلغاء</button>'+
-  '</div>';
-  document.body.appendChild(d);
-}
-
-function saveProfile(){
-  var n = document.getElementById("prfName").value.trim();
-  if(!n){ toast("الرجاء كتابة الاسم أو اليوزر نيم"); return; }
-  S.dispName = n;
-  if(window.fbSyncUserProfile) window.fbSyncUserProfile();
-  saveAllUserStorage();
-  toast("✅ تم تحديث اسمك بنجاح");
-  var md = document.getElementById("md"); if(md) md.remove();
-  draw();
-}
-
-function getUserDispName(em){
-  if(em === S.email) return S.dispName || "أنا";
-  var u = (S.allUsers||[]).find(function(x){ return x.email === em; });
-  return u && u.name ? u.name : "عضو";
-}
-
-
 Object.defineProperty(S,"used",{
   get:function(){return S.use[S.email+"|"+new Date().toDateString()]||0},
   set:function(v){S.use[S.email+"|"+new Date().toDateString()]=v;try{localStorage.setItem("misbar_use_v1",JSON.stringify(S.use))}catch(e){}}
@@ -557,6 +528,38 @@ function gate(){if(isSub())return true;if(S.used>=S.free){toast("انتهت دخ
 /* ============================================================================
    [الأساس ٥] محرك الذكاء الاصطناعي بحساب Gmail الخاص بالزبون نفسه
    ============================================================================ */
+
+/* نافذة إدارة الحساب الشخصي (تغيير الاسم، يوزر نيم @handle، إعدادات الحساب) */
+function openAccountSettingsModal(){
+  var old = $("md"); if(old) old.remove();
+  var d = document.createElement("div"); d.id = "md";
+  d.innerHTML = '<div class="mc" style="width:min(380px,94%)">' +
+    '<div class="row" style="margin-bottom:10px"><b class="grow">⚙️ إعدادات الحساب الشخصي</b><button class="b d" style="min-height:32px;padding:3px 9px" onclick="document.getElementById(\'md\').remove()">×</button></div>' +
+    '<label>الاسم الكامل</label>' +
+    '<input id="setDispName" value="'+esc(S.dispName||"")+'">' +
+    '<label>اليوزر نيم الشخصي (يظهر للجميع بـ @ بدلاً من الإيميل)</label>' +
+    '<input id="setUsername" dir="ltr" placeholder="username (بدون @)" value="'+esc(S.username||"")+'">' +
+    '<label>البريد الإلكتروني (غير قابل للتعديل)</label>' +
+    '<input disabled dir="ltr" value="'+esc(S.email)+'" style="background:var(--bg);color:var(--mu)">' +
+    '<button class="b" style="width:100%;margin-top:10px;background:#15803d" onclick="saveAccountSettings()">✅ حفظ التعديلات</button>' +
+  '</div>';
+  document.body.appendChild(d);
+}
+
+function saveAccountSettings(){
+  var nameIn = $("setDispName"), usrIn = $("setUsername");
+  if(nameIn) S.dispName = nameIn.value.trim();
+  if(usrIn){
+    var u = usrIn.value.trim().replace(/^@+/, "").replace(/[^a-zA-Z0-9_؀-ۿ]/g, "");
+    S.username = u || S.email.split("@")[0];
+  }
+  saveAllUserStorage();
+  if(window.fbSyncUserProfile) window.fbSyncUserProfile();
+  var md = $("md"); if(md) md.remove();
+  toast("✅ تم حفظ إعدادات الحساب بنجاح");
+  draw();
+}
+
 function openAutoKeyConnect(onConnectedCb){
   var d=document.createElement("div");d.id="md";
   d.innerHTML='<div class="mc">'+
@@ -654,9 +657,8 @@ function head(t){
     ? '<button class="b s" title="مزامنة Google Drive" onclick="handleDriveSyncClick()">'+(S.driveSyncing?'⏳':(S.driveToken?'☁️ Drive':'☁️ ربط'))+'</button>'
     : '';
   return '<header><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>'+t+'</h1>'+
-  (S.role!='own' ? '<button class="b s" style="min-width:38px;padding:4px 0;font-size:16px" onclick="openProfileModal()" title="حسابي">👤</button>' : '') +
   drvBtn+
-  (stat()&&S.role!='own'?'<button class="b s" onclick="S.subv=1;draw()">'+stat()+'</button>':'')+
+  (stat()&&S.role!='own'?'<button class="b s" onclick="S.subv=1;draw()">'+stat()+'</button>':''+'<button class="b s" title="إعدادات الحساب" onclick="openAccountSettingsModal()">⚙️ الحساب</button>')+
   (S.role?'<button class="b s" title="تبديل بين الأستاذ والطالب" onclick="setRole(null)">🔄</button>':'')+
   '<button class="b d" title="تسجيل الخروج النهائي" onclick="fbLogout()">خروج</button></header>';
 }
@@ -3287,14 +3289,13 @@ function renderChatPickerModal(){
     '<div style="flex:1;overflow-y:auto;max-height:260px;border:1px solid var(--ln);border-radius:10px;padding:4px">' +
       (users.length ? users.map(function(u){
         var isSel = !!S.chatPickEmails[u.email];
-        var disp = u.name || "مستخدم";
-        return '<div class="row" style="padding:7px;border-bottom:1px solid var(--ln);cursor:pointer;background:'+(isSel?'var(--acs)':'transparent')+';border-radius:8px" onclick="selectChatUser(\''+esc(u.email)+'\',\''+esc(disp)+'\',\''+esc(u.photo||'')+'\')">' +
-          avatarHtml(disp, u.photo) +
-          '<div class="grow" style="overflow:hidden"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(disp)+'</b></div>' +
+        return '<div class="row" style="padding:7px;border-bottom:1px solid var(--ln);cursor:pointer;background:'+(isSel?'var(--acs)':'transparent')+';border-radius:8px" onclick="selectChatUser(\''+esc(u.email)+'\',\''+esc(u.name||u.email)+'\',\''+esc(u.photo||'')+'\')">' +
+          avatarHtml(u.name || u.email, u.photo) +
+          '<div class="grow" style="overflow:hidden"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(u.name || u.email.split("@")[0])+'</b><div class="mu" dir="ltr" style="font-size:12px;text-align:start">'+esc(u.email)+'</div></div>' +
           '<span>'+(mode==='dm'?'💬':(isSel?'✅':'⚪'))+'</span>' +
         '</div>';
-      }).join("") : '<div class="mu" style="padding:12px;text-align:center">لا يوجد مستخدم مطابق بالقائمة.<br>اكتب اسماً أو يوزراً صحيحاً في البحث.</div>') +
-      (q.indexOf("@") > 0 ? '<button class="b s" style="width:100%;margin-top:6px" onclick="selectChatUser(\''+esc(q)+'\',\'مستخدم\',\'\')">+ إضافة مستخدم عبر الإيميل المباشر</button>' : '') +
+      }).join("") : '<div class="mu" style="padding:12px;text-align:center">لا يوجد مستخدم مطابق بالقائمة.<br>إذا كتبت جيميل صحيحاً بالأعلى يمكنك إضافته مباشرة بالزر أدناه:</div>') +
+      (q.indexOf("@") > 0 ? '<button class="b s" style="width:100%;margin-top:6px" onclick="selectChatUser(\''+esc(q)+'\',\''+esc(q.split("@")[0])+'\',\'\')">+ اختيار الجيميل: '+esc(q)+'</button>' : '') +
     '</div>' +
     (mode!=='dm' ? '<button class="b" style="width:100%;margin-top:10px;background:#15803d" onclick="confirmGroupCreateOrAdd()">'+(mode==='grp'?'✅ إنشاء الكروب الآن':'✅ إضافة الأعضاء المحددين')+'</button>' : '') +
   '</div>';
@@ -3303,6 +3304,7 @@ function renderChatPickerModal(){
   if(inp){ inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
 }
 
+
 function selectChatUser(em, name, photo){
   em = em.trim().toLowerCase();
   if(S.chatModal === "dm"){
@@ -3310,7 +3312,7 @@ function selectChatUser(em, name, photo){
     var md = $("md"); if(md) md.remove();
     var existing = S.cv.find(function(c){ return !c.g && c.peerEmail === em; });
     if(existing){ S.curChatId = existing.id; draw(); return; }
-    var newChat = { id: "dm_" + Date.now(), n: name || "مستخدم", peerEmail: em, photo: photo || "", g: 0, members: [S.email, em], msgs: [] };
+    var newChat = { id: "dm_" + Date.now(), n: name || em, peerEmail: em, photo: photo || "", g: 0, members: [S.email.toLowerCase(), em], updatedAt: Date.now(), msgs: [] };
     S.cv.unshift(newChat);
     S.curChatId = newChat.id;
     if(window.fbSaveChatRoom) window.fbSaveChatRoom(newChat);
@@ -3323,42 +3325,44 @@ function selectChatUser(em, name, photo){
 
 function confirmGroupCreateOrAdd(){
   var picked = Object.keys(S.chatPickEmails).filter(function(k){ return S.chatPickEmails[k]; });
-  var pickedNames = picked.map(function(em){ return getUserDispName(em); });
   if(S.chatModal === "grp"){
     var gName = (S.chatGroupName || "").trim() || "كروب دراسي جديد";
-    var members = [S.email].concat(picked);
-    var msgId = "m_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
-    var sysMsg = { id: msgId, e: S.email, isSys: true, sender: "النظام", t: "أنشأ " + (S.dispName || "مستخدم") + " الكروب (" + members.length + " أعضاء)", at: Date.now() };
+    var members = Array.from(new Set([S.email.toLowerCase()].concat(picked.map(function(e){ return e.toLowerCase(); }))));
+    var senderHandle = S.username ? ("@" + S.username) : (S.dispName || S.email.split("@")[0]);
     var grpObj = {
       id: "grp_" + Date.now(),
       n: gName,
       g: 1,
       members: members,
-      msgs: [sysMsg]
+      updatedAt: Date.now(),
+      msgs: [{ e: S.email.toLowerCase(), sender: senderHandle, t: "أنشأ الكروب (" + members.length + " أعضاء)", at: Date.now() }]
     };
     S.chatModal = null;
-    var md = document.getElementById("md"); if(md) md.remove();
+    var md = $("md"); if(md) md.remove();
     S.cv.unshift(grpObj);
     S.curChatId = grpObj.id;
-    if(window.fbSendRoomMessage) window.fbSendRoomMessage(grpObj, sysMsg);
+    if(window.fbSaveChatRoom) window.fbSaveChatRoom(grpObj);
     saveAllUserStorage(); draw();
+    toast("✅ تم إنشاء الكروب بنجاح");
   }else if(S.chatModal === "add_member"){
     var c = S.cv.find(function(x){ return x.id === S.curChatId; });
     S.chatModal = null;
-    var md2 = document.getElementById("md"); if(md2) md2.remove();
+    var md2 = $("md"); if(md2) md2.remove();
     if(c && picked.length){
-      c.members = Array.from(new Set((c.members || [S.email]).concat(picked)));
-      var msgId = "m_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
-      var sysMsg = { id: msgId, e: S.email, isSys: true, sender: "النظام", t: "أُضيف: " + pickedNames.join("، "), at: Date.now() };
-      c.msgs = c.msgs || [];
-      c.msgs.push(sysMsg);
-      if(window.fbSendRoomMessage) window.fbSendRoomMessage(c, sysMsg);
-      saveAllUserStorage(); draw();
+      c.members = Array.from(new Set((c.members || [S.email.toLowerCase()]).concat(picked.map(function(e){ return e.toLowerCase(); }))));
+      c.updatedAt = Date.now();
+      var addedNames = picked.join("، ");
+      var senderHandle2 = S.username ? ("@" + S.username) : (S.dispName || S.email.split("@")[0]);
+      c.msgs.push({ e: S.email.toLowerCase(), sender: senderHandle2, t: "أُضيف إلى الكروب: " + addedNames, at: Date.now() });
+      if(window.fbSaveChatRoom) window.fbSaveChatRoom(c);
+      saveAllUserStorage();
+      toast("✅ تم إضافة الأعضاء بنجاح");
+      draw();
     }
   }
 }
 
-/* واجهة غرفة الدردشة بسلاسة واتساب وتليجرام + رفع وتحميل الملفات */
+
 function roomV(){
   var c = S.cv.find(function(x){ return x.id === S.curChatId; }); if(!c){ S.curChatId = null; return cListV(); }
   if(window.fbWatchRoomMessages) window.fbWatchRoomMessages(c.id);
@@ -3374,8 +3378,8 @@ function roomV(){
     '</div>' +
     '<div class="wa-body" id="waBody">' +
       (ms.length ? ms.map(function(m, mi){
-        if(m.isSys || m.e === "sys"){
-          return '<div style="text-align:center;font-size:11px;color:var(--mu);background:var(--sf);padding:3px 10px;border-radius:99px;align-self:center;margin:4px 0">'+esc(m.t)+'</div>';
+        if(m.e === "sys"){
+          return '<div style="text-align:center;font-size:11px;color:var(--mu);background:var(--sf);padding:3px 10px;border-radius:99px;align-self:center">'+esc(m.t)+'</div>';
         }
         var me = m.e === S.email;
         var timeStr = m.at ? new Date(m.at).toLocaleTimeString("ar-IQ",{hour:"2-digit",minute:"2-digit"}) : "";
@@ -3418,7 +3422,7 @@ function sendM(fileObj){
   var msg = {
     id: msgId,
     e: S.email,
-    sender: S.dispName || S.email.split("@")[0],
+    sender: S.username ? ("@" + S.username) : (S.dispName || S.email.split("@")[0]),
     t: t,
     file: fileObj || null,
     at: Date.now()
@@ -3771,7 +3775,7 @@ window.fbLogin=function(){
 
 window.fbSyncUserProfile=function(){
   if(!S.uid)return;
-  var payload={email:S.email,name:S.dispName,photo:(auth.currentUser&&auth.currentUser.photoURL)||"",lastSeen:Date.now(),updatedAt:S.updatedAt||Date.now()};
+  var payload={email:S.email,name:S.dispName,username:S.username||S.email.split("@")[0],photo:(auth.currentUser&&auth.currentUser.photoURL)||"",lastSeen:Date.now(),updatedAt:S.updatedAt||Date.now()};
   if(S.userAiKey)payload.userAiKey=S.userAiKey;
   try{
     var docsJson=JSON.stringify(S.docs||[]);
