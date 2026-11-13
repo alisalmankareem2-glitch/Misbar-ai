@@ -126,7 +126,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.16.0";
+var APP_VERSION = "2.18.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -249,7 +249,8 @@ var S={
   cv:[{id:"local_notes",n:"ملاحظاتي السريعة",g:0,members:[],msgs:[]}],curChatId:null,chatModal:null,chatSearch:"",chatPickEmails:{},chatGroupName:"",
   gw:null,pp:null,bk:null,docs:[],
   planRows:null,pi:"",per:"أسبوعية",pv:0,
-  hiddenMsgs:{}
+  hiddenMsgs:{},
+  blocked:[]
 };
 
 function storagePrefix(){ return "misbar_u_" + (S.uid || "guest") + "_"; }
@@ -276,6 +277,7 @@ function loadUserDeviceData(){
     if(acPref !== null) S.scnAutoCrop = acPref === "1";
     S.scnDocId = localStorage.getItem(p+"scnDocId") || null;
     try{ S.hiddenMsgs = JSON.parse(localStorage.getItem(p+"hiddenMsgs")||"{}"); }catch(e){}
+    try{ S.blocked = JSON.parse(localStorage.getItem(p+"blocked")||"[]"); }catch(e){}
     migrateScannerFolders();
   }catch(e){}
 }
@@ -309,6 +311,7 @@ function saveDeviceOnly(){
     localStorage.setItem(p+"classes", JSON.stringify(S.classes));
     localStorage.setItem(p+"posts", JSON.stringify(S.posts));
     localStorage.setItem(p+"hiddenMsgs", JSON.stringify(S.hiddenMsgs||{}));
+    localStorage.setItem(p+"blocked", JSON.stringify(S.blocked||[]));
   }catch(e){}
 }
 
@@ -402,6 +405,7 @@ async function restoreFromGoogleDrive(silent){
           if(Array.isArray(remote.bag)) S.bag = remote.bag;
           if(Array.isArray(remote.fl)) S.fl = remote.fl;
           if(Array.isArray(remote.cv)) S.cv = remote.cv;
+          if(Array.isArray(remote.blocked)) S.blocked = remote.blocked;
           if(remote.userAiKey && !getUserKey()){
             S.userAiKey = remote.userAiKey;
             try{ localStorage.setItem("misbar_gkey_"+(S.uid||"anon"), remote.userAiKey); }catch(e){}
@@ -444,7 +448,8 @@ async function syncToGoogleDrive(silent){
       joined: S.joined,
       bag: S.bag,
       fl: S.fl,
-      cv: S.cv
+      cv: S.cv,
+      blocked: S.blocked
     };
     var boundary = "-------misbar314159265";
     var meta = fileId
@@ -3752,6 +3757,22 @@ function uploadCustomWaWp(){
 }
 
 
+
+function toggleBlockUser(email){
+  if(!email) return;
+  S.blocked = S.blocked || [];
+  var idx = S.blocked.indexOf(email);
+  if(idx > -1){
+    S.blocked.splice(idx, 1);
+    toast("✅ تم فك الحظر عن المستخدم");
+  } else {
+    S.blocked.push(email);
+    toast("🚫 تم حظر المستخدم، لن تصلك رسائله");
+  }
+  saveAllUserStorage();
+  draw();
+}
+
 /* ==================== حذف الرسائل والمحادثات ==================== */
 function deleteOrLeaveChat(chatId){
   var c = S.cv.find(function(x){ return x.id === chatId; }); if(!c) return;
@@ -3817,11 +3838,19 @@ function roomV(){
       '<div class="grow" style="overflow:hidden"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(c.g?'👥 ':'')+esc(chatTitle(c))+'</b>' +
         '<div style="font-size:11px;opacity:.88">'+(c.g ? ((c.members?c.members.length:1)+' أعضاء · اضغط 📎 لمشاركة ملف') : (chatPeerHandle(c) || 'مراسلة مباشرة'))+'</div>' +
       '</div>' +
-      (c.g ? '<button class="b s" style="min-height:34px;padding:4px 9px" onclick="openChatPicker(\'add_member\')">+ عضو</button>' : '') +
-            '<button class="b s" style="min-height:34px;padding:4px 9px;font-size:18px;font-weight:bold;margin-inline-start:4px" onclick="showChatMenu(\''+c.id+'\')" title="خيارات المحادثة">⋮</button>' +
-      '<button class="b s" style="min-height:34px;padding:4px 9px" onclick="openWaWallpaperModal()" title="تغيير خلفية المحادثة">🎨</button>' +
+      (c.g ? '<button style="background:transparent;color:#fff;border:none;font-size:20px;cursor:pointer" onclick="openChatPicker(\'add_member\')" title="إضافة عضو">👤+</button>' : '') +
+      '<div style="position:relative">' +
+        '<button style="background:transparent;color:#fff;border:none;font-size:22px;font-weight:bold;cursor:pointer;padding:0 8px" onclick="var m=document.getElementById(\'waMenuDropdown\');if(m)m.style.display=m.style.display===\'none\'?\'block\':\'none\';event.stopPropagation();">⋮</button>' +
+        '<div id="waMenuDropdown" style="display:none;position:absolute;top:38px;left:0;background:var(--sf);color:var(--tx);min-width:170px;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,0.2);z-index:100;overflow:hidden;text-align:start;font-size:15px;font-weight:600">' +
+          (c.g ? '<div style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--ln);color:#ef4444" onclick="confirmLeaveGroup(\''+c.id+'\')">مغادرة المجموعة</div>' 
+               : '<div style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--ln);color:#ef4444" onclick="confirmDeleteChat(\''+c.id+'\')">حذف المحادثة</div>' +
+                 '<div style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--ln);color:#ef4444" onclick="toggleBlockUser(\''+chatPeerEmail(c)+'\')">' + (S.blocked && S.blocked.indexOf(chatPeerEmail(c)) > -1 ? '✅ فك الحظر' : '🚫 حظر المستخدم') + '</div>') +
+          '<div style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--ln)" onclick="clearChatMessages(\''+c.id+'\')">مسح محتوى المحادثة</div>' +
+          '<div style="padding:14px 16px;cursor:pointer" onclick="openWaWallpaperModal();document.getElementById(\'waMenuDropdown\').style.display=\'none\';">تغيير الخلفية</div>' +
+        '</div>' +
+      '</div>' +
     '</div>' +
-    '<div class="wa-body" id="waBody" style="' + bgStyle + '">' +
+    '<div class="wa-body" id="waBody" style="' + bgStyle + '" onclick="var m=document.getElementById(\'waMenuDropdown\');if(m)m.style.display=\'none\';">' +
       (wp.doodle && !wp.img ? '<div class="wa-doodle-layer" style="' + doodleFilter + '"></div>' : '') +
       (wp.dim > 0 ? '<div style="position:fixed;inset:0;background:rgba(0,0,0,' + (wp.dim/100) + ');pointer-events:none;z-index:0"></div>' : '') +
       (ms.length ? ms.filter(function(m){ return !S.hiddenMsgs[m.id]; }).map(function(m, mi){
@@ -3855,9 +3884,11 @@ function roomV(){
       }).join("") : '<div class="mu" style="text-align:center;margin:24px 0;background:var(--sf);padding:8px 14px;border-radius:10px;align-self:center;z-index:1">ابدأ المحادثة الآن أو أرسل ملفاً/صورة للجميع 📎</div>') +
     '</div>' +
     '<div class="wa-foot">' +
-      '<button type="button" class="b s" style="min-height:40px;padding:0 11px;font-size:18px" title="رفع ملف أو صورة" onclick="attachChatFile()">📎</button>' +
-      '<input id="mt" class="grow" style="margin:0" placeholder="اكتب رسالة..." onkeydown="if(event.key==\'Enter\')sendM()">' +
-      '<button type="button" class="b" style="min-height:40px;padding:0 14px" onclick="sendM()">إرسال</button>' +
+      (!c.g && S.blocked && S.blocked.indexOf(chatPeerEmail(c)) > -1 
+        ? '<div style="width:100%;text-align:center;padding:8px;color:var(--mu);font-size:13px">لقد قمت بحظر هذا المستخدم. <button class="b s" style="min-height:28px;padding:2px 10px;font-size:12px;margin-inline-start:6px" onclick="toggleBlockUser(\''+chatPeerEmail(c)+'\')">فك الحظر</button></div>'
+        : '<button type="button" class="b s" style="min-height:40px;padding:0 11px;font-size:18px" title="رفع ملف أو صورة" onclick="attachChatFile()">📎</button>' +
+          '<input id="mt" class="grow" style="margin:0" placeholder="اكتب رسالة..." onkeydown="if(event.key==\'Enter\')sendM()">' +
+          '<button type="button" class="b" style="min-height:40px;padding:0 14px" onclick="sendM()">إرسال</button>') +
     '</div>' +
   '</div>';
 }
@@ -4424,6 +4455,7 @@ onAuthStateChanged(auth,function(u){
         var o=prev[x.id];
         if(o && (o.updatedAt||0)>=(x.updatedAt||0)) return;
         if(!x.lastFrom || x.lastFrom===S.email) return;
+        if(!x.g && S.blocked && S.blocked.indexOf(x.lastFrom) > -1) return; // Ignore blocked users
         var senderTitle = chatTitle(x);
         var prevTxt = x.lastPreview || "رسالة جديدة";
         if(S.curChatId===x.id && S.tab===(S.role==="pro"?5:4)) return;
