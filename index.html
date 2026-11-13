@@ -3815,7 +3815,7 @@ function roomV(){
         '<div style="font-size:11px;opacity:.88">'+(c.g ? ((c.members?c.members.length:1)+' أعضاء · اضغط 📎 لمشاركة ملف') : (chatPeerHandle(c) || 'مراسلة مباشرة'))+'</div>' +
       '</div>' +
       (c.g ? '<button class="b s" style="min-height:34px;padding:4px 9px" onclick="openChatPicker(\'add_member\')">+ عضو</button>' : '') +
-      '<button class="b d" style="min-height:34px;padding:4px 9px" onclick="deleteOrLeaveChat(''+c.id+'')" title="حذف أو مغادرة المحادثة">🗑️</button>' +
+            '<button class="b s" style="min-height:34px;padding:4px 9px;font-size:18px;font-weight:bold;margin-inline-start:4px" onclick="showChatMenu(\''+c.id+'\')" title="خيارات المحادثة">⋮</button>' +
       '<button class="b s" style="min-height:34px;padding:4px 9px" onclick="openWaWallpaperModal()" title="تغيير خلفية المحادثة">🎨</button>' +
     '</div>' +
     '<div class="wa-body" id="waBody" style="' + bgStyle + '">' +
