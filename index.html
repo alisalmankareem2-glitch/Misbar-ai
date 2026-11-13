@@ -126,7 +126,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.13.0";
+var APP_VERSION = "2.14.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -3748,6 +3748,54 @@ function uploadCustomWaWp(){
   f.click();
 }
 
+
+/* ==================== حذف الرسائل والمحادثات ==================== */
+function deleteOrLeaveChat(chatId){
+  var c = S.cv.find(function(x){ return x.id === chatId; }); if(!c) return;
+  if(c.id === "local_notes"){ toast("لا يمكن حذف ملاحظاتي السريعة"); return; }
+  
+  if(c.g){
+    ask("هل أنت متأكد أنك تريد مغادرة الكروب («"+esc(c.n)+"»)؟", function(conf){
+      if(conf !== "نعم"){ toast("اكتب نعم للتأكيد"); return; }
+      c.members = c.members.filter(function(em){ return em !== S.email.toLowerCase(); });
+      var senderHandle = S.username ? ("@" + S.username) : (S.dispName || S.email.split("@")[0]);
+      c.msgs.push({ e: S.email.toLowerCase(), isSys: true, sender: "النظام", t: "غادر " + senderHandle + " الكروب", at: Date.now() });
+      if(window.fbSaveChatRoom) window.fbSaveChatRoom(c);
+      S.cv = S.cv.filter(function(x){ return x.id !== chatId; });
+      S.curChatId = null;
+      saveAllUserStorage();
+      toast("تم مغادرة الكروب");
+      draw();
+    }, 0, "نعم");
+  }else{
+    ask("هل أنت متأكد من حذف هذه المحادثة من جهازك؟ (الرسائل ستبقى عند الطرف الآخر)", function(conf){
+      if(conf !== "نعم"){ toast("اكتب نعم للتأكيد"); return; }
+      S.cv = S.cv.filter(function(x){ return x.id !== chatId; });
+      S.curChatId = null;
+      saveAllUserStorage();
+      toast("تم حذف المحادثة");
+      draw();
+    }, 0, "نعم");
+  }
+}
+
+function promptDeleteMessage(chatId, msgId){
+  if(!msgId) return;
+  ask("هل تريد حذف هذه الرسالة من لدى الجميع؟ (نعم / لا)", function(conf){
+    if(conf === "نعم"){
+      var c = S.cv.find(function(x){ return x.id === chatId; }); if(!c) return;
+      var mIdx = c.msgs.findIndex(function(m){ return m.id === msgId; });
+      if(mIdx > -1){
+        c.msgs.splice(mIdx, 1);
+        if(window.fbDeleteRoomMessage) window.fbDeleteRoomMessage(chatId, msgId);
+        saveAllUserStorage();
+        toast("تم حذف الرسالة");
+        draw();
+      }
+    }
+  }, 0, "نعم");
+}
+
 function roomV(){
   var c = S.cv.find(function(x){ return x.id === S.curChatId; }); if(!c){ S.curChatId = null; return cListV(); }
   if(window.fbWatchRoomMessages) window.fbWatchRoomMessages(c.id);
@@ -3767,7 +3815,8 @@ function roomV(){
         '<div style="font-size:11px;opacity:.88">'+(c.g ? ((c.members?c.members.length:1)+' أعضاء · اضغط 📎 لمشاركة ملف') : (chatPeerHandle(c) || 'مراسلة مباشرة'))+'</div>' +
       '</div>' +
       (c.g ? '<button class="b s" style="min-height:34px;padding:4px 9px" onclick="openChatPicker(\'add_member\')">+ عضو</button>' : '') +
-      '<button class="b s" style="min-height:34px;padding:4px 9px" onclick="openWaWallpaperModal()" title="تغيير خلفية المحادثة">🎨 خلفية</button>' +
+      '<button class="b d" style="min-height:34px;padding:4px 9px" onclick="deleteOrLeaveChat(''+c.id+'')" title="حذف أو مغادرة المحادثة">🗑️</button>' +
+      '<button class="b s" style="min-height:34px;padding:4px 9px" onclick="openWaWallpaperModal()" title="تغيير خلفية المحادثة">🎨</button>' +
     '</div>' +
     '<div class="wa-body" id="waBody" style="' + bgStyle + '">' +
       (wp.doodle && !wp.img ? '<div class="wa-doodle-layer" style="' + doodleFilter + '"></div>' : '') +
@@ -3793,7 +3842,8 @@ function roomV(){
             '</div>';
           }
         }
-        return '<div class="wa-bub '+(me?'out':'in')+'">' +
+        var delClick = me ? ' onclick="promptDeleteMessage(\''+c.id+'\',\''+esc(m.id)+'\')"' : '';
+        return '<div class="wa-bub '+(me?'out':'in')+'"'+delClick+(me?' style="cursor:pointer" title="اضغط لحذف الرسالة"':'')+'>' +
           (c.g && !me ? '<div style="font-size:11px;font-weight:800;color:var(--ac);margin-bottom:2px">'+esc(m.sender)+'</div>' : '') +
           (m.t ? '<div>'+esc(m.t)+'</div>' : '') +
           fileHtml +
@@ -4395,6 +4445,11 @@ onAuthStateChanged(auth,function(u){
     var members=(chatObj.members&&chatObj.members.length)?chatObj.members:[S.email];
     var meta={id:chatObj.id,n:chatObj.n||"",g:chatObj.g?1:0,members:arrayUnion.apply(null,members),photo:chatObj.photo||"",lastPreview:chatObj.lastPreview||"",lastFrom:chatObj.lastFrom||"",updatedAt:chatObj.updatedAt||Date.now()};
     return setDoc(doc(db,"chats",chatObj.id),meta,{merge:true});
+  };
+  window.fbDeleteRoomMessage=function(chatId, msgId){
+    if(chatId && chatId !== "local_notes" && msgId){
+      deleteDoc(doc(db,"chats",chatId,"messages",msgId)).catch(function(){});
+    }
   };
   window.fbSendRoomMessage=function(chatObj, msgObj){
     if(!chatObj||!chatObj.id||chatObj.id==="local_notes"||!msgObj||!msgObj.id)return;
