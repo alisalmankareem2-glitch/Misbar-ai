@@ -119,17 +119,21 @@ nav button.on{color:var(--ac)}nav i{display:block;font-style:normal;font-size:19
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.5.1";
+var APP_VERSION = "2.6.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
-    fetch("./sw.js", { method: "HEAD", cache: "no-store" }).then(function(r) {
+    fetch("./sw.js?v=" + Date.now(), { method: "HEAD", cache: "no-store" }).then(function(r) {
       if (r.ok) {
         navigator.serviceWorker.register("./sw.js").then(function(reg) {
           reg.update().catch(function(){});
         }).catch(function(){});
       }
     }).catch(function(){});
+  });
+  var _swRefreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", function() {
+    if (!_swRefreshing) { _swRefreshing = true; location.reload(); }
   });
 }
 
@@ -149,7 +153,7 @@ async function checkForLiveUpdate() {
     }
   } catch (e) {}
 }
-window.addEventListener("load", function(){ setTimeout(checkForLiveUpdate, 1500); });
+window.addEventListener("load", function(){ setTimeout(checkForLiveUpdate, 300); });
 document.addEventListener("visibilitychange", function(){ if (!document.hidden) checkForLiveUpdate(); });
 
 /* ============================================================================
@@ -3123,10 +3127,7 @@ function aiV(){
     (S.ai.length?S.ai.map(function(m){return '<div class="msg'+(m[1]?' me':'')+'">'+esc(m[0])+'</div>'}).join(""):'')+
     (S.busy?'<div class="msg mu">⏳ يكتب الإجابة...</div>':'')+
     '<div class="row" style="margin-top:6px"><input id="aiIn" placeholder="اكتب سؤالك لـ '+esc(S.prov)+'..." class="grow" onkeydown="if(event.key==\'Enter\')sendAI()"><button class="b" '+(S.busy?'disabled':'')+' onclick="sendAI()">إرسال</button></div>'+
-    '<div class="row" style="margin-top:6px;justify-content:space-between">'+
-      '<span class="mu" style="font-size:11px">يفتح مباشرة بحسابك المسجل على الجهاز</span>'+
-      '<button class="b s" style="min-height:30px;padding:3px 9px;font-size:11px" onclick="openAutoKeyConnect()">⚙️ ربط API اختياري</button>'+
-    '</div>'+
+    '<div class="mu" style="font-size:12px;margin-top:6px;text-align:center">✅ مربوط تلقائياً بحسابك — اختر أي منصة بالأعلى أو أرسل سؤالك مباشرة</div>'+
   '</div>';
 }
 
@@ -3213,7 +3214,7 @@ function cListV(){
     if(!c.id) c.id = "chat_loc_" + i;
     var ms=c.msgs||[];
     var l=ms[ms.length-1];
-    var preview = l ? (l.file ? ('📎 ' + l.file.name) : (l.t || '')) : 'ابدأ المراسلة الآن';
+    var preview = l ? (l.file ? ('📎 ' + l.file.name) : (l.t || '')) : (c.lastPreview || 'ابدأ المراسلة الآن');
     return '<div class="card row" style="cursor:pointer" onclick="S.curChatId=\''+esc(c.id)+'\';draw()">'+
       avatarHtml(c.n, c.photo)+
       '<span class="grow"><b>'+(c.g?'👥 ':'')+esc(c.n)+'</b><div class="mu">'+esc(preview)+'</div></span>'+
@@ -3320,6 +3321,7 @@ function confirmGroupCreateOrAdd(){
 /* واجهة غرفة الدردشة بسلاسة واتساب وتليجرام + رفع وتحميل الملفات */
 function roomV(){
   var c = S.cv.find(function(x){ return x.id === S.curChatId; }); if(!c){ S.curChatId = null; return cListV(); }
+  if(window.fbWatchRoomMessages) window.fbWatchRoomMessages(c.id);
   var ms = c.msgs || [];
   return '<div class="wa-room">' +
     '<div class="wa-head">' +
@@ -3372,15 +3374,21 @@ function sendM(fileObj){
   var e = $("mt"), t = e ? e.value.trim() : "";
   if(!t && !fileObj) return;
   var c = S.cv.find(function(x){ return x.id === S.curChatId; }); if(!c) return;
+  var msgId = "m_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
   var msg = {
+    id: msgId,
     e: S.email,
     sender: S.dispName || S.email.split("@")[0],
     t: t,
     file: fileObj || null,
     at: Date.now()
   };
+  c.msgs = c.msgs || [];
   c.msgs.push(msg);
-  if(window.fbSaveChatRoom) window.fbSaveChatRoom(c);
+  c.lastPreview = fileObj ? ("📎 " + fileObj.name) : t;
+  c.updatedAt = msg.at;
+  if(window.fbSendRoomMessage) window.fbSendRoomMessage(c, msg);
+  else if(window.fbSaveChatRoom) window.fbSaveChatRoom(c);
   saveAllUserStorage();
   draw();
   setTimeout(function(){ var wb=$("waBody"); if(wb) wb.scrollTop=wb.scrollHeight; }, 30);
@@ -3392,18 +3400,22 @@ function attachChatFile(){
   f.accept = "image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt";
   f.onchange = function(){
     var x = f.files[0]; if(!x) return;
-    if(x.size > 2500000){ toast("حجم الملف كبير (الحد الأقصى 2.5 ميجا)"); return; }
     var isImg = /^image\//.test(x.type);
+    if(!isImg && x.size > 720000){
+      toast("الحد الأقصى للملفات المرفقة في المحادثة هو 700 كيلوبايت");
+      return;
+    }
     var r = new FileReader();
     r.onload = function(){
       if(isImg){
         var im = new Image();
         im.onload = function(){
-          var k = Math.min(1, 1000 / Math.max(im.width, im.height));
+          var k = Math.min(1, 820 / Math.max(im.width, im.height));
           var c = document.createElement("canvas");
           c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
           c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
-          sendM({ name: x.name, isImg: true, data: c.toDataURL("image/jpeg", 0.78), sizeTxt: Math.round(x.size/1024)+" ك.ب" });
+          var compressed = c.toDataURL("image/jpeg", 0.72);
+          sendM({ name: x.name, isImg: true, data: compressed, sizeTxt: Math.round(compressed.length*0.75/1024)+" ك.ب" });
         };
         im.src = r.result;
       }else{
@@ -3787,22 +3799,54 @@ onAuthStateChanged(auth,function(u){
     var a=[];s.forEach(function(d){a.push(d.data())});S.allUsers=a;draw();
   },function(){}));
 
+  var msgUnsub = null, watchedChatId = null;
+  window.fbWatchRoomMessages = function(chatId){
+    if(!chatId || chatId === "local_notes" || chatId === watchedChatId) return;
+    if(msgUnsub){ try{msgUnsub()}catch(e){} msgUnsub = null; }
+    watchedChatId = chatId;
+    msgUnsub = onSnapshot(collection(db,"chats",chatId,"messages"),function(msSnap){
+      var arr=[];
+      msSnap.forEach(function(md){ arr.push(md.data()); });
+      arr.sort(function(a,b){ return (a.at||0)-(b.at||0); });
+      var room = S.cv.find(function(x){ return x.id === chatId; });
+      if(room && arr.length){
+        room.msgs = arr;
+        draw();
+        setTimeout(function(){ var wb=$("waBody"); if(wb) wb.scrollTop=wb.scrollHeight; }, 30);
+      }
+    },function(){});
+    unsubs.push(msgUnsub);
+  };
+
   unsubs.push(onSnapshot(collection(db,"chats"),function(s){
     var remoteChats=[];
     s.forEach(function(d){
       var x=d.data();x.id=d.id;
+      var oldLocal = S.cv.find(function(o){ return o.id === d.id; });
+      x.msgs = (oldLocal && Array.isArray(oldLocal.msgs) && oldLocal.msgs.length) ? oldLocal.msgs : (x.msgs || []);
       if(!x.members || x.members.indexOf(S.email)>-1) remoteChats.push(x);
     });
+    remoteChats.sort(function(a,b){ return (b.updatedAt||0)-(a.updatedAt||0); });
     if(remoteChats.length){
-      var notes=S.cv.filter(function(c){return !c.id || c.n==="ملاحظاتي السريعة"});
+      var notes=S.cv.filter(function(c){return c.id==="local_notes"});
       S.cv=notes.concat(remoteChats);
       draw();
     }
   },function(){}));
 
   window.fbSaveChatRoom=function(chatObj){
+    if(!chatObj||!chatObj.id||chatObj.id==="local_notes")return;
+    var roomMeta={id:chatObj.id,n:chatObj.n,g:chatObj.g?1:0,members:chatObj.members||[S.email],peerEmail:chatObj.peerEmail||"",photo:chatObj.photo||"",lastPreview:chatObj.lastPreview||"",updatedAt:chatObj.updatedAt||Date.now()};
+    setDoc(doc(db,"chats",chatObj.id),roomMeta,{merge:true}).catch(function(){});
+  };
+  window.fbSendRoomMessage=function(chatObj, msgObj){
     if(!chatObj||!chatObj.id)return;
-    setDoc(doc(db,"chats",chatObj.id),chatObj,{merge:true}).catch(function(){});
+    window.fbSaveChatRoom(chatObj);
+    if(chatObj.id!=="local_notes" && msgObj && msgObj.id){
+      setDoc(doc(db,"chats",chatObj.id,"messages",msgObj.id),msgObj).catch(function(err){
+        toast("تعذر إرسال المرفق (الحجم كبير)");
+      });
+    }
   };
   window.fbSendFeedback=function(item){
     setDoc(doc(db,"feedbacks",item.id),item).catch(function(){});
