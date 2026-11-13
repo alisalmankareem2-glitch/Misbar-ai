@@ -126,7 +126,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.14.0";
+var APP_VERSION = "2.16.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -248,7 +248,8 @@ var S={
   fl:[{n:"ملفاتي",it:[]}],fo:0,scnAutoCrop:true,scnQuery:"",scnDocId:null,scnEd:null,scnPrintDoc:null,scnSelectMode:false,scnSelected:{},scnMoreOpen:false,use:{},
   cv:[{id:"local_notes",n:"ملاحظاتي السريعة",g:0,members:[],msgs:[]}],curChatId:null,chatModal:null,chatSearch:"",chatPickEmails:{},chatGroupName:"",
   gw:null,pp:null,bk:null,docs:[],
-  planRows:null,pi:"",per:"أسبوعية",pv:0
+  planRows:null,pi:"",per:"أسبوعية",pv:0,
+  hiddenMsgs:{}
 };
 
 function storagePrefix(){ return "misbar_u_" + (S.uid || "guest") + "_"; }
@@ -274,6 +275,7 @@ function loadUserDeviceData(){
     var acPref = localStorage.getItem(p+"scnAutoCrop");
     if(acPref !== null) S.scnAutoCrop = acPref === "1";
     S.scnDocId = localStorage.getItem(p+"scnDocId") || null;
+    try{ S.hiddenMsgs = JSON.parse(localStorage.getItem(p+"hiddenMsgs")||"{}"); }catch(e){}
     migrateScannerFolders();
   }catch(e){}
 }
@@ -306,6 +308,7 @@ function saveDeviceOnly(){
     localStorage.setItem(p+"cv", JSON.stringify(S.cv));
     localStorage.setItem(p+"classes", JSON.stringify(S.classes));
     localStorage.setItem(p+"posts", JSON.stringify(S.posts));
+    localStorage.setItem(p+"hiddenMsgs", JSON.stringify(S.hiddenMsgs||{}));
   }catch(e){}
 }
 
@@ -3821,7 +3824,7 @@ function roomV(){
     '<div class="wa-body" id="waBody" style="' + bgStyle + '">' +
       (wp.doodle && !wp.img ? '<div class="wa-doodle-layer" style="' + doodleFilter + '"></div>' : '') +
       (wp.dim > 0 ? '<div style="position:fixed;inset:0;background:rgba(0,0,0,' + (wp.dim/100) + ');pointer-events:none;z-index:0"></div>' : '') +
-      (ms.length ? ms.map(function(m, mi){
+      (ms.length ? ms.filter(function(m){ return !S.hiddenMsgs[m.id]; }).map(function(m, mi){
         if(m.isSys || m.e === "sys"){
           return '<div style="text-align:center;font-size:11px;color:var(--mu);background:var(--sf);padding:3px 10px;border-radius:99px;align-self:center;margin:4px 0;z-index:1">'+esc(m.t)+'</div>';
         }
