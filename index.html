@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="مسبار AI">
 <link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <title>مسبار AI</title>
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -121,7 +123,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.10.0";
+var APP_VERSION = "2.11.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -596,6 +598,10 @@ function profileScr(){
       '<div class="mu" style="font-size:11px;margin-bottom:10px">تسجيل الدخول يتم عبر حساب Google، فالجيميل ما ينغير من داخل التطبيق. إذا تريد جيميل ثاني سجّل خروج وادخل بالحساب الجديد.</div>' +
       '<button class="b s" style="width:100%" onclick="fbLogout()">🔁 تبديل الحساب</button>' +
     '</div>' +
+    '<div class="card"><div class="grid">' +
+      '<button class="b s" onclick="handleDriveSyncClick()">' + (S.driveToken ? '☁️ مزامنة Drive' : '☁️ ربط Google Drive') + '</button>' +
+      (stat() && S.role != 'own' ? '<button class="b s" onclick="S.profileOpen=false;S.subv=1;draw()">' + stat() + '</button>' : '') +
+    '</div></div>' +
     '<div class="mu" style="text-align:center;margin-top:8px;font-size:11px">إصدار v' + APP_VERSION + '</div>' +
     '</main>';
   $("app").className = S.role == "pro" ? "pro" : "";
@@ -740,16 +746,31 @@ function hat(){
   if(S.taps>=5){S.taps=0;ask("أدخل رمز المالك",function(c){if(c===S.code)setRole("own");else toast("الرمز غير صحيح")},1)}
 }
 function head(t){
-  var drvBtn = S.role!='own'
-    ? '<button class="b s" title="مزامنة Google Drive" onclick="handleDriveSyncClick()">'+(S.driveSyncing?'⏳':(S.driveToken?'☁️ Drive':'☁️ ربط'))+'</button>'
+  var me = findUserByEmail(S.email);
+  var av = S.role!='own'
+    ? '<button class="b s" style="padding:0;min-width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center" onclick="openProfileModal()" title="حسابي" aria-label="حسابي">'+avatarHtml(S.dispName||S.email, (me&&me.photo)||"")+'</button>'
     : '';
-  return '<header><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>'+t+'</h1>'+
-  (S.role!='own' ? '<button class="b s" style="min-width:38px;padding:4px 0;font-size:16px" onclick="openProfileModal()" title="حسابي">👤</button>' : '') +
-  drvBtn+
-  (stat()&&S.role!='own'?'<button class="b s" onclick="S.subv=1;draw()">'+stat()+'</button>':'')+
+  return '<header><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button>'+av+'<h1>'+t+'</h1>'+
   (S.role?'<button class="b s" title="تبديل بين الأستاذ والطالب" onclick="setRole(null)">🔄</button>':'')+
   '<button class="b d" title="تسجيل الخروج النهائي" onclick="fbLogout()">خروج</button></header>';
 }
+
+/* بطاقة الحساب أعلى الصفحة: الاسم واليوزر نيم + Drive + الاشتراك */
+function profileBarH(){
+  if(!S.uid || S.role=='own') return '';
+  var me = findUserByEmail(S.email);
+  var nm = S.dispName || (S.email ? S.email.split("@")[0] : "");
+  return '<div class="card row" style="gap:10px;padding:10px 12px">'+
+    '<span style="cursor:pointer" onclick="openProfileModal()">'+avatarHtml(nm, (me&&me.photo)||"")+'</span>'+
+    '<div class="grow" style="cursor:pointer;overflow:hidden" onclick="openProfileModal()">'+
+      '<b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(nm)+'</b>'+
+      '<span class="mu" dir="ltr" style="font-size:12px">'+(S.username?'@'+esc(S.username):'أضف يوزر نيم ›')+'</span></div>'+
+    '<button class="b s" style="min-width:40px;padding:4px 8px" title="مزامنة Google Drive" onclick="handleDriveSyncClick()">'+(S.driveSyncing?'⏳':'☁️')+'</button>'+
+    (stat()?'<button class="b s" onclick="S.subv=1;draw()">'+stat()+'</button>':'')+
+  '</div>';
+}
+function topBarH(){ return (S.tab==0 || S.tab==(S.role=="pro"?5:4)) ? profileBarH() : ''; }
+
 function navb(items){return '<nav>'+items.map(function(x,i){var n=(i==items.length-1)?chatUnreadCount():0;return '<button class="'+(S.tab==i?'on':'')+'" onclick="tab('+i+')"><i>'+x[0]+'</i>'+x[1]+(n?'<span class="nbdot">'+n+'</span>':'')+'</button>'}).join("")+'</nav>'}
 
 function driveBannerH(){
@@ -3821,10 +3842,10 @@ function draw(){
     '<button class="b s" style="width:100%;margin-top:14px" onclick="fbLogout()">🚪 تسجيل الخروج وتغيير الحساب</button>'+
     '<div class="mu" style="text-align:center;margin-top:10px;font-size:11px">v'+APP_VERSION+'</div></main>';
   }else if(r=="pro"){
-    h=head("واجهة الأستاذ")+'<main>'+[proPortalsV,filesV,bagV,clsV,aiAndTextV,chatV][S.tab]()+'</main>'+
+    h=head("واجهة الأستاذ")+'<main>'+topBarH()+[proPortalsV,filesV,bagV,clsV,aiAndTextV,chatV][S.tab]()+'</main>'+
       navb([["🏛️","البوابات"],["📷","السكنر"],["🎒","الحقيبة"],["🏫","الكلاسات"],["🤖","الذكاء والنص"],["💬","المجتمع"]]);
   }else if(r=="stu"){
-    h=head("واجهة الطالب")+'<main>'+[stuV,filesV,revV,aiAndTextV,chatV][S.tab]()+'</main>'+
+    h=head("واجهة الطالب")+'<main>'+topBarH()+[stuV,filesV,revV,aiAndTextV,chatV][S.tab]()+'</main>'+
       navb([["📚","كلاساتي"],["📷","السكنر"],["🧠","المراجعة"],["🤖","الذكاء والنص"],["💬","المجتمع"]]);
   }else{
     h=head("لوحة المالك")+'<main>'+ownV()+'</main>';
