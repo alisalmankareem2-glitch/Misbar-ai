@@ -123,7 +123,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.11.0";
+var APP_VERSION = "2.12.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -157,6 +157,43 @@ async function checkForLiveUpdate() {
     }
   } catch (e) {}
 }
+
+/* دعم زر الرجوع في الجهاز (Back Button) داخل التطبيق بدلاً من الخروج */
+window.addEventListener("popstate", function(e){
+  if(S.profileOpen){ S.profileOpen = false; draw(); return; }
+  if(S.curChatId !== null){ S.curChatId = null; draw(); return; }
+  if(S.proPortal !== null){ S.proPortal = null; draw(); return; }
+  if(S.scnDocId !== null){ S.scnDocId = null; draw(); return; }
+  if(S.pp !== null){ S.pp = null; S.gw = null; draw(); return; }
+  if(S.bk !== null){ S.bk = null; S.gw = null; draw(); return; }
+  if(S.role !== null && S.tab > 0){ S.tab = 0; draw(); return; }
+  if(S.role !== null){ S.role = null; draw(); return; }
+});
+
+
+/* طلب إذن إرسال الإشعارات (Browser & PUSH Notifications) */
+function requestNotificationPermission(){
+  if("Notification" in window && Notification.permission === "default"){
+    Notification.requestPermission().catch(function(){});
+  }
+}
+function showBrowserNotification(title, body){
+  if("Notification" in window && Notification.permission === "granted"){
+    try{
+      if(navigator.serviceWorker && navigator.serviceWorker.ready){
+        navigator.serviceWorker.ready.then(function(reg){
+          reg.showNotification(title, { body: body, icon: "./icon-192.png", badge: "./icon-192.png" });
+        });
+      }else{
+        new Notification(title, { body: body, icon: "./icon-192.png" });
+      }
+    }catch(e){
+      try{ new Notification(title, { body: body }); }catch(err){}
+    }
+  }
+}
+window.addEventListener("load", function(){ setTimeout(requestNotificationPermission, 2000); });
+
 window.addEventListener("load", function(){ setTimeout(checkForLiveUpdate, 400); });
 document.addEventListener("visibilitychange", function(){ if (!document.hidden) checkForLiveUpdate(); });
 
@@ -3815,7 +3852,32 @@ function loginV(){
   '</div></main>';
 }
 
+
+/* حفظ واسترجاع مكان الصفحة عند التحديث (Refresh) أو السحب للتحديث */
+function saveAppStateToSession(){
+  try{
+    var st = { role: S.role, tab: S.tab, curChatId: S.curChatId, proPortal: S.proPortal, profileOpen: S.profileOpen };
+    sessionStorage.setItem("misbar_app_state", JSON.stringify(st));
+  }catch(e){}
+}
+function restoreAppStateFromSession(){
+  try{
+    var raw = sessionStorage.getItem("misbar_app_state");
+    if(raw){
+      var st = JSON.parse(raw);
+      if(st && st.role !== undefined){
+        S.role = st.role;
+        S.tab = st.tab !== undefined ? st.tab : 0;
+        S.curChatId = st.curChatId !== undefined ? st.curChatId : null;
+        S.proPortal = st.proPortal !== undefined ? st.proPortal : null;
+        S.profileOpen = !!st.profileOpen;
+      }
+    }
+  }catch(e){}
+}
+
 function draw(){
+  saveAppStateToSession();
   /* تم إزالة الدائرة العائمة بالكامل بناءً على طلبك ليبقى التطبيق نظيفاً وسلساً */
   var oldFab=$("fab");if(oldFab)oldFab.remove();
   if(!S.authReady)return;
@@ -4010,6 +4072,7 @@ onAuthStateChanged(auth,function(u){
   S.isOwner=S.email==OWNER.toLowerCase()&&u.emailVerified;
 
   loadUserDeviceData();
+  restoreAppStateFromSession();
   getDoc(doc(db,"users",u.uid)).then(function(uSnap){
     if(uSnap.exists()){
       var ud=uSnap.data();
@@ -4101,8 +4164,11 @@ onAuthStateChanged(auth,function(u){
         var o=prev[x.id];
         if(o && (o.updatedAt||0)>=(x.updatedAt||0)) return;
         if(!x.lastFrom || x.lastFrom===S.email) return;
+        var senderTitle = chatTitle(x);
+        var prevTxt = x.lastPreview || "رسالة جديدة";
         if(S.curChatId===x.id && S.tab===(S.role==="pro"?5:4)) return;
-        toast("💬 "+chatTitle(x)+": "+(x.lastPreview||"رسالة جديدة"));
+        toast("💬 "+senderTitle+": "+prevTxt);
+        showBrowserNotification("مسبار AI - " + senderTitle, prevTxt);
       });
     }
     chatsFirst=false;
