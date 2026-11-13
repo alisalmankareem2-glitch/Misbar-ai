@@ -87,7 +87,7 @@ nav button.on{color:var(--ac)}nav i{display:block;font-style:normal;font-size:19
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.1.0";
+var APP_VERSION = "2.2.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -183,10 +183,11 @@ function saveDeviceOnly(){
   }catch(e){}
 }
 
-/* الحفظ المزدوج الذكي: يحفظ على جهاز الزبون فوراً + يرفع نسخة محدثة تلقائياً إلى Google Drive الخاص بالزبون */
+/* الحفظ الثلاثي الذكي: يحفظ على جهاز الزبون فوراً + سحابة حسابه تلقائياً + Google Drive الخاص به */
 var _driveDebounce = null;
 function saveAllUserStorage(){
   saveDeviceOnly();
+  if(window.fbSyncUserProfile) window.fbSyncUserProfile();
   clearTimeout(_driveDebounce);
   _driveDebounce = setTimeout(function(){
     if(S.driveToken) syncToGoogleDrive(true);
@@ -353,7 +354,10 @@ async function syncToGoogleDrive(silent){
 async function saveFileToUserDrive(filename, htmlContent, rtl){
   if(!S.driveToken){
     if(window.fbConnectDrive){
-      window.fbConnectDrive(function(){ saveFileToUserDrive(filename, htmlContent, rtl); });
+      showDriveGuideModal(
+        function(){ window.fbConnectDrive(function(){ saveFileToUserDrive(filename, htmlContent, rtl); }); },
+        function(){ shareWordViaSystem(filename, htmlContent, rtl); }
+      );
     }
     return;
   }
@@ -387,11 +391,51 @@ async function saveFileToUserDrive(filename, htmlContent, rtl){
   }
 }
 
+function showDriveGuideModal(onProceed, fallbackShareFn){
+  var d=document.createElement("div");d.id="md";
+  d.innerHTML='<div class="mc" style="width:min(380px,94%)">'+
+    '<div style="font-size:30px;text-align:center">☁️📁</div>'+
+    '<b style="display:block;text-align:center;font-size:15px;margin:4px 0">ربط مجلدك الشخصي على Google Drive</b>'+
+    '<div class="mu" style="text-align:center;margin-bottom:10px">ملاحظة: ملفاتك محفوظة تلقائياً بحسابك، ولربط مجلد <b>«Misbar AI - مسبار»</b> على Drive لأول مرة:</div>'+
+    '<div style="background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:10px;font-size:13px;line-height:1.75;margin-bottom:10px">'+
+      '<div><b>١.</b> إذا ظهرت لك شاشة مكتوب فيها <i>«لم يتحقق Google من هذا التطبيق»</i>، اضغط بالأسفل على <b>إعدادات متقدمة (Advanced)</b>.</div>'+
+      '<div style="margin-top:4px"><b>٢.</b> اضغط على <b>الانتقال إلى misbar-ai.firebaseapp.com</b> ثم <b>متابعة (Continue)</b>.</div>'+
+    '</div>'+
+    '<button class="b" style="width:100%;background:#15803d;margin-bottom:6px" id="dgGo">✅ فهمت، متابعة وربط Google Drive الآن</button>'+
+    (fallbackShareFn?'<button class="b s" style="width:100%;margin-bottom:6px" id="dgShare">📤 أو حفظ مباشرة عبر تطبيق Drive بالموبايل</button>':'')+
+    '<button class="b s" style="width:100%" id="dgCancel">إلغاء</button>'+
+  '</div>';
+  document.body.appendChild(d);
+  function closeM(){d.remove()}
+  $("dgCancel").onclick=closeM;
+  $("dgGo").onclick=function(){closeM();if(onProceed)onProceed()};
+  if(fallbackShareFn&&$("dgShare"))$("dgShare").onclick=function(){closeM();fallbackShareFn()};
+}
+
+function shareWordViaSystem(filename, htmlContent, rtl){
+  var docHtml='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'+
+    '<head><meta charset="utf-8"><title>'+esc(filename)+'</title>'+
+    '<style>@page{size:A4;margin:15mm}body{font-family:Arial,Tahoma,sans-serif;direction:'+(rtl?'rtl':'ltr')+';line-height:1.8}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:6px}</style>'+
+    '</head><body>'+htmlContent+'</body></html>';
+  var cleanName=filename.replace(/[^\w\u0600-\u06FF\- ]/g,"")+".doc";
+  var blob=new Blob(["\ufeff",docHtml],{type:"application/msword;charset=utf-8"});
+  try{
+    var file=new File([blob],cleanName,{type:"application/msword"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      navigator.share({files:[file],title:cleanName}).catch(function(){});
+      return;
+    }
+  }catch(e){}
+  downloadWordFile(filename,htmlContent,rtl);
+}
+
 function handleDriveSyncClick(){
   if(S.driveToken){
     restoreFromGoogleDrive(false);
   }else if(window.fbConnectDrive){
-    window.fbConnectDrive(function(){ restoreFromGoogleDrive(false); });
+    showDriveGuideModal(function(){
+      window.fbConnectDrive(function(){ restoreFromGoogleDrive(false); });
+    });
   }
 }
 
@@ -1822,7 +1866,7 @@ function draw(){
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,reauthenticateWithPopup,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {getFirestore,doc,setDoc,updateDoc,deleteDoc,collection,onSnapshot,query,where} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import {getFirestore,doc,setDoc,getDoc,updateDoc,deleteDoc,collection,onSnapshot,query,where} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 var OWNER="alisalmankareem2@gmail.com";
 
@@ -1838,9 +1882,8 @@ var auth=getAuth(app),db=getFirestore(app),unsubs=[],remotePlans=[];
 var fail=function(e){toast(e&&e.code=="permission-denied"?"لا تملك الصلاحية":"خطأ: "+((e&&e.code)||e))};
 var err=function(e){console.warn(e&&e.code?e.code:e)};
 
-function makeGoogleProvider(){
+function makeBasicGoogleProvider(){
   var p=new GoogleAuthProvider();
-  p.addScope("https://www.googleapis.com/auth/drive.file");
   p.setCustomParameters({prompt:"select_account"});
   return p;
 }
@@ -1856,18 +1899,31 @@ function captureDriveToken(res){
 }
 
 getRedirectResult(auth).then(function(res){
-  if(res){captureDriveToken(res);restoreFromGoogleDrive(true)}
+  if(res){captureDriveToken(res);if(S.driveToken)restoreFromGoogleDrive(true)}
 }).catch(err);
 
+/* تسجيل دخول نظيف ومباشر بحساب Google بدون أي شاشة تحذير للزبون */
 window.fbLogin=function(){
-  var p=makeGoogleProvider();
-  signInWithPopup(auth,p).then(function(res){
-    captureDriveToken(res);
-    restoreFromGoogleDrive(false);
-  }).catch(function(e){
+  var p=makeBasicGoogleProvider();
+  signInWithPopup(auth,p).catch(function(e){
     if(e.code=="auth/popup-blocked"||e.code=="auth/cancelled-popup-request")signInWithRedirect(auth,p);
     else if(e.code!="auth/popup-closed-by-user")toast("تعذر تسجيل الدخول: "+e.code);
   });
+};
+
+window.fbSyncUserProfile=function(){
+  if(!S.uid)return;
+  var payload={email:S.email,name:S.dispName,lastSeen:Date.now(),updatedAt:S.updatedAt||Date.now()};
+  if(S.userAiKey)payload.userAiKey=S.userAiKey;
+  try{
+    var docsJson=JSON.stringify(S.docs||[]);
+    if(docsJson.length<450000)payload.docsJson=docsJson;
+    payload.grJson=JSON.stringify(S.gr||[]);
+    payload.joinedJson=JSON.stringify(S.joined||[]);
+    payload.classesJson=JSON.stringify(S.classes||[]);
+    payload.bagJson=JSON.stringify(S.bag||[]);
+  }catch(e){}
+  setDoc(doc(db,"users",S.uid),payload,{merge:true}).catch(err);
 };
 
 window.fbConnectDrive=function(cb){
@@ -1911,7 +1967,28 @@ onAuthStateChanged(auth,function(u){
   S.isOwner=S.email==OWNER.toLowerCase()&&u.emailVerified;
 
   loadUserDeviceData();
-  setDoc(doc(db,"users",u.uid),{email:S.email,name:S.dispName,lastSeen:Date.now()},{merge:true}).catch(err);
+  getDoc(doc(db,"users",u.uid)).then(function(uSnap){
+    if(uSnap.exists()){
+      var ud=uSnap.data();
+      if((ud.updatedAt||0)>(S.updatedAt||0)){
+        if(ud.docsJson){try{S.docs=JSON.parse(ud.docsJson)}catch(e){}}
+        if(ud.grJson){try{S.gr=JSON.parse(ud.grJson)}catch(e){}}
+        if(ud.joinedJson){try{S.joined=JSON.parse(ud.joinedJson)}catch(e){}}
+        if(ud.classesJson){try{S.classes=JSON.parse(ud.classesJson)}catch(e){}}
+        if(ud.bagJson){try{S.bag=JSON.parse(ud.bagJson)}catch(e){}}
+        S.updatedAt=ud.updatedAt;
+        saveDeviceOnly();
+      }
+      if(ud.userAiKey&&!getUserKey()){
+        S.userAiKey=ud.userAiKey;
+        try{localStorage.setItem("misbar_gkey_"+u.uid,ud.userAiKey)}catch(e){}
+      }
+      draw();
+    }
+    window.fbSyncUserProfile();
+  }).catch(function(){
+    setDoc(doc(db,"users",u.uid),{email:S.email,name:S.dispName,lastSeen:Date.now()},{merge:true}).catch(err);
+  });
 
   if(S.driveToken){
     setTimeout(function(){restoreFromGoogleDrive(true)},400);
