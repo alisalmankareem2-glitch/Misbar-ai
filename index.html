@@ -123,7 +123,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.12.0";
+var APP_VERSION = "2.14.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -465,7 +465,695 @@ async function saveFileToUserDrive(filename, htmlContent, rtl){
     var docHtml = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
       '<head><meta charset="utf-8"><title>' + esc(filename) + '</title>' +
       '<style>@page{size:A4;margin:15mm}body{font-family:Arial,Tahoma,sans-serif;direction:' + (rtl?'rtl':'ltr') + ';line-height:1.8}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:6px}</style>' +
-      '</head><body>' + htmlContent + '</body></html>';
+      '</head><body>' + htmlContent + '
+<!-- ====== تحديث مسبار AI (v2.14.0): محادثة واتساب بملء الشاشة + الخلفيات + الرد بالسحب + البصمة الصوتية + التفاعلات + زر الرجوع ====== -->
+<style>
+  /* شاشة المحادثة الكاملة مثل واتساب */
+  .wa-room.wa-fullscreen {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 25 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100dvh !important;
+    width: 100vw !important;
+    background: #efeae2;
+  }
+  .wa-room.wa-fullscreen .wa-head {
+    background: #075e54;
+    color: #fff;
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) 12px 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.22);
+    z-index: 3;
+  }
+  @media (prefers-color-scheme: dark) {
+    .wa-room.wa-fullscreen .wa-head { background: #1f2c34; }
+  }
+  .wa-room.wa-fullscreen .wa-body {
+    flex: 1 !important;
+    max-height: none !important;
+    padding: 12px 10px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    position: relative;
+    background-size: cover !important;
+    background-position: center !important;
+  }
+  .wa-room.wa-fullscreen .wa-bub {
+    max-width: 82%;
+    padding: 7px 11px;
+    border-radius: 10px;
+    box-shadow: 0 1px 1.5px rgba(0,0,0,.15);
+    border: 0;
+    transition: transform .15s ease;
+    user-select: text;
+  }
+  .wa-room.wa-fullscreen .wa-bub.in {
+    background: #ffffff;
+    color: #111b21;
+    border-top-right-radius: 2px;
+  }
+  .wa-room.wa-fullscreen .wa-bub.out {
+    background: #d9fdd3;
+    color: #111b21;
+    border-top-left-radius: 2px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .wa-room.wa-fullscreen .wa-bub.in { background: #202c33; color: #e9edef; }
+    .wa-room.wa-fullscreen .wa-bub.out { background: #005c4b; color: #e9edef; }
+  }
+  .wa-reply-quote {
+    background: rgba(0,0,0,.06);
+    border-inline-start: 3.5px solid #00a884;
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin-bottom: 5px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  @media (prefers-color-scheme: dark) {
+    .wa-reply-quote { background: rgba(255,255,255,.08); }
+  }
+  .wa-reply-bar {
+    background: var(--sf);
+    border-top: 1px solid var(--ln);
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 2;
+  }
+  .wa-reply-bar-inner {
+    flex: 1;
+    background: var(--bg);
+    border-inline-start: 4px solid #00a884;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    overflow: hidden;
+  }
+  .wa-react-bar {
+    display: inline-flex;
+    gap: 3px;
+    background: var(--sf);
+    border: 1px solid var(--ln);
+    border-radius: 99px;
+    padding: 1px 6px;
+    font-size: 12px;
+    margin-top: 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.1);
+  }
+  .wa-bub-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: 3px;
+    font-size: 10px;
+    opacity: .78;
+  }
+  .wa-act-btn {
+    background: none;
+    border: 0;
+    padding: 0 3px;
+    cursor: pointer;
+    font-size: 12px;
+    opacity: .8;
+    color: inherit;
+  }
+  .wa-room.wa-fullscreen .wa-foot {
+    padding: 8px 10px calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+    background: #f0f2f5;
+    border-top: 0;
+    z-index: 2;
+  }
+  @media (prefers-color-scheme: dark) {
+    .wa-room.wa-fullscreen .wa-foot { background: #1f2c34; }
+  }
+  .wa-room.wa-fullscreen .wa-foot input {
+    border-radius: 22px !important;
+    padding: 10px 14px !important;
+    border: 0 !important;
+  }
+  .wa-rec-btn.rec-on {
+    background: #ef4444 !important;
+    color: #fff !important;
+    animation: waPulse 1s infinite;
+  }
+  @keyframes waPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  /* شبكة اختيار خلفيات واتساب */
+  .wa-wp-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+  .wa-wp-tile {
+    height: 82px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 2.5px solid var(--ln);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 4px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .wa-wp-tile.on { border-color: #25d366; transform: scale(0.98); }
+</style>
+
+<script>
+(function(){
+  /* ١) نقشة واتساب الأصلية (SVG Doodle) وقائمة الخلفيات */
+  var WA_DOODLE_SVG = "data:image/svg+xml;utf8," + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" opacity="0.09">' +
+    '<g fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round">' +
+    '<circle cx="24" cy="24" r="9"/><path d="M70 18h24v16H70z"/><path d="M18 76c10-8 22-8 32 0"/>' +
+    '<polygon points="85,70 97,92 73,92"/><circle cx="52" cy="54" r="4"/><path d="M22 102h28"/>' +
+    '</g></svg>'
+  );
+
+  var WA_WALLPAPERS = {
+    bright: [
+      {id:"b1", name:"كلاسيكي فاتح", bg:"#efeae2", doodle:true},
+      {id:"b2", name:"أخضر نعناعي", bg:"linear-gradient(135deg,#d4fc79,#96e6a1)", doodle:true},
+      {id:"b3", name:"سماء صافية",   bg:"linear-gradient(135deg,#a1c4fd,#c2e9fb)", doodle:true},
+      {id:"b4", name:"شروق دافئ",    bg:"linear-gradient(135deg,#ffecd2,#fcb69f)", doodle:true},
+      {id:"b5", name:"خزامى ناعم",   bg:"linear-gradient(135deg,#e0c3fc,#8ec5fc)", doodle:true},
+      {id:"b6", name:"وردي هادئ",    bg:"linear-gradient(135deg,#fad0c4,#ffd1ff)", doodle:true}
+    ],
+    dark: [
+      {id:"d1", name:"واتساب داكن",  bg:"#0b141a", doodle:true},
+      {id:"d2", name:"زمردي ليلي",   bg:"linear-gradient(135deg,#0f2027,#203a43,#2c5364)", doodle:true},
+      {id:"d3", name:"كحلي عميق",    bg:"linear-gradient(135deg,#141e30,#243b55)", doodle:true},
+      {id:"d4", name:"غسق بنفسجي",   bg:"linear-gradient(135deg,#200122,#6f0000)", doodle:true},
+      {id:"d5", name:"غابة داكنة",   bg:"linear-gradient(135deg,#093028,#237a57)", doodle:true},
+      {id:"d6", name:"فحمي أنيق",    bg:"linear-gradient(135deg,#232526,#414345)", doodle:true}
+    ],
+    solid: [
+      {id:"s1", name:"بيج واتساب",  bg:"#efeae2"},
+      {id:"s2", name:"أخضر فاتح",   bg:"#dcf8c6"},
+      {id:"s3", name:"تركواز",      bg:"#cbfdd9"},
+      {id:"s4", name:"أزرق سماوي",  bg:"#d2effa"},
+      {id:"s5", name:"بنفسجي فاتح", bg:"#e6d8fa"},
+      {id:"s6", name:"وردي فاتح",   bg:"#fce4ec"},
+      {id:"s7", name:"عنابي",       bg:"#5c1d24"},
+      {id:"s8", name:"زيتي غامق",   bg:"#1f3a34"},
+      {id:"s9", name:"أزرق ملكي",   bg:"#1b3b5c"},
+      {id:"s10",name:"رمادي داكن",  bg:"#262d31"},
+      {id:"s11",name:"بني دافئ",    bg:"#3e2723"},
+      {id:"s12",name:"أسود صافي",   bg:"#0b141a"}
+    ]
+  };
+
+  function getWpStore(){
+    try { return JSON.parse(localStorage.getItem(storagePrefix()+"wa_wp_v1") || "{}"); }
+    catch(e){ return {}; }
+  }
+  function saveWpStore(obj){
+    try { localStorage.setItem(storagePrefix()+"wa_wp_v1", JSON.stringify(obj)); } catch(e){}
+  }
+  function getActiveWallpaper(chatId){
+    var st = getWpStore();
+    return (chatId && st["chat_" + chatId]) || st.global || { bg:"#efeae2", doodle:true, dim:0, customImg:"" };
+  }
+  function buildWpStyle(wp){
+    var layers = [];
+    var dim = Number(wp.dim) || 0;
+    if(dim > 0){
+      layers.push("linear-gradient(rgba(0,0,0," + (dim/100).toFixed(2) + "),rgba(0,0,0," + (dim/100).toFixed(2) + "))");
+    }
+    if(wp.customImg){
+      layers.push("url('" + wp.customImg + "')");
+      return "background-image:" + layers.join(",") + ";background-size:cover;background-position:center;";
+    }
+    if(wp.doodle){
+      layers.push("url(\"" + WA_DOODLE_SVG + "\")");
+    }
+    if(wp.bg && wp.bg.indexOf("gradient") > -1){
+      layers.push(wp.bg);
+      return "background-image:" + layers.join(",") + ";";
+    }
+    var imgPart = layers.length ? ("background-image:" + layers.join(",") + ";background-repeat:repeat;") : "";
+    return "background-color:" + (wp.bg || "#efeae2") + ";" + imgPart;
+  }
+
+  /* ٢) نافذة اختيار خلفية المحادثة طبق الأصل من واتساب */
+  window.openWaWallpaperModal = function(){
+    var old = $("md"); if(old) old.remove();
+    var curWp = getActiveWallpaper(S.curChatId);
+    S._wpTab = S._wpTab || "bright";
+    S._wpScope = S._wpScope || "this";
+    S._wpDraft = S._wpDraft || Object.assign({}, curWp);
+
+    var tab = S._wpTab;
+    var list = WA_WALLPAPERS[tab] || WA_WALLPAPERS.bright;
+    var d = document.createElement("div"); d.id = "md";
+    d.innerHTML = '<div class="mc" style="width:min(410px,95%);max-height:90vh;overflow-y:auto">' +
+      '<div class="row" style="margin-bottom:8px"><b class="grow">🎨 خلفية المحادثة (مثل واتساب)</b><button class="b d" style="min-height:30px;padding:2px 9px" onclick="S._wpDraft=null;document.getElementById(\'md\').remove()">×</button></div>' +
+      '<div style="height:105px;border-radius:12px;padding:10px;margin-bottom:10px;display:flex;flex-direction:column;justify-content:space-between;border:1px solid var(--ln);' + buildWpStyle(S._wpDraft) + '">' +
+        '<div style="background:#fff;color:#111;padding:4px 10px;border-radius:8px;align-self:flex-start;font-size:12px;box-shadow:0 1px 2px rgba(0,0,0,.15)">معاينة رسالة واردة 👋</div>' +
+        '<div style="background:#d9fdd3;color:#111;padding:4px 10px;border-radius:8px;align-self:flex-end;font-size:12px;box-shadow:0 1px 2px rgba(0,0,0,.15)">معاينة رسالتك أنت ✓✓</div>' +
+      '</div>' +
+      '<div class="grid" style="grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:8px">' +
+        '<button class="b '+(tab==="bright"?"":"s")+'" style="font-size:11px;padding:6px 4px" onclick="S._wpTab=\'bright\';openWaWallpaperModal()">☀️ مشرقة</button>' +
+        '<button class="b '+(tab==="dark"?"":"s")+'" style="font-size:11px;padding:6px 4px" onclick="S._wpTab=\'dark\';openWaWallpaperModal()">🌙 داكنة</button>' +
+        '<button class="b '+(tab==="solid"?"":"s")+'" style="font-size:11px;padding:6px 4px" onclick="S._wpTab=\'solid\';openWaWallpaperModal()">🎨 ألوان ثابتة</button>' +
+        '<button class="b s" style="font-size:11px;padding:6px 4px" onclick="pickCustomWaWallpaper()">🖼️ معرضي</button>' +
+      '</div>' +
+      '<div class="wa-wp-grid">' +
+        list.map(function(item){
+          var isSel = !S._wpDraft.customImg && S._wpDraft.bg === item.bg;
+          return '<div class="wa-wp-tile '+(isSel?'on':'')+'" style="' + buildWpStyle({bg:item.bg,doodle:item.doodle!==false,dim:0}) + '" onclick="selectWaPreset(\''+tab+'\',\''+item.id+'\')">' +
+            '<span style="background:rgba(0,0,0,.55);color:#fff;padding:1px 6px;border-radius:6px">' + esc(item.name) + '</span>' +
+          '</div>';
+        }).join("") +
+      '</div>' +
+      '<label class="row" style="margin:8px 0;cursor:pointer"><input type="checkbox" style="width:auto;margin:0" ' + (S._wpDraft.doodle ? 'checked' : '') + ' onchange="S._wpDraft.doodle=this.checked;openWaWallpaperModal()"> إظهار رسومات خلفية واتساب (Doodle)</label>' +
+      '<label>تعتيم الخلفية (' + (S._wpDraft.dim || 0) + '%)</label>' +
+      '<input type="range" min="0" max="75" value="' + (S._wpDraft.dim || 0) + '" onchange="S._wpDraft.dim=+this.value;openWaWallpaperModal()" style="margin:2px 0 8px">' +
+      '<div class="row" style="gap:6px;margin-bottom:10px">' +
+        '<button type="button" class="chip '+(S._wpScope==="this"?"on":"")+' grow" onclick="S._wpScope=\'this\';openWaWallpaperModal()">لهذه المحادثة فقط</button>' +
+        '<button type="button" class="chip '+(S._wpScope==="all"?"on":"")+' grow" onclick="S._wpScope=\'all\';openWaWallpaperModal()">لجميع المحادثات</button>' +
+      '</div>' +
+      '<div class="row">' +
+        '<button class="b grow" style="background:#15803d" onclick="applyWaWallpaper()">✅ تعيين الخلفية</button>' +
+        '<button class="b s" onclick="resetWaWallpaper()">↺ الافتراضية</button>' +
+      '</div>' +
+    '</div>';
+    document.body.appendChild(d);
+  };
+
+  window.selectWaPreset = function(tab, id){
+    var arr = WA_WALLPAPERS[tab] || [];
+    var found = arr.find(function(x){ return x.id === id; });
+    if(!found) return;
+    S._wpDraft.customImg = "";
+    S._wpDraft.bg = found.bg;
+    if(tab !== "solid") S._wpDraft.doodle = true;
+    openWaWallpaperModal();
+  };
+
+  window.pickCustomWaWallpaper = function(){
+    var inp = document.createElement("input");
+    inp.type = "file"; inp.accept = "image/*";
+    inp.onchange = function(){
+      var f = inp.files[0]; if(!f) return;
+      var r = new FileReader();
+      r.onload = function(){
+        var im = new Image();
+        im.onload = function(){
+          var k = Math.min(1, 1000 / Math.max(im.width, im.height));
+          var c = document.createElement("canvas");
+          c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+          c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+          S._wpDraft.customImg = c.toDataURL("image/jpeg", 0.78);
+          openWaWallpaperModal();
+        };
+        im.src = r.result;
+      };
+      r.readAsDataURL(f);
+    };
+    inp.click();
+  };
+
+  window.applyWaWallpaper = function(){
+    var st = getWpStore();
+    var copy = Object.assign({}, S._wpDraft);
+    if(S._wpScope === "all") st.global = copy;
+    else if(S.curChatId) st["chat_" + S.curChatId] = copy;
+    saveWpStore(st);
+    S._wpDraft = null;
+    var md = $("md"); if(md) md.remove();
+    toast("✅ تم تغيير خلفية المحادثة");
+    draw();
+  };
+
+  window.resetWaWallpaper = function(){
+    var st = getWpStore();
+    if(S._wpScope === "all") delete st.global;
+    else if(S.curChatId) delete st["chat_" + S.curChatId];
+    saveWpStore(st);
+    S._wpDraft = null;
+    var md = $("md"); if(md) md.remove();
+    toast("↺ تمت استعادة خلفية واتساب الافتراضية");
+    draw();
+  };
+
+  /* ٣) ميزات غرفة المحادثة المتقدمة: الرد على رسالة (بالسحب أو الزر) + البصمة الصوتية + التفاعلات السريعة */
+  window.setReplyMsg = function(mi){
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c || !c.msgs || !c.msgs[mi]) return;
+    var m = c.msgs[mi];
+    S.replyTo = {
+      id: m.id || ("idx_" + mi),
+      sender: m.sender || (m.e === S.email ? "أنت" : "مستخدم"),
+      t: m.t || (m.file ? ("📎 " + m.file.name) : "رسالة صوتية 🎤")
+    };
+    draw();
+    var mt = $("mt"); if(mt) mt.focus();
+  };
+
+  window.cancelReplyMsg = function(){
+    S.replyTo = null;
+    draw();
+  };
+
+  window.scrollToMsgId = function(msgId){
+    var el = document.querySelector('[data-msgid="'+msgId+'"]');
+    if(el){
+      el.scrollIntoView({behavior:"smooth", block:"center"});
+      el.style.outline = "2px solid #00a884";
+      setTimeout(function(){ el.style.outline = ""; }, 1400);
+    }
+  };
+
+  window.openMsgContextMenu = function(mi){
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c || !c.msgs || !c.msgs[mi]) return;
+    var m = c.msgs[mi];
+    var old = $("md"); if(old) old.remove();
+    var emojis = ["❤️","👍","😂","😮","🙏","👏"];
+    var d = document.createElement("div"); d.id = "md";
+    d.innerHTML = '<div class="mc" style="width:min(330px,92%);text-align:center">' +
+      '<div class="row" style="justify-content:center;gap:8px;margin-bottom:12px">' +
+        emojis.map(function(em){
+          return '<button type="button" class="b s" style="font-size:20px;min-width:42px;padding:4px" onclick="reactToMsg('+mi+',\''+em+'\')">'+em+'</button>';
+        }).join("") +
+      '</div>' +
+      '<div class="grid">' +
+        '<button class="b s" onclick="document.getElementById(\'md\').remove();setReplyMsg('+mi+')">↩️ رد على الرسالة</button>' +
+        '<button class="b s" onclick="document.getElementById(\'md\').remove();if(navigator.clipboard)navigator.clipboard.writeText(\''+esc(m.t||"").replace(/'/g,"\\'")+'\');toast(\'تم نسخ النص\')">📋 نسخ النص</button>' +
+      '</div>' +
+      (m.e === S.email ? '<button class="b d" style="width:100%;margin-top:8px" onclick="deleteMyMsg('+mi+')">🗑️ حذف الرسالة</button>' : '') +
+      '<button class="b s" style="width:100%;margin-top:8px" onclick="document.getElementById(\'md\').remove()">إغلاق</button>' +
+    '</div>';
+    document.body.appendChild(d);
+  };
+
+  window.reactToMsg = function(mi, emoji){
+    var md = $("md"); if(md) md.remove();
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c || !c.msgs || !c.msgs[mi]) return;
+    var m = c.msgs[mi];
+    m.reacts = m.reacts || {};
+    if(m.reacts[S.email] === emoji) delete m.reacts[S.email];
+    else m.reacts[S.email] = emoji;
+    if(window.fbSendRoomMessage && c.id !== "local_notes") window.fbSendRoomMessage(c, m);
+    saveAllUserStorage();
+    draw();
+  };
+
+  window.deleteMyMsg = function(mi){
+    var md = $("md"); if(md) md.remove();
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c || !c.msgs || !c.msgs[mi]) return;
+    c.msgs.splice(mi, 1);
+    saveAllUserStorage();
+    toast("🗑️ تم حذف الرسالة");
+    draw();
+  };
+
+  /* تسجيل البصمة الصوتية (Voice Note) وإرسالها داخل المحادثة مثل واتساب */
+  var _mediaRec = null, _audioChunks = [], _recStart = 0;
+  window.toggleVoiceNoteRec = async function(){
+    if(S._isRecVoice){
+      if(_mediaRec && _mediaRec.state !== "inactive"){
+        _mediaRec.stop();
+      }
+      S._isRecVoice = false;
+      draw();
+      return;
+    }
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      toast("المتصفح لا يدعم تسجيل المايكروفون");
+      return;
+    }
+    try {
+      var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      _audioChunks = [];
+      _mediaRec = new MediaRecorder(stream);
+      _recStart = Date.now();
+      S._isRecVoice = true;
+      draw();
+      toast("🎙️ جاري تسجيل بصمة صوتية... اضغط زر المايك الأحمر للإرسال");
+      _mediaRec.ondataavailable = function(e){
+        if(e.data && e.data.size > 0) _audioChunks.push(e.data);
+      };
+      _mediaRec.onstop = function(){
+        stream.getTracks().forEach(function(t){ t.stop(); });
+        var durSec = Math.max(1, Math.round((Date.now() - _recStart) / 1000));
+        var blob = new Blob(_audioChunks, { type: _mediaRec.mimeType || "audio/webm" });
+        if(blob.size > 680000){
+          toast("البصمة الصوتية طويلة جداً، سجل مقطعاً أقصر");
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(){
+          sendM({
+            name: "بصمة صوتية (" + durSec + " ثانية)",
+            isAudio: true,
+            mime: blob.type,
+            data: reader.result,
+            sizeTxt: durSec + " ث"
+          });
+        };
+        reader.readAsDataURL(blob);
+      };
+      _mediaRec.start();
+    } catch(err){
+      S._isRecVoice = false;
+      toast("تعذر الوصول للمايكروفون: تأكد من إعطاء الإذن");
+      draw();
+    }
+  };
+
+  /* السحب على الرسالة للرد السريع مثل واتساب (Swipe-to-Reply) */
+  function attachSwipeReplyHandlers(){
+    var body = $("waBody");
+    if(!body) return;
+    var startX = 0, startY = 0, activeBub = null, activeIdx = -1;
+    body.ontouchstart = function(e){
+      var bub = e.target.closest ? e.target.closest(".wa-bub") : null;
+      if(!bub) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      activeBub = bub;
+      activeIdx = Number(bub.getAttribute("data-mi"));
+    };
+    body.ontouchmove = function(e){
+      if(!activeBub) return;
+      var dx = e.touches[0].clientX - startX;
+      var dy = Math.abs(e.touches[0].clientY - startY);
+      if(dy > 35){ activeBub.style.transform = ""; activeBub = null; return; }
+      if(Math.abs(dx) > 12 && Math.abs(dx) < 75){
+        activeBub.style.transform = "translateX(" + (dx * 0.55) + "px)";
+      }
+    };
+    body.ontouchend = function(e){
+      if(!activeBub) return;
+      var endX = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientX : startX;
+      var dx = endX - startX;
+      activeBub.style.transform = "";
+      if(Math.abs(dx) > 52 && activeIdx >= 0){
+        setReplyMsg(activeIdx);
+      }
+      activeBub = null;
+      activeIdx = -1;
+    };
+  }
+
+  /* ٤) استبدال roomV و sendM بنسخة واتساب المتكاملة بملء الشاشة */
+  window.roomV = function(){
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c){ S.curChatId = null; return cListV(); }
+    if(window.fbWatchRoomMessages) window.fbWatchRoomMessages(c.id);
+    markChatRead(c);
+    var ms = c.msgs || [];
+    var wp = getActiveWallpaper(S.curChatId);
+    var styleStr = buildWpStyle(wp);
+
+    return '<div class="wa-room wa-fullscreen">' +
+      '<div class="wa-head">' +
+        '<button class="b s" style="min-height:34px;padding:4px 10px;background:rgba(255,255,255,.15);color:#fff" onclick="S.curChatId=null;S.replyTo=null;draw()">←</button>' +
+        avatarHtml(chatTitle(c), chatPhoto(c)) +
+        '<div class="grow" style="overflow:hidden"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(c.g?'👥 ':'')+esc(chatTitle(c))+'</b>' +
+          '<div style="font-size:11px;opacity:.88">'+(c.g ? ((c.members?c.members.length:1)+' أعضاء · اسحب أي رسالة للرد عليها') : (chatPeerHandle(c) || 'متصل · اسحب الرسالة للرد'))+'</div>' +
+        '</div>' +
+        '<button class="b s" style="min-height:34px;padding:4px 9px;background:rgba(255,255,255,.18);color:#fff" onclick="openWaWallpaperModal()" title="تغيير خلفية المحادثة">🎨 خلفية</button>' +
+        (c.g ? '<button class="b s" style="min-height:34px;padding:4px 9px;background:rgba(255,255,255,.18);color:#fff" onclick="openChatPicker(\'add_member\')">+ عضو</button>' : '') +
+      '</div>' +
+      '<div class="wa-body" id="waBody" style="' + styleStr + '">' +
+        (ms.length ? ms.map(function(m, mi){
+          if(m.isSys || m.e === "sys"){
+            return '<div style="text-align:center;font-size:11px;color:#111;background:rgba(255,255,255,.85);padding:3px 10px;border-radius:99px;align-self:center;margin:4px 0;box-shadow:0 1px 2px rgba(0,0,0,.1)">'+esc(m.t)+'</div>';
+          }
+          var me = m.e === S.email;
+          var timeStr = m.at ? new Date(m.at).toLocaleTimeString("ar-IQ",{hour:"2-digit",minute:"2-digit"}) : "";
+          var replyHtml = "";
+          if(m.replyTo){
+            replyHtml = '<div class="wa-reply-quote" onclick="scrollToMsgId(\''+esc(m.replyTo.id||"")+'\')">' +
+              '<b style="color:#00a884;display:block">' + esc(m.replyTo.sender || "") + '</b>' +
+              '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85">' + esc(m.replyTo.t || "") + '</div>' +
+            '</div>';
+          }
+          var fileHtml = "";
+          if(m.file){
+            if(m.file.isAudio && m.file.data){
+              fileHtml = '<div style="margin-top:5px;min-width:210px"><audio controls src="'+m.file.data+'" style="width:100%;height:34px"></audio></div>';
+            }else if(m.file.isImg && m.file.data){
+              fileHtml = '<div style="margin-top:5px"><img src="'+m.file.data+'" alt="" style="max-width:100%;max-height:220px;border-radius:10px;display:block">' +
+                '<button type="button" class="b s" style="width:100%;margin-top:5px;min-height:30px;padding:3px;font-size:11px" onclick="downloadChatAttachment('+mi+')">⬇️ حفظ الصورة</button></div>';
+            }else{
+              fileHtml = '<div class="wa-file-box">' +
+                '<div class="row"><span style="font-size:22px">📄</span><div class="grow" style="overflow:hidden"><b style="display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(m.file.name)+'</b><span style="font-size:11px;opacity:.8">'+esc(m.file.sizeTxt||'ملف مرفق')+'</span></div></div>' +
+                '<div class="grid" style="margin-top:6px">' +
+                  '<button type="button" class="b s" style="min-height:30px;padding:2px 6px;font-size:12px" onclick="openChatAttachmentInApp('+mi+')">👁️ فتح</button>' +
+                  '<button type="button" class="b s" style="min-height:30px;padding:2px 6px;font-size:12px" onclick="downloadChatAttachment('+mi+')">⬇️ تنزيل</button>' +
+                '</div>' +
+              '</div>';
+            }
+          }
+          var reactsObj = m.reacts || {};
+          var reactVals = Object.keys(reactsObj).map(function(k){ return reactsObj[k]; });
+          var reactHtml = reactVals.length ? '<div class="wa-react-bar" onclick="openMsgContextMenu('+mi+')">' + reactVals.join(" ") + '</div>' : '';
+
+          return '<div class="wa-bub '+(me?'out':'in')+'" data-mi="'+mi+'" data-msgid="'+esc(m.id||("idx_"+mi))+'" ondblclick="setReplyMsg('+mi+')">' +
+            (c.g && !me ? '<div style="font-size:11px;font-weight:800;color:#00a884;margin-bottom:2px">'+esc(m.sender)+'</div>' : '') +
+            replyHtml +
+            (m.t ? '<div>'+esc(m.t)+'</div>' : '') +
+            fileHtml +
+            '<div class="wa-bub-actions">' +
+              '<button type="button" class="wa-act-btn" title="رد" onclick="setReplyMsg('+mi+')">↩️</button>' +
+              '<button type="button" class="wa-act-btn" title="تفاعل وخيارات" onclick="openMsgContextMenu('+mi+')">☺️</button>' +
+              '<span>'+timeStr+(me?(m._fail?' ⚠️':(m._pend?' 🕓':' ✓✓')):'')+'</span>' +
+            '</div>' +
+            reactHtml +
+          '</div>';
+        }).join("") : '<div style="text-align:center;margin:24px auto;background:rgba(255,255,255,.88);color:#222;padding:8px 14px;border-radius:12px;font-size:12px;max-width:85%">🔒 الرسائل والملفات والبصمات الصوتية محفوظة بأمان. ابدأ المحادثة الآن!</div>') +
+      '</div>' +
+      (S.replyTo ? '<div class="wa-reply-bar">' +
+        '<div class="wa-reply-bar-inner"><b style="color:#00a884;display:block">الرد على: '+esc(S.replyTo.sender)+'</b><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(S.replyTo.t)+'</div></div>' +
+        '<button type="button" class="b d" style="min-height:28px;padding:2px 8px" onclick="cancelReplyMsg()">×</button>' +
+      '</div>' : '') +
+      '<div class="wa-foot">' +
+        '<button type="button" class="b s" style="min-height:40px;padding:0 11px;font-size:18px;border-radius:50%" title="إرفاق ملف أو صورة" onclick="attachChatFile()">📎</button>' +
+        '<button type="button" class="b s wa-rec-btn '+(S._isRecVoice?'rec-on':'')+'" style="min-height:40px;padding:0 11px;font-size:17px;border-radius:50%" title="تسجيل بصمة صوتية" onclick="toggleVoiceNoteRec()">🎤</button>' +
+        '<input id="mt" class="grow" style="margin:0" placeholder="اكتب رسالة..." onkeydown="if(event.key==\'Enter\')sendM()">' +
+        '<button type="button" class="b" style="min-height:40px;padding:0 14px;border-radius:20px;background:#00a884" onclick="sendM()">إرسال</button>' +
+      '</div>' +
+    '</div>';
+  };
+
+  window.sendM = function(fileObj){
+    var e = $("mt"), t = e ? e.value.trim() : "";
+    if(!t && !fileObj) return;
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; }); if(!c) return;
+    if(e) e.value = "";
+    var msgId = "m_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
+    var msg = {
+      id: msgId,
+      e: S.email,
+      sender: S.dispName || S.email.split("@")[0],
+      t: t,
+      file: fileObj || null,
+      replyTo: S.replyTo || null,
+      at: Date.now()
+    };
+    S.replyTo = null;
+    c.msgs = c.msgs || [];
+    c.msgs.push(msg);
+    c.lastPreview = fileObj ? (fileObj.isAudio ? "🎤 بصمة صوتية" : ("📎 " + fileObj.name)) : t;
+    c.updatedAt = msg.at;
+    c.lastFrom = S.email;
+    if(window.fbSendRoomMessage) window.fbSendRoomMessage(c, msg);
+    else if(window.fbSaveChatRoom) window.fbSaveChatRoom(c);
+    saveAllUserStorage();
+    draw();
+    setTimeout(function(){ var wb=$("waBody"); if(wb) wb.scrollTop=wb.scrollHeight; }, 30);
+  };
+
+  /* ٥) إصلاح زر الرجوع في الجهاز (History Stack + popstate) ليرجع خطوة للخلف دائماً */
+  var _isHandlingPop = false;
+  var _lastSnapKey = "";
+
+  function getNavSnap(){
+    return {
+      role: S.role,
+      tab: S.tab,
+      curChatId: S.curChatId,
+      proPortal: S.proPortal,
+      scnDocId: S.scnDocId,
+      openMat: S.openMat ? 1 : 0,
+      profileOpen: !!S.profileOpen,
+      subv: S.subv || 0,
+      gw: S.gw ? S.gw.view : null
+    };
+  }
+
+  var _origDraw = window.draw;
+  window.draw = function(){
+    _origDraw();
+    var inFullChat = (S.curChatId !== null) && ((S.role === "pro" && S.tab === 5) || (S.role === "stu" && S.tab === 4));
+    var hdr = document.querySelector("#app > header");
+    var nav = document.querySelector("#app > nav");
+    if(hdr) hdr.style.display = inFullChat ? "none" : "";
+    if(nav) nav.style.display = inFullChat ? "none" : "";
+    if(inFullChat){
+      attachSwipeReplyHandlers();
+      setTimeout(function(){ var wb = $("waBody"); if(wb) wb.scrollTop = wb.scrollHeight; }, 20);
+    }
+
+    if(!_isHandlingPop && S.authReady && S.uid){
+      var snap = getNavSnap();
+      var key = JSON.stringify(snap);
+      if(_lastSnapKey && _lastSnapKey !== key){
+        try { history.pushState(snap, ""); } catch(e){}
+      } else if(!_lastSnapKey){
+        try { history.replaceState(snap, ""); } catch(e){}
+      }
+      _lastSnapKey = key;
+    }
+  };
+
+  window.addEventListener("popstate", function(e){
+    e.stopImmediatePropagation();
+    _isHandlingPop = true;
+    var md = $("md");
+    if(md){ md.remove(); S.chatModal = null; S._wpDraft = null; _isHandlingPop = false; try{history.pushState(getNavSnap(), "");}catch(err){} return; }
+    if(S.profileOpen){ S.profileOpen = false; draw(); _isHandlingPop = false; return; }
+    if(S.subv){ S.subv = 0; draw(); _isHandlingPop = false; return; }
+    if(S.curChatId !== null){ S.curChatId = null; S.replyTo = null; draw(); _isHandlingPop = false; return; }
+    if(S.scnPrintDoc){ S.scnPrintDoc = null; draw(); _isHandlingPop = false; return; }
+    if(S.scnEd){ S.scnEd = null; draw(); _isHandlingPop = false; return; }
+    if(S.scnDocId !== null){ setOpenScnDoc(null); draw(); _isHandlingPop = false; return; }
+    if(S.openMat !== null){ S.openMat = null; S.out = ""; S.quiz = null; draw(); _isHandlingPop = false; return; }
+    if(S.pp !== null || S.bk !== null || S.gw !== null){ S.pp = null; S.bk = null; S.gw = null; draw(); _isHandlingPop = false; return; }
+    if(S.proPortal !== null){ S.proPortal = null; draw(); _isHandlingPop = false; return; }
+    if(S.role !== null && S.tab > 0){ S.tab = 0; draw(); _isHandlingPop = false; return; }
+    if(S.role !== null){
+      try { history.pushState(getNavSnap(), ""); } catch(err){}
+      toast("أنت في الصفحة الرئيسية · للتبديل بين الأستاذ والطالب اضغط زر 🔄 بالأعلى");
+      _isHandlingPop = false;
+      return;
+    }
+    _isHandlingPop = false;
+  }, true);
+})();
+</script>
+
+</body></html>';
     var cleanName = filename.replace(/[^\w\u0600-\u06FF\- ]/g, "") + ".doc";
     var boundary = "-------misbarDoc987654";
     var meta = { name: cleanName, parents: [folderId], mimeType: "application/msword" };
@@ -514,7 +1202,695 @@ function shareWordViaSystem(filename, htmlContent, rtl){
   var docHtml='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'+
     '<head><meta charset="utf-8"><title>'+esc(filename)+'</title>'+
     '<style>@page{size:A4;margin:15mm}body{font-family:Arial,Tahoma,sans-serif;direction:'+(rtl?'rtl':'ltr')+';line-height:1.8}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:6px}</style>'+
-    '</head><body>'+htmlContent+'</body></html>';
+    '</head><body>'+htmlContent+'
+<!-- ====== تحديث مسبار AI (v2.14.0): محادثة واتساب بملء الشاشة + الخلفيات + الرد بالسحب + البصمة الصوتية + التفاعلات + زر الرجوع ====== -->
+<style>
+  /* شاشة المحادثة الكاملة مثل واتساب */
+  .wa-room.wa-fullscreen {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 25 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100dvh !important;
+    width: 100vw !important;
+    background: #efeae2;
+  }
+  .wa-room.wa-fullscreen .wa-head {
+    background: #075e54;
+    color: #fff;
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) 12px 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.22);
+    z-index: 3;
+  }
+  @media (prefers-color-scheme: dark) {
+    .wa-room.wa-fullscreen .wa-head { background: #1f2c34; }
+  }
+  .wa-room.wa-fullscreen .wa-body {
+    flex: 1 !important;
+    max-height: none !important;
+    padding: 12px 10px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    position: relative;
+    background-size: cover !important;
+    background-position: center !important;
+  }
+  .wa-room.wa-fullscreen .wa-bub {
+    max-width: 82%;
+    padding: 7px 11px;
+    border-radius: 10px;
+    box-shadow: 0 1px 1.5px rgba(0,0,0,.15);
+    border: 0;
+    transition: transform .15s ease;
+    user-select: text;
+  }
+  .wa-room.wa-fullscreen .wa-bub.in {
+    background: #ffffff;
+    color: #111b21;
+    border-top-right-radius: 2px;
+  }
+  .wa-room.wa-fullscreen .wa-bub.out {
+    background: #d9fdd3;
+    color: #111b21;
+    border-top-left-radius: 2px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .wa-room.wa-fullscreen .wa-bub.in { background: #202c33; color: #e9edef; }
+    .wa-room.wa-fullscreen .wa-bub.out { background: #005c4b; color: #e9edef; }
+  }
+  .wa-reply-quote {
+    background: rgba(0,0,0,.06);
+    border-inline-start: 3.5px solid #00a884;
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin-bottom: 5px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  @media (prefers-color-scheme: dark) {
+    .wa-reply-quote { background: rgba(255,255,255,.08); }
+  }
+  .wa-reply-bar {
+    background: var(--sf);
+    border-top: 1px solid var(--ln);
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 2;
+  }
+  .wa-reply-bar-inner {
+    flex: 1;
+    background: var(--bg);
+    border-inline-start: 4px solid #00a884;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    overflow: hidden;
+  }
+  .wa-react-bar {
+    display: inline-flex;
+    gap: 3px;
+    background: var(--sf);
+    border: 1px solid var(--ln);
+    border-radius: 99px;
+    padding: 1px 6px;
+    font-size: 12px;
+    margin-top: 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.1);
+  }
+  .wa-bub-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: 3px;
+    font-size: 10px;
+    opacity: .78;
+  }
+  .wa-act-btn {
+    background: none;
+    border: 0;
+    padding: 0 3px;
+    cursor: pointer;
+    font-size: 12px;
+    opacity: .8;
+    color: inherit;
+  }
+  .wa-room.wa-fullscreen .wa-foot {
+    padding: 8px 10px calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+    background: #f0f2f5;
+    border-top: 0;
+    z-index: 2;
+  }
+  @media (prefers-color-scheme: dark) {
+    .wa-room.wa-fullscreen .wa-foot { background: #1f2c34; }
+  }
+  .wa-room.wa-fullscreen .wa-foot input {
+    border-radius: 22px !important;
+    padding: 10px 14px !important;
+    border: 0 !important;
+  }
+  .wa-rec-btn.rec-on {
+    background: #ef4444 !important;
+    color: #fff !important;
+    animation: waPulse 1s infinite;
+  }
+  @keyframes waPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  /* شبكة اختيار خلفيات واتساب */
+  .wa-wp-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+  .wa-wp-tile {
+    height: 82px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 2.5px solid var(--ln);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 4px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .wa-wp-tile.on { border-color: #25d366; transform: scale(0.98); }
+</style>
+
+<script>
+(function(){
+  /* ١) نقشة واتساب الأصلية (SVG Doodle) وقائمة الخلفيات */
+  var WA_DOODLE_SVG = "data:image/svg+xml;utf8," + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" opacity="0.09">' +
+    '<g fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round">' +
+    '<circle cx="24" cy="24" r="9"/><path d="M70 18h24v16H70z"/><path d="M18 76c10-8 22-8 32 0"/>' +
+    '<polygon points="85,70 97,92 73,92"/><circle cx="52" cy="54" r="4"/><path d="M22 102h28"/>' +
+    '</g></svg>'
+  );
+
+  var WA_WALLPAPERS = {
+    bright: [
+      {id:"b1", name:"كلاسيكي فاتح", bg:"#efeae2", doodle:true},
+      {id:"b2", name:"أخضر نعناعي", bg:"linear-gradient(135deg,#d4fc79,#96e6a1)", doodle:true},
+      {id:"b3", name:"سماء صافية",   bg:"linear-gradient(135deg,#a1c4fd,#c2e9fb)", doodle:true},
+      {id:"b4", name:"شروق دافئ",    bg:"linear-gradient(135deg,#ffecd2,#fcb69f)", doodle:true},
+      {id:"b5", name:"خزامى ناعم",   bg:"linear-gradient(135deg,#e0c3fc,#8ec5fc)", doodle:true},
+      {id:"b6", name:"وردي هادئ",    bg:"linear-gradient(135deg,#fad0c4,#ffd1ff)", doodle:true}
+    ],
+    dark: [
+      {id:"d1", name:"واتساب داكن",  bg:"#0b141a", doodle:true},
+      {id:"d2", name:"زمردي ليلي",   bg:"linear-gradient(135deg,#0f2027,#203a43,#2c5364)", doodle:true},
+      {id:"d3", name:"كحلي عميق",    bg:"linear-gradient(135deg,#141e30,#243b55)", doodle:true},
+      {id:"d4", name:"غسق بنفسجي",   bg:"linear-gradient(135deg,#200122,#6f0000)", doodle:true},
+      {id:"d5", name:"غابة داكنة",   bg:"linear-gradient(135deg,#093028,#237a57)", doodle:true},
+      {id:"d6", name:"فحمي أنيق",    bg:"linear-gradient(135deg,#232526,#414345)", doodle:true}
+    ],
+    solid: [
+      {id:"s1", name:"بيج واتساب",  bg:"#efeae2"},
+      {id:"s2", name:"أخضر فاتح",   bg:"#dcf8c6"},
+      {id:"s3", name:"تركواز",      bg:"#cbfdd9"},
+      {id:"s4", name:"أزرق سماوي",  bg:"#d2effa"},
+      {id:"s5", name:"بنفسجي فاتح", bg:"#e6d8fa"},
+      {id:"s6", name:"وردي فاتح",   bg:"#fce4ec"},
+      {id:"s7", name:"عنابي",       bg:"#5c1d24"},
+      {id:"s8", name:"زيتي غامق",   bg:"#1f3a34"},
+      {id:"s9", name:"أزرق ملكي",   bg:"#1b3b5c"},
+      {id:"s10",name:"رمادي داكن",  bg:"#262d31"},
+      {id:"s11",name:"بني دافئ",    bg:"#3e2723"},
+      {id:"s12",name:"أسود صافي",   bg:"#0b141a"}
+    ]
+  };
+
+  function getWpStore(){
+    try { return JSON.parse(localStorage.getItem(storagePrefix()+"wa_wp_v1") || "{}"); }
+    catch(e){ return {}; }
+  }
+  function saveWpStore(obj){
+    try { localStorage.setItem(storagePrefix()+"wa_wp_v1", JSON.stringify(obj)); } catch(e){}
+  }
+  function getActiveWallpaper(chatId){
+    var st = getWpStore();
+    return (chatId && st["chat_" + chatId]) || st.global || { bg:"#efeae2", doodle:true, dim:0, customImg:"" };
+  }
+  function buildWpStyle(wp){
+    var layers = [];
+    var dim = Number(wp.dim) || 0;
+    if(dim > 0){
+      layers.push("linear-gradient(rgba(0,0,0," + (dim/100).toFixed(2) + "),rgba(0,0,0," + (dim/100).toFixed(2) + "))");
+    }
+    if(wp.customImg){
+      layers.push("url('" + wp.customImg + "')");
+      return "background-image:" + layers.join(",") + ";background-size:cover;background-position:center;";
+    }
+    if(wp.doodle){
+      layers.push("url(\"" + WA_DOODLE_SVG + "\")");
+    }
+    if(wp.bg && wp.bg.indexOf("gradient") > -1){
+      layers.push(wp.bg);
+      return "background-image:" + layers.join(",") + ";";
+    }
+    var imgPart = layers.length ? ("background-image:" + layers.join(",") + ";background-repeat:repeat;") : "";
+    return "background-color:" + (wp.bg || "#efeae2") + ";" + imgPart;
+  }
+
+  /* ٢) نافذة اختيار خلفية المحادثة طبق الأصل من واتساب */
+  window.openWaWallpaperModal = function(){
+    var old = $("md"); if(old) old.remove();
+    var curWp = getActiveWallpaper(S.curChatId);
+    S._wpTab = S._wpTab || "bright";
+    S._wpScope = S._wpScope || "this";
+    S._wpDraft = S._wpDraft || Object.assign({}, curWp);
+
+    var tab = S._wpTab;
+    var list = WA_WALLPAPERS[tab] || WA_WALLPAPERS.bright;
+    var d = document.createElement("div"); d.id = "md";
+    d.innerHTML = '<div class="mc" style="width:min(410px,95%);max-height:90vh;overflow-y:auto">' +
+      '<div class="row" style="margin-bottom:8px"><b class="grow">🎨 خلفية المحادثة (مثل واتساب)</b><button class="b d" style="min-height:30px;padding:2px 9px" onclick="S._wpDraft=null;document.getElementById(\'md\').remove()">×</button></div>' +
+      '<div style="height:105px;border-radius:12px;padding:10px;margin-bottom:10px;display:flex;flex-direction:column;justify-content:space-between;border:1px solid var(--ln);' + buildWpStyle(S._wpDraft) + '">' +
+        '<div style="background:#fff;color:#111;padding:4px 10px;border-radius:8px;align-self:flex-start;font-size:12px;box-shadow:0 1px 2px rgba(0,0,0,.15)">معاينة رسالة واردة 👋</div>' +
+        '<div style="background:#d9fdd3;color:#111;padding:4px 10px;border-radius:8px;align-self:flex-end;font-size:12px;box-shadow:0 1px 2px rgba(0,0,0,.15)">معاينة رسالتك أنت ✓✓</div>' +
+      '</div>' +
+      '<div class="grid" style="grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:8px">' +
+        '<button class="b '+(tab==="bright"?"":"s")+'" style="font-size:11px;padding:6px 4px" onclick="S._wpTab=\'bright\';openWaWallpaperModal()">☀️ مشرقة</button>' +
+        '<button class="b '+(tab==="dark"?"":"s")+'" style="font-size:11px;padding:6px 4px" onclick="S._wpTab=\'dark\';openWaWallpaperModal()">🌙 داكنة</button>' +
+        '<button class="b '+(tab==="solid"?"":"s")+'" style="font-size:11px;padding:6px 4px" onclick="S._wpTab=\'solid\';openWaWallpaperModal()">🎨 ألوان ثابتة</button>' +
+        '<button class="b s" style="font-size:11px;padding:6px 4px" onclick="pickCustomWaWallpaper()">🖼️ معرضي</button>' +
+      '</div>' +
+      '<div class="wa-wp-grid">' +
+        list.map(function(item){
+          var isSel = !S._wpDraft.customImg && S._wpDraft.bg === item.bg;
+          return '<div class="wa-wp-tile '+(isSel?'on':'')+'" style="' + buildWpStyle({bg:item.bg,doodle:item.doodle!==false,dim:0}) + '" onclick="selectWaPreset(\''+tab+'\',\''+item.id+'\')">' +
+            '<span style="background:rgba(0,0,0,.55);color:#fff;padding:1px 6px;border-radius:6px">' + esc(item.name) + '</span>' +
+          '</div>';
+        }).join("") +
+      '</div>' +
+      '<label class="row" style="margin:8px 0;cursor:pointer"><input type="checkbox" style="width:auto;margin:0" ' + (S._wpDraft.doodle ? 'checked' : '') + ' onchange="S._wpDraft.doodle=this.checked;openWaWallpaperModal()"> إظهار رسومات خلفية واتساب (Doodle)</label>' +
+      '<label>تعتيم الخلفية (' + (S._wpDraft.dim || 0) + '%)</label>' +
+      '<input type="range" min="0" max="75" value="' + (S._wpDraft.dim || 0) + '" onchange="S._wpDraft.dim=+this.value;openWaWallpaperModal()" style="margin:2px 0 8px">' +
+      '<div class="row" style="gap:6px;margin-bottom:10px">' +
+        '<button type="button" class="chip '+(S._wpScope==="this"?"on":"")+' grow" onclick="S._wpScope=\'this\';openWaWallpaperModal()">لهذه المحادثة فقط</button>' +
+        '<button type="button" class="chip '+(S._wpScope==="all"?"on":"")+' grow" onclick="S._wpScope=\'all\';openWaWallpaperModal()">لجميع المحادثات</button>' +
+      '</div>' +
+      '<div class="row">' +
+        '<button class="b grow" style="background:#15803d" onclick="applyWaWallpaper()">✅ تعيين الخلفية</button>' +
+        '<button class="b s" onclick="resetWaWallpaper()">↺ الافتراضية</button>' +
+      '</div>' +
+    '</div>';
+    document.body.appendChild(d);
+  };
+
+  window.selectWaPreset = function(tab, id){
+    var arr = WA_WALLPAPERS[tab] || [];
+    var found = arr.find(function(x){ return x.id === id; });
+    if(!found) return;
+    S._wpDraft.customImg = "";
+    S._wpDraft.bg = found.bg;
+    if(tab !== "solid") S._wpDraft.doodle = true;
+    openWaWallpaperModal();
+  };
+
+  window.pickCustomWaWallpaper = function(){
+    var inp = document.createElement("input");
+    inp.type = "file"; inp.accept = "image/*";
+    inp.onchange = function(){
+      var f = inp.files[0]; if(!f) return;
+      var r = new FileReader();
+      r.onload = function(){
+        var im = new Image();
+        im.onload = function(){
+          var k = Math.min(1, 1000 / Math.max(im.width, im.height));
+          var c = document.createElement("canvas");
+          c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+          c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+          S._wpDraft.customImg = c.toDataURL("image/jpeg", 0.78);
+          openWaWallpaperModal();
+        };
+        im.src = r.result;
+      };
+      r.readAsDataURL(f);
+    };
+    inp.click();
+  };
+
+  window.applyWaWallpaper = function(){
+    var st = getWpStore();
+    var copy = Object.assign({}, S._wpDraft);
+    if(S._wpScope === "all") st.global = copy;
+    else if(S.curChatId) st["chat_" + S.curChatId] = copy;
+    saveWpStore(st);
+    S._wpDraft = null;
+    var md = $("md"); if(md) md.remove();
+    toast("✅ تم تغيير خلفية المحادثة");
+    draw();
+  };
+
+  window.resetWaWallpaper = function(){
+    var st = getWpStore();
+    if(S._wpScope === "all") delete st.global;
+    else if(S.curChatId) delete st["chat_" + S.curChatId];
+    saveWpStore(st);
+    S._wpDraft = null;
+    var md = $("md"); if(md) md.remove();
+    toast("↺ تمت استعادة خلفية واتساب الافتراضية");
+    draw();
+  };
+
+  /* ٣) ميزات غرفة المحادثة المتقدمة: الرد على رسالة (بالسحب أو الزر) + البصمة الصوتية + التفاعلات السريعة */
+  window.setReplyMsg = function(mi){
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c || !c.msgs || !c.msgs[mi]) return;
+    var m = c.msgs[mi];
+    S.replyTo = {
+      id: m.id || ("idx_" + mi),
+      sender: m.sender || (m.e === S.email ? "أنت" : "مستخدم"),
+      t: m.t || (m.file ? ("📎 " + m.file.name) : "رسالة صوتية 🎤")
+    };
+    draw();
+    var mt = $("mt"); if(mt) mt.focus();
+  };
+
+  window.cancelReplyMsg = function(){
+    S.replyTo = null;
+    draw();
+  };
+
+  window.scrollToMsgId = function(msgId){
+    var el = document.querySelector('[data-msgid="'+msgId+'"]');
+    if(el){
+      el.scrollIntoView({behavior:"smooth", block:"center"});
+      el.style.outline = "2px solid #00a884";
+      setTimeout(function(){ el.style.outline = ""; }, 1400);
+    }
+  };
+
+  window.openMsgContextMenu = function(mi){
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c || !c.msgs || !c.msgs[mi]) return;
+    var m = c.msgs[mi];
+    var old = $("md"); if(old) old.remove();
+    var emojis = ["❤️","👍","😂","😮","🙏","👏"];
+    var d = document.createElement("div"); d.id = "md";
+    d.innerHTML = '<div class="mc" style="width:min(330px,92%);text-align:center">' +
+      '<div class="row" style="justify-content:center;gap:8px;margin-bottom:12px">' +
+        emojis.map(function(em){
+          return '<button type="button" class="b s" style="font-size:20px;min-width:42px;padding:4px" onclick="reactToMsg('+mi+',\''+em+'\')">'+em+'</button>';
+        }).join("") +
+      '</div>' +
+      '<div class="grid">' +
+        '<button class="b s" onclick="document.getElementById(\'md\').remove();setReplyMsg('+mi+')">↩️ رد على الرسالة</button>' +
+        '<button class="b s" onclick="document.getElementById(\'md\').remove();if(navigator.clipboard)navigator.clipboard.writeText(\''+esc(m.t||"").replace(/'/g,"\\'")+'\');toast(\'تم نسخ النص\')">📋 نسخ النص</button>' +
+      '</div>' +
+      (m.e === S.email ? '<button class="b d" style="width:100%;margin-top:8px" onclick="deleteMyMsg('+mi+')">🗑️ حذف الرسالة</button>' : '') +
+      '<button class="b s" style="width:100%;margin-top:8px" onclick="document.getElementById(\'md\').remove()">إغلاق</button>' +
+    '</div>';
+    document.body.appendChild(d);
+  };
+
+  window.reactToMsg = function(mi, emoji){
+    var md = $("md"); if(md) md.remove();
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c || !c.msgs || !c.msgs[mi]) return;
+    var m = c.msgs[mi];
+    m.reacts = m.reacts || {};
+    if(m.reacts[S.email] === emoji) delete m.reacts[S.email];
+    else m.reacts[S.email] = emoji;
+    if(window.fbSendRoomMessage && c.id !== "local_notes") window.fbSendRoomMessage(c, m);
+    saveAllUserStorage();
+    draw();
+  };
+
+  window.deleteMyMsg = function(mi){
+    var md = $("md"); if(md) md.remove();
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c || !c.msgs || !c.msgs[mi]) return;
+    c.msgs.splice(mi, 1);
+    saveAllUserStorage();
+    toast("🗑️ تم حذف الرسالة");
+    draw();
+  };
+
+  /* تسجيل البصمة الصوتية (Voice Note) وإرسالها داخل المحادثة مثل واتساب */
+  var _mediaRec = null, _audioChunks = [], _recStart = 0;
+  window.toggleVoiceNoteRec = async function(){
+    if(S._isRecVoice){
+      if(_mediaRec && _mediaRec.state !== "inactive"){
+        _mediaRec.stop();
+      }
+      S._isRecVoice = false;
+      draw();
+      return;
+    }
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      toast("المتصفح لا يدعم تسجيل المايكروفون");
+      return;
+    }
+    try {
+      var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      _audioChunks = [];
+      _mediaRec = new MediaRecorder(stream);
+      _recStart = Date.now();
+      S._isRecVoice = true;
+      draw();
+      toast("🎙️ جاري تسجيل بصمة صوتية... اضغط زر المايك الأحمر للإرسال");
+      _mediaRec.ondataavailable = function(e){
+        if(e.data && e.data.size > 0) _audioChunks.push(e.data);
+      };
+      _mediaRec.onstop = function(){
+        stream.getTracks().forEach(function(t){ t.stop(); });
+        var durSec = Math.max(1, Math.round((Date.now() - _recStart) / 1000));
+        var blob = new Blob(_audioChunks, { type: _mediaRec.mimeType || "audio/webm" });
+        if(blob.size > 680000){
+          toast("البصمة الصوتية طويلة جداً، سجل مقطعاً أقصر");
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(){
+          sendM({
+            name: "بصمة صوتية (" + durSec + " ثانية)",
+            isAudio: true,
+            mime: blob.type,
+            data: reader.result,
+            sizeTxt: durSec + " ث"
+          });
+        };
+        reader.readAsDataURL(blob);
+      };
+      _mediaRec.start();
+    } catch(err){
+      S._isRecVoice = false;
+      toast("تعذر الوصول للمايكروفون: تأكد من إعطاء الإذن");
+      draw();
+    }
+  };
+
+  /* السحب على الرسالة للرد السريع مثل واتساب (Swipe-to-Reply) */
+  function attachSwipeReplyHandlers(){
+    var body = $("waBody");
+    if(!body) return;
+    var startX = 0, startY = 0, activeBub = null, activeIdx = -1;
+    body.ontouchstart = function(e){
+      var bub = e.target.closest ? e.target.closest(".wa-bub") : null;
+      if(!bub) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      activeBub = bub;
+      activeIdx = Number(bub.getAttribute("data-mi"));
+    };
+    body.ontouchmove = function(e){
+      if(!activeBub) return;
+      var dx = e.touches[0].clientX - startX;
+      var dy = Math.abs(e.touches[0].clientY - startY);
+      if(dy > 35){ activeBub.style.transform = ""; activeBub = null; return; }
+      if(Math.abs(dx) > 12 && Math.abs(dx) < 75){
+        activeBub.style.transform = "translateX(" + (dx * 0.55) + "px)";
+      }
+    };
+    body.ontouchend = function(e){
+      if(!activeBub) return;
+      var endX = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientX : startX;
+      var dx = endX - startX;
+      activeBub.style.transform = "";
+      if(Math.abs(dx) > 52 && activeIdx >= 0){
+        setReplyMsg(activeIdx);
+      }
+      activeBub = null;
+      activeIdx = -1;
+    };
+  }
+
+  /* ٤) استبدال roomV و sendM بنسخة واتساب المتكاملة بملء الشاشة */
+  window.roomV = function(){
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c){ S.curChatId = null; return cListV(); }
+    if(window.fbWatchRoomMessages) window.fbWatchRoomMessages(c.id);
+    markChatRead(c);
+    var ms = c.msgs || [];
+    var wp = getActiveWallpaper(S.curChatId);
+    var styleStr = buildWpStyle(wp);
+
+    return '<div class="wa-room wa-fullscreen">' +
+      '<div class="wa-head">' +
+        '<button class="b s" style="min-height:34px;padding:4px 10px;background:rgba(255,255,255,.15);color:#fff" onclick="S.curChatId=null;S.replyTo=null;draw()">←</button>' +
+        avatarHtml(chatTitle(c), chatPhoto(c)) +
+        '<div class="grow" style="overflow:hidden"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(c.g?'👥 ':'')+esc(chatTitle(c))+'</b>' +
+          '<div style="font-size:11px;opacity:.88">'+(c.g ? ((c.members?c.members.length:1)+' أعضاء · اسحب أي رسالة للرد عليها') : (chatPeerHandle(c) || 'متصل · اسحب الرسالة للرد'))+'</div>' +
+        '</div>' +
+        '<button class="b s" style="min-height:34px;padding:4px 9px;background:rgba(255,255,255,.18);color:#fff" onclick="openWaWallpaperModal()" title="تغيير خلفية المحادثة">🎨 خلفية</button>' +
+        (c.g ? '<button class="b s" style="min-height:34px;padding:4px 9px;background:rgba(255,255,255,.18);color:#fff" onclick="openChatPicker(\'add_member\')">+ عضو</button>' : '') +
+      '</div>' +
+      '<div class="wa-body" id="waBody" style="' + styleStr + '">' +
+        (ms.length ? ms.map(function(m, mi){
+          if(m.isSys || m.e === "sys"){
+            return '<div style="text-align:center;font-size:11px;color:#111;background:rgba(255,255,255,.85);padding:3px 10px;border-radius:99px;align-self:center;margin:4px 0;box-shadow:0 1px 2px rgba(0,0,0,.1)">'+esc(m.t)+'</div>';
+          }
+          var me = m.e === S.email;
+          var timeStr = m.at ? new Date(m.at).toLocaleTimeString("ar-IQ",{hour:"2-digit",minute:"2-digit"}) : "";
+          var replyHtml = "";
+          if(m.replyTo){
+            replyHtml = '<div class="wa-reply-quote" onclick="scrollToMsgId(\''+esc(m.replyTo.id||"")+'\')">' +
+              '<b style="color:#00a884;display:block">' + esc(m.replyTo.sender || "") + '</b>' +
+              '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85">' + esc(m.replyTo.t || "") + '</div>' +
+            '</div>';
+          }
+          var fileHtml = "";
+          if(m.file){
+            if(m.file.isAudio && m.file.data){
+              fileHtml = '<div style="margin-top:5px;min-width:210px"><audio controls src="'+m.file.data+'" style="width:100%;height:34px"></audio></div>';
+            }else if(m.file.isImg && m.file.data){
+              fileHtml = '<div style="margin-top:5px"><img src="'+m.file.data+'" alt="" style="max-width:100%;max-height:220px;border-radius:10px;display:block">' +
+                '<button type="button" class="b s" style="width:100%;margin-top:5px;min-height:30px;padding:3px;font-size:11px" onclick="downloadChatAttachment('+mi+')">⬇️ حفظ الصورة</button></div>';
+            }else{
+              fileHtml = '<div class="wa-file-box">' +
+                '<div class="row"><span style="font-size:22px">📄</span><div class="grow" style="overflow:hidden"><b style="display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(m.file.name)+'</b><span style="font-size:11px;opacity:.8">'+esc(m.file.sizeTxt||'ملف مرفق')+'</span></div></div>' +
+                '<div class="grid" style="margin-top:6px">' +
+                  '<button type="button" class="b s" style="min-height:30px;padding:2px 6px;font-size:12px" onclick="openChatAttachmentInApp('+mi+')">👁️ فتح</button>' +
+                  '<button type="button" class="b s" style="min-height:30px;padding:2px 6px;font-size:12px" onclick="downloadChatAttachment('+mi+')">⬇️ تنزيل</button>' +
+                '</div>' +
+              '</div>';
+            }
+          }
+          var reactsObj = m.reacts || {};
+          var reactVals = Object.keys(reactsObj).map(function(k){ return reactsObj[k]; });
+          var reactHtml = reactVals.length ? '<div class="wa-react-bar" onclick="openMsgContextMenu('+mi+')">' + reactVals.join(" ") + '</div>' : '';
+
+          return '<div class="wa-bub '+(me?'out':'in')+'" data-mi="'+mi+'" data-msgid="'+esc(m.id||("idx_"+mi))+'" ondblclick="setReplyMsg('+mi+')">' +
+            (c.g && !me ? '<div style="font-size:11px;font-weight:800;color:#00a884;margin-bottom:2px">'+esc(m.sender)+'</div>' : '') +
+            replyHtml +
+            (m.t ? '<div>'+esc(m.t)+'</div>' : '') +
+            fileHtml +
+            '<div class="wa-bub-actions">' +
+              '<button type="button" class="wa-act-btn" title="رد" onclick="setReplyMsg('+mi+')">↩️</button>' +
+              '<button type="button" class="wa-act-btn" title="تفاعل وخيارات" onclick="openMsgContextMenu('+mi+')">☺️</button>' +
+              '<span>'+timeStr+(me?(m._fail?' ⚠️':(m._pend?' 🕓':' ✓✓')):'')+'</span>' +
+            '</div>' +
+            reactHtml +
+          '</div>';
+        }).join("") : '<div style="text-align:center;margin:24px auto;background:rgba(255,255,255,.88);color:#222;padding:8px 14px;border-radius:12px;font-size:12px;max-width:85%">🔒 الرسائل والملفات والبصمات الصوتية محفوظة بأمان. ابدأ المحادثة الآن!</div>') +
+      '</div>' +
+      (S.replyTo ? '<div class="wa-reply-bar">' +
+        '<div class="wa-reply-bar-inner"><b style="color:#00a884;display:block">الرد على: '+esc(S.replyTo.sender)+'</b><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(S.replyTo.t)+'</div></div>' +
+        '<button type="button" class="b d" style="min-height:28px;padding:2px 8px" onclick="cancelReplyMsg()">×</button>' +
+      '</div>' : '') +
+      '<div class="wa-foot">' +
+        '<button type="button" class="b s" style="min-height:40px;padding:0 11px;font-size:18px;border-radius:50%" title="إرفاق ملف أو صورة" onclick="attachChatFile()">📎</button>' +
+        '<button type="button" class="b s wa-rec-btn '+(S._isRecVoice?'rec-on':'')+'" style="min-height:40px;padding:0 11px;font-size:17px;border-radius:50%" title="تسجيل بصمة صوتية" onclick="toggleVoiceNoteRec()">🎤</button>' +
+        '<input id="mt" class="grow" style="margin:0" placeholder="اكتب رسالة..." onkeydown="if(event.key==\'Enter\')sendM()">' +
+        '<button type="button" class="b" style="min-height:40px;padding:0 14px;border-radius:20px;background:#00a884" onclick="sendM()">إرسال</button>' +
+      '</div>' +
+    '</div>';
+  };
+
+  window.sendM = function(fileObj){
+    var e = $("mt"), t = e ? e.value.trim() : "";
+    if(!t && !fileObj) return;
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; }); if(!c) return;
+    if(e) e.value = "";
+    var msgId = "m_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
+    var msg = {
+      id: msgId,
+      e: S.email,
+      sender: S.dispName || S.email.split("@")[0],
+      t: t,
+      file: fileObj || null,
+      replyTo: S.replyTo || null,
+      at: Date.now()
+    };
+    S.replyTo = null;
+    c.msgs = c.msgs || [];
+    c.msgs.push(msg);
+    c.lastPreview = fileObj ? (fileObj.isAudio ? "🎤 بصمة صوتية" : ("📎 " + fileObj.name)) : t;
+    c.updatedAt = msg.at;
+    c.lastFrom = S.email;
+    if(window.fbSendRoomMessage) window.fbSendRoomMessage(c, msg);
+    else if(window.fbSaveChatRoom) window.fbSaveChatRoom(c);
+    saveAllUserStorage();
+    draw();
+    setTimeout(function(){ var wb=$("waBody"); if(wb) wb.scrollTop=wb.scrollHeight; }, 30);
+  };
+
+  /* ٥) إصلاح زر الرجوع في الجهاز (History Stack + popstate) ليرجع خطوة للخلف دائماً */
+  var _isHandlingPop = false;
+  var _lastSnapKey = "";
+
+  function getNavSnap(){
+    return {
+      role: S.role,
+      tab: S.tab,
+      curChatId: S.curChatId,
+      proPortal: S.proPortal,
+      scnDocId: S.scnDocId,
+      openMat: S.openMat ? 1 : 0,
+      profileOpen: !!S.profileOpen,
+      subv: S.subv || 0,
+      gw: S.gw ? S.gw.view : null
+    };
+  }
+
+  var _origDraw = window.draw;
+  window.draw = function(){
+    _origDraw();
+    var inFullChat = (S.curChatId !== null) && ((S.role === "pro" && S.tab === 5) || (S.role === "stu" && S.tab === 4));
+    var hdr = document.querySelector("#app > header");
+    var nav = document.querySelector("#app > nav");
+    if(hdr) hdr.style.display = inFullChat ? "none" : "";
+    if(nav) nav.style.display = inFullChat ? "none" : "";
+    if(inFullChat){
+      attachSwipeReplyHandlers();
+      setTimeout(function(){ var wb = $("waBody"); if(wb) wb.scrollTop = wb.scrollHeight; }, 20);
+    }
+
+    if(!_isHandlingPop && S.authReady && S.uid){
+      var snap = getNavSnap();
+      var key = JSON.stringify(snap);
+      if(_lastSnapKey && _lastSnapKey !== key){
+        try { history.pushState(snap, ""); } catch(e){}
+      } else if(!_lastSnapKey){
+        try { history.replaceState(snap, ""); } catch(e){}
+      }
+      _lastSnapKey = key;
+    }
+  };
+
+  window.addEventListener("popstate", function(e){
+    e.stopImmediatePropagation();
+    _isHandlingPop = true;
+    var md = $("md");
+    if(md){ md.remove(); S.chatModal = null; S._wpDraft = null; _isHandlingPop = false; try{history.pushState(getNavSnap(), "");}catch(err){} return; }
+    if(S.profileOpen){ S.profileOpen = false; draw(); _isHandlingPop = false; return; }
+    if(S.subv){ S.subv = 0; draw(); _isHandlingPop = false; return; }
+    if(S.curChatId !== null){ S.curChatId = null; S.replyTo = null; draw(); _isHandlingPop = false; return; }
+    if(S.scnPrintDoc){ S.scnPrintDoc = null; draw(); _isHandlingPop = false; return; }
+    if(S.scnEd){ S.scnEd = null; draw(); _isHandlingPop = false; return; }
+    if(S.scnDocId !== null){ setOpenScnDoc(null); draw(); _isHandlingPop = false; return; }
+    if(S.openMat !== null){ S.openMat = null; S.out = ""; S.quiz = null; draw(); _isHandlingPop = false; return; }
+    if(S.pp !== null || S.bk !== null || S.gw !== null){ S.pp = null; S.bk = null; S.gw = null; draw(); _isHandlingPop = false; return; }
+    if(S.proPortal !== null){ S.proPortal = null; draw(); _isHandlingPop = false; return; }
+    if(S.role !== null && S.tab > 0){ S.tab = 0; draw(); _isHandlingPop = false; return; }
+    if(S.role !== null){
+      try { history.pushState(getNavSnap(), ""); } catch(err){}
+      toast("أنت في الصفحة الرئيسية · للتبديل بين الأستاذ والطالب اضغط زر 🔄 بالأعلى");
+      _isHandlingPop = false;
+      return;
+    }
+    _isHandlingPop = false;
+  }, true);
+})();
+</script>
+
+</body></html>';
   var cleanName=filename.replace(/[^\w\u0600-\u06FF\- ]/g,"")+".doc";
   var blob=new Blob(["\ufeff",docHtml],{type:"application/msword;charset=utf-8"});
   try{
@@ -762,7 +2138,695 @@ function downloadWordFile(filename,innerHtml,rtl){
   var docHtml='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'+
     '<head><meta charset="utf-8"><title>'+esc(filename)+'</title>'+
     '<style>@page{size:A4;margin:15mm}body{font-family:Arial,Tahoma,sans-serif;direction:'+(rtl?'rtl':'ltr')+';line-height:1.8}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:6px}</style>'+
-    '</head><body>'+innerHtml+'</body></html>';
+    '</head><body>'+innerHtml+'
+<!-- ====== تحديث مسبار AI (v2.14.0): محادثة واتساب بملء الشاشة + الخلفيات + الرد بالسحب + البصمة الصوتية + التفاعلات + زر الرجوع ====== -->
+<style>
+  /* شاشة المحادثة الكاملة مثل واتساب */
+  .wa-room.wa-fullscreen {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 25 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100dvh !important;
+    width: 100vw !important;
+    background: #efeae2;
+  }
+  .wa-room.wa-fullscreen .wa-head {
+    background: #075e54;
+    color: #fff;
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) 12px 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.22);
+    z-index: 3;
+  }
+  @media (prefers-color-scheme: dark) {
+    .wa-room.wa-fullscreen .wa-head { background: #1f2c34; }
+  }
+  .wa-room.wa-fullscreen .wa-body {
+    flex: 1 !important;
+    max-height: none !important;
+    padding: 12px 10px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    position: relative;
+    background-size: cover !important;
+    background-position: center !important;
+  }
+  .wa-room.wa-fullscreen .wa-bub {
+    max-width: 82%;
+    padding: 7px 11px;
+    border-radius: 10px;
+    box-shadow: 0 1px 1.5px rgba(0,0,0,.15);
+    border: 0;
+    transition: transform .15s ease;
+    user-select: text;
+  }
+  .wa-room.wa-fullscreen .wa-bub.in {
+    background: #ffffff;
+    color: #111b21;
+    border-top-right-radius: 2px;
+  }
+  .wa-room.wa-fullscreen .wa-bub.out {
+    background: #d9fdd3;
+    color: #111b21;
+    border-top-left-radius: 2px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .wa-room.wa-fullscreen .wa-bub.in { background: #202c33; color: #e9edef; }
+    .wa-room.wa-fullscreen .wa-bub.out { background: #005c4b; color: #e9edef; }
+  }
+  .wa-reply-quote {
+    background: rgba(0,0,0,.06);
+    border-inline-start: 3.5px solid #00a884;
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin-bottom: 5px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  @media (prefers-color-scheme: dark) {
+    .wa-reply-quote { background: rgba(255,255,255,.08); }
+  }
+  .wa-reply-bar {
+    background: var(--sf);
+    border-top: 1px solid var(--ln);
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 2;
+  }
+  .wa-reply-bar-inner {
+    flex: 1;
+    background: var(--bg);
+    border-inline-start: 4px solid #00a884;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    overflow: hidden;
+  }
+  .wa-react-bar {
+    display: inline-flex;
+    gap: 3px;
+    background: var(--sf);
+    border: 1px solid var(--ln);
+    border-radius: 99px;
+    padding: 1px 6px;
+    font-size: 12px;
+    margin-top: 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.1);
+  }
+  .wa-bub-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: 3px;
+    font-size: 10px;
+    opacity: .78;
+  }
+  .wa-act-btn {
+    background: none;
+    border: 0;
+    padding: 0 3px;
+    cursor: pointer;
+    font-size: 12px;
+    opacity: .8;
+    color: inherit;
+  }
+  .wa-room.wa-fullscreen .wa-foot {
+    padding: 8px 10px calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+    background: #f0f2f5;
+    border-top: 0;
+    z-index: 2;
+  }
+  @media (prefers-color-scheme: dark) {
+    .wa-room.wa-fullscreen .wa-foot { background: #1f2c34; }
+  }
+  .wa-room.wa-fullscreen .wa-foot input {
+    border-radius: 22px !important;
+    padding: 10px 14px !important;
+    border: 0 !important;
+  }
+  .wa-rec-btn.rec-on {
+    background: #ef4444 !important;
+    color: #fff !important;
+    animation: waPulse 1s infinite;
+  }
+  @keyframes waPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  /* شبكة اختيار خلفيات واتساب */
+  .wa-wp-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+  .wa-wp-tile {
+    height: 82px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 2.5px solid var(--ln);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 4px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .wa-wp-tile.on { border-color: #25d366; transform: scale(0.98); }
+</style>
+
+<script>
+(function(){
+  /* ١) نقشة واتساب الأصلية (SVG Doodle) وقائمة الخلفيات */
+  var WA_DOODLE_SVG = "data:image/svg+xml;utf8," + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" opacity="0.09">' +
+    '<g fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round">' +
+    '<circle cx="24" cy="24" r="9"/><path d="M70 18h24v16H70z"/><path d="M18 76c10-8 22-8 32 0"/>' +
+    '<polygon points="85,70 97,92 73,92"/><circle cx="52" cy="54" r="4"/><path d="M22 102h28"/>' +
+    '</g></svg>'
+  );
+
+  var WA_WALLPAPERS = {
+    bright: [
+      {id:"b1", name:"كلاسيكي فاتح", bg:"#efeae2", doodle:true},
+      {id:"b2", name:"أخضر نعناعي", bg:"linear-gradient(135deg,#d4fc79,#96e6a1)", doodle:true},
+      {id:"b3", name:"سماء صافية",   bg:"linear-gradient(135deg,#a1c4fd,#c2e9fb)", doodle:true},
+      {id:"b4", name:"شروق دافئ",    bg:"linear-gradient(135deg,#ffecd2,#fcb69f)", doodle:true},
+      {id:"b5", name:"خزامى ناعم",   bg:"linear-gradient(135deg,#e0c3fc,#8ec5fc)", doodle:true},
+      {id:"b6", name:"وردي هادئ",    bg:"linear-gradient(135deg,#fad0c4,#ffd1ff)", doodle:true}
+    ],
+    dark: [
+      {id:"d1", name:"واتساب داكن",  bg:"#0b141a", doodle:true},
+      {id:"d2", name:"زمردي ليلي",   bg:"linear-gradient(135deg,#0f2027,#203a43,#2c5364)", doodle:true},
+      {id:"d3", name:"كحلي عميق",    bg:"linear-gradient(135deg,#141e30,#243b55)", doodle:true},
+      {id:"d4", name:"غسق بنفسجي",   bg:"linear-gradient(135deg,#200122,#6f0000)", doodle:true},
+      {id:"d5", name:"غابة داكنة",   bg:"linear-gradient(135deg,#093028,#237a57)", doodle:true},
+      {id:"d6", name:"فحمي أنيق",    bg:"linear-gradient(135deg,#232526,#414345)", doodle:true}
+    ],
+    solid: [
+      {id:"s1", name:"بيج واتساب",  bg:"#efeae2"},
+      {id:"s2", name:"أخضر فاتح",   bg:"#dcf8c6"},
+      {id:"s3", name:"تركواز",      bg:"#cbfdd9"},
+      {id:"s4", name:"أزرق سماوي",  bg:"#d2effa"},
+      {id:"s5", name:"بنفسجي فاتح", bg:"#e6d8fa"},
+      {id:"s6", name:"وردي فاتح",   bg:"#fce4ec"},
+      {id:"s7", name:"عنابي",       bg:"#5c1d24"},
+      {id:"s8", name:"زيتي غامق",   bg:"#1f3a34"},
+      {id:"s9", name:"أزرق ملكي",   bg:"#1b3b5c"},
+      {id:"s10",name:"رمادي داكن",  bg:"#262d31"},
+      {id:"s11",name:"بني دافئ",    bg:"#3e2723"},
+      {id:"s12",name:"أسود صافي",   bg:"#0b141a"}
+    ]
+  };
+
+  function getWpStore(){
+    try { return JSON.parse(localStorage.getItem(storagePrefix()+"wa_wp_v1") || "{}"); }
+    catch(e){ return {}; }
+  }
+  function saveWpStore(obj){
+    try { localStorage.setItem(storagePrefix()+"wa_wp_v1", JSON.stringify(obj)); } catch(e){}
+  }
+  function getActiveWallpaper(chatId){
+    var st = getWpStore();
+    return (chatId && st["chat_" + chatId]) || st.global || { bg:"#efeae2", doodle:true, dim:0, customImg:"" };
+  }
+  function buildWpStyle(wp){
+    var layers = [];
+    var dim = Number(wp.dim) || 0;
+    if(dim > 0){
+      layers.push("linear-gradient(rgba(0,0,0," + (dim/100).toFixed(2) + "),rgba(0,0,0," + (dim/100).toFixed(2) + "))");
+    }
+    if(wp.customImg){
+      layers.push("url('" + wp.customImg + "')");
+      return "background-image:" + layers.join(",") + ";background-size:cover;background-position:center;";
+    }
+    if(wp.doodle){
+      layers.push("url(\"" + WA_DOODLE_SVG + "\")");
+    }
+    if(wp.bg && wp.bg.indexOf("gradient") > -1){
+      layers.push(wp.bg);
+      return "background-image:" + layers.join(",") + ";";
+    }
+    var imgPart = layers.length ? ("background-image:" + layers.join(",") + ";background-repeat:repeat;") : "";
+    return "background-color:" + (wp.bg || "#efeae2") + ";" + imgPart;
+  }
+
+  /* ٢) نافذة اختيار خلفية المحادثة طبق الأصل من واتساب */
+  window.openWaWallpaperModal = function(){
+    var old = $("md"); if(old) old.remove();
+    var curWp = getActiveWallpaper(S.curChatId);
+    S._wpTab = S._wpTab || "bright";
+    S._wpScope = S._wpScope || "this";
+    S._wpDraft = S._wpDraft || Object.assign({}, curWp);
+
+    var tab = S._wpTab;
+    var list = WA_WALLPAPERS[tab] || WA_WALLPAPERS.bright;
+    var d = document.createElement("div"); d.id = "md";
+    d.innerHTML = '<div class="mc" style="width:min(410px,95%);max-height:90vh;overflow-y:auto">' +
+      '<div class="row" style="margin-bottom:8px"><b class="grow">🎨 خلفية المحادثة (مثل واتساب)</b><button class="b d" style="min-height:30px;padding:2px 9px" onclick="S._wpDraft=null;document.getElementById(\'md\').remove()">×</button></div>' +
+      '<div style="height:105px;border-radius:12px;padding:10px;margin-bottom:10px;display:flex;flex-direction:column;justify-content:space-between;border:1px solid var(--ln);' + buildWpStyle(S._wpDraft) + '">' +
+        '<div style="background:#fff;color:#111;padding:4px 10px;border-radius:8px;align-self:flex-start;font-size:12px;box-shadow:0 1px 2px rgba(0,0,0,.15)">معاينة رسالة واردة 👋</div>' +
+        '<div style="background:#d9fdd3;color:#111;padding:4px 10px;border-radius:8px;align-self:flex-end;font-size:12px;box-shadow:0 1px 2px rgba(0,0,0,.15)">معاينة رسالتك أنت ✓✓</div>' +
+      '</div>' +
+      '<div class="grid" style="grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:8px">' +
+        '<button class="b '+(tab==="bright"?"":"s")+'" style="font-size:11px;padding:6px 4px" onclick="S._wpTab=\'bright\';openWaWallpaperModal()">☀️ مشرقة</button>' +
+        '<button class="b '+(tab==="dark"?"":"s")+'" style="font-size:11px;padding:6px 4px" onclick="S._wpTab=\'dark\';openWaWallpaperModal()">🌙 داكنة</button>' +
+        '<button class="b '+(tab==="solid"?"":"s")+'" style="font-size:11px;padding:6px 4px" onclick="S._wpTab=\'solid\';openWaWallpaperModal()">🎨 ألوان ثابتة</button>' +
+        '<button class="b s" style="font-size:11px;padding:6px 4px" onclick="pickCustomWaWallpaper()">🖼️ معرضي</button>' +
+      '</div>' +
+      '<div class="wa-wp-grid">' +
+        list.map(function(item){
+          var isSel = !S._wpDraft.customImg && S._wpDraft.bg === item.bg;
+          return '<div class="wa-wp-tile '+(isSel?'on':'')+'" style="' + buildWpStyle({bg:item.bg,doodle:item.doodle!==false,dim:0}) + '" onclick="selectWaPreset(\''+tab+'\',\''+item.id+'\')">' +
+            '<span style="background:rgba(0,0,0,.55);color:#fff;padding:1px 6px;border-radius:6px">' + esc(item.name) + '</span>' +
+          '</div>';
+        }).join("") +
+      '</div>' +
+      '<label class="row" style="margin:8px 0;cursor:pointer"><input type="checkbox" style="width:auto;margin:0" ' + (S._wpDraft.doodle ? 'checked' : '') + ' onchange="S._wpDraft.doodle=this.checked;openWaWallpaperModal()"> إظهار رسومات خلفية واتساب (Doodle)</label>' +
+      '<label>تعتيم الخلفية (' + (S._wpDraft.dim || 0) + '%)</label>' +
+      '<input type="range" min="0" max="75" value="' + (S._wpDraft.dim || 0) + '" onchange="S._wpDraft.dim=+this.value;openWaWallpaperModal()" style="margin:2px 0 8px">' +
+      '<div class="row" style="gap:6px;margin-bottom:10px">' +
+        '<button type="button" class="chip '+(S._wpScope==="this"?"on":"")+' grow" onclick="S._wpScope=\'this\';openWaWallpaperModal()">لهذه المحادثة فقط</button>' +
+        '<button type="button" class="chip '+(S._wpScope==="all"?"on":"")+' grow" onclick="S._wpScope=\'all\';openWaWallpaperModal()">لجميع المحادثات</button>' +
+      '</div>' +
+      '<div class="row">' +
+        '<button class="b grow" style="background:#15803d" onclick="applyWaWallpaper()">✅ تعيين الخلفية</button>' +
+        '<button class="b s" onclick="resetWaWallpaper()">↺ الافتراضية</button>' +
+      '</div>' +
+    '</div>';
+    document.body.appendChild(d);
+  };
+
+  window.selectWaPreset = function(tab, id){
+    var arr = WA_WALLPAPERS[tab] || [];
+    var found = arr.find(function(x){ return x.id === id; });
+    if(!found) return;
+    S._wpDraft.customImg = "";
+    S._wpDraft.bg = found.bg;
+    if(tab !== "solid") S._wpDraft.doodle = true;
+    openWaWallpaperModal();
+  };
+
+  window.pickCustomWaWallpaper = function(){
+    var inp = document.createElement("input");
+    inp.type = "file"; inp.accept = "image/*";
+    inp.onchange = function(){
+      var f = inp.files[0]; if(!f) return;
+      var r = new FileReader();
+      r.onload = function(){
+        var im = new Image();
+        im.onload = function(){
+          var k = Math.min(1, 1000 / Math.max(im.width, im.height));
+          var c = document.createElement("canvas");
+          c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+          c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+          S._wpDraft.customImg = c.toDataURL("image/jpeg", 0.78);
+          openWaWallpaperModal();
+        };
+        im.src = r.result;
+      };
+      r.readAsDataURL(f);
+    };
+    inp.click();
+  };
+
+  window.applyWaWallpaper = function(){
+    var st = getWpStore();
+    var copy = Object.assign({}, S._wpDraft);
+    if(S._wpScope === "all") st.global = copy;
+    else if(S.curChatId) st["chat_" + S.curChatId] = copy;
+    saveWpStore(st);
+    S._wpDraft = null;
+    var md = $("md"); if(md) md.remove();
+    toast("✅ تم تغيير خلفية المحادثة");
+    draw();
+  };
+
+  window.resetWaWallpaper = function(){
+    var st = getWpStore();
+    if(S._wpScope === "all") delete st.global;
+    else if(S.curChatId) delete st["chat_" + S.curChatId];
+    saveWpStore(st);
+    S._wpDraft = null;
+    var md = $("md"); if(md) md.remove();
+    toast("↺ تمت استعادة خلفية واتساب الافتراضية");
+    draw();
+  };
+
+  /* ٣) ميزات غرفة المحادثة المتقدمة: الرد على رسالة (بالسحب أو الزر) + البصمة الصوتية + التفاعلات السريعة */
+  window.setReplyMsg = function(mi){
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c || !c.msgs || !c.msgs[mi]) return;
+    var m = c.msgs[mi];
+    S.replyTo = {
+      id: m.id || ("idx_" + mi),
+      sender: m.sender || (m.e === S.email ? "أنت" : "مستخدم"),
+      t: m.t || (m.file ? ("📎 " + m.file.name) : "رسالة صوتية 🎤")
+    };
+    draw();
+    var mt = $("mt"); if(mt) mt.focus();
+  };
+
+  window.cancelReplyMsg = function(){
+    S.replyTo = null;
+    draw();
+  };
+
+  window.scrollToMsgId = function(msgId){
+    var el = document.querySelector('[data-msgid="'+msgId+'"]');
+    if(el){
+      el.scrollIntoView({behavior:"smooth", block:"center"});
+      el.style.outline = "2px solid #00a884";
+      setTimeout(function(){ el.style.outline = ""; }, 1400);
+    }
+  };
+
+  window.openMsgContextMenu = function(mi){
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c || !c.msgs || !c.msgs[mi]) return;
+    var m = c.msgs[mi];
+    var old = $("md"); if(old) old.remove();
+    var emojis = ["❤️","👍","😂","😮","🙏","👏"];
+    var d = document.createElement("div"); d.id = "md";
+    d.innerHTML = '<div class="mc" style="width:min(330px,92%);text-align:center">' +
+      '<div class="row" style="justify-content:center;gap:8px;margin-bottom:12px">' +
+        emojis.map(function(em){
+          return '<button type="button" class="b s" style="font-size:20px;min-width:42px;padding:4px" onclick="reactToMsg('+mi+',\''+em+'\')">'+em+'</button>';
+        }).join("") +
+      '</div>' +
+      '<div class="grid">' +
+        '<button class="b s" onclick="document.getElementById(\'md\').remove();setReplyMsg('+mi+')">↩️ رد على الرسالة</button>' +
+        '<button class="b s" onclick="document.getElementById(\'md\').remove();if(navigator.clipboard)navigator.clipboard.writeText(\''+esc(m.t||"").replace(/'/g,"\\'")+'\');toast(\'تم نسخ النص\')">📋 نسخ النص</button>' +
+      '</div>' +
+      (m.e === S.email ? '<button class="b d" style="width:100%;margin-top:8px" onclick="deleteMyMsg('+mi+')">🗑️ حذف الرسالة</button>' : '') +
+      '<button class="b s" style="width:100%;margin-top:8px" onclick="document.getElementById(\'md\').remove()">إغلاق</button>' +
+    '</div>';
+    document.body.appendChild(d);
+  };
+
+  window.reactToMsg = function(mi, emoji){
+    var md = $("md"); if(md) md.remove();
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c || !c.msgs || !c.msgs[mi]) return;
+    var m = c.msgs[mi];
+    m.reacts = m.reacts || {};
+    if(m.reacts[S.email] === emoji) delete m.reacts[S.email];
+    else m.reacts[S.email] = emoji;
+    if(window.fbSendRoomMessage && c.id !== "local_notes") window.fbSendRoomMessage(c, m);
+    saveAllUserStorage();
+    draw();
+  };
+
+  window.deleteMyMsg = function(mi){
+    var md = $("md"); if(md) md.remove();
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c || !c.msgs || !c.msgs[mi]) return;
+    c.msgs.splice(mi, 1);
+    saveAllUserStorage();
+    toast("🗑️ تم حذف الرسالة");
+    draw();
+  };
+
+  /* تسجيل البصمة الصوتية (Voice Note) وإرسالها داخل المحادثة مثل واتساب */
+  var _mediaRec = null, _audioChunks = [], _recStart = 0;
+  window.toggleVoiceNoteRec = async function(){
+    if(S._isRecVoice){
+      if(_mediaRec && _mediaRec.state !== "inactive"){
+        _mediaRec.stop();
+      }
+      S._isRecVoice = false;
+      draw();
+      return;
+    }
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      toast("المتصفح لا يدعم تسجيل المايكروفون");
+      return;
+    }
+    try {
+      var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      _audioChunks = [];
+      _mediaRec = new MediaRecorder(stream);
+      _recStart = Date.now();
+      S._isRecVoice = true;
+      draw();
+      toast("🎙️ جاري تسجيل بصمة صوتية... اضغط زر المايك الأحمر للإرسال");
+      _mediaRec.ondataavailable = function(e){
+        if(e.data && e.data.size > 0) _audioChunks.push(e.data);
+      };
+      _mediaRec.onstop = function(){
+        stream.getTracks().forEach(function(t){ t.stop(); });
+        var durSec = Math.max(1, Math.round((Date.now() - _recStart) / 1000));
+        var blob = new Blob(_audioChunks, { type: _mediaRec.mimeType || "audio/webm" });
+        if(blob.size > 680000){
+          toast("البصمة الصوتية طويلة جداً، سجل مقطعاً أقصر");
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(){
+          sendM({
+            name: "بصمة صوتية (" + durSec + " ثانية)",
+            isAudio: true,
+            mime: blob.type,
+            data: reader.result,
+            sizeTxt: durSec + " ث"
+          });
+        };
+        reader.readAsDataURL(blob);
+      };
+      _mediaRec.start();
+    } catch(err){
+      S._isRecVoice = false;
+      toast("تعذر الوصول للمايكروفون: تأكد من إعطاء الإذن");
+      draw();
+    }
+  };
+
+  /* السحب على الرسالة للرد السريع مثل واتساب (Swipe-to-Reply) */
+  function attachSwipeReplyHandlers(){
+    var body = $("waBody");
+    if(!body) return;
+    var startX = 0, startY = 0, activeBub = null, activeIdx = -1;
+    body.ontouchstart = function(e){
+      var bub = e.target.closest ? e.target.closest(".wa-bub") : null;
+      if(!bub) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      activeBub = bub;
+      activeIdx = Number(bub.getAttribute("data-mi"));
+    };
+    body.ontouchmove = function(e){
+      if(!activeBub) return;
+      var dx = e.touches[0].clientX - startX;
+      var dy = Math.abs(e.touches[0].clientY - startY);
+      if(dy > 35){ activeBub.style.transform = ""; activeBub = null; return; }
+      if(Math.abs(dx) > 12 && Math.abs(dx) < 75){
+        activeBub.style.transform = "translateX(" + (dx * 0.55) + "px)";
+      }
+    };
+    body.ontouchend = function(e){
+      if(!activeBub) return;
+      var endX = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientX : startX;
+      var dx = endX - startX;
+      activeBub.style.transform = "";
+      if(Math.abs(dx) > 52 && activeIdx >= 0){
+        setReplyMsg(activeIdx);
+      }
+      activeBub = null;
+      activeIdx = -1;
+    };
+  }
+
+  /* ٤) استبدال roomV و sendM بنسخة واتساب المتكاملة بملء الشاشة */
+  window.roomV = function(){
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c){ S.curChatId = null; return cListV(); }
+    if(window.fbWatchRoomMessages) window.fbWatchRoomMessages(c.id);
+    markChatRead(c);
+    var ms = c.msgs || [];
+    var wp = getActiveWallpaper(S.curChatId);
+    var styleStr = buildWpStyle(wp);
+
+    return '<div class="wa-room wa-fullscreen">' +
+      '<div class="wa-head">' +
+        '<button class="b s" style="min-height:34px;padding:4px 10px;background:rgba(255,255,255,.15);color:#fff" onclick="S.curChatId=null;S.replyTo=null;draw()">←</button>' +
+        avatarHtml(chatTitle(c), chatPhoto(c)) +
+        '<div class="grow" style="overflow:hidden"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(c.g?'👥 ':'')+esc(chatTitle(c))+'</b>' +
+          '<div style="font-size:11px;opacity:.88">'+(c.g ? ((c.members?c.members.length:1)+' أعضاء · اسحب أي رسالة للرد عليها') : (chatPeerHandle(c) || 'متصل · اسحب الرسالة للرد'))+'</div>' +
+        '</div>' +
+        '<button class="b s" style="min-height:34px;padding:4px 9px;background:rgba(255,255,255,.18);color:#fff" onclick="openWaWallpaperModal()" title="تغيير خلفية المحادثة">🎨 خلفية</button>' +
+        (c.g ? '<button class="b s" style="min-height:34px;padding:4px 9px;background:rgba(255,255,255,.18);color:#fff" onclick="openChatPicker(\'add_member\')">+ عضو</button>' : '') +
+      '</div>' +
+      '<div class="wa-body" id="waBody" style="' + styleStr + '">' +
+        (ms.length ? ms.map(function(m, mi){
+          if(m.isSys || m.e === "sys"){
+            return '<div style="text-align:center;font-size:11px;color:#111;background:rgba(255,255,255,.85);padding:3px 10px;border-radius:99px;align-self:center;margin:4px 0;box-shadow:0 1px 2px rgba(0,0,0,.1)">'+esc(m.t)+'</div>';
+          }
+          var me = m.e === S.email;
+          var timeStr = m.at ? new Date(m.at).toLocaleTimeString("ar-IQ",{hour:"2-digit",minute:"2-digit"}) : "";
+          var replyHtml = "";
+          if(m.replyTo){
+            replyHtml = '<div class="wa-reply-quote" onclick="scrollToMsgId(\''+esc(m.replyTo.id||"")+'\')">' +
+              '<b style="color:#00a884;display:block">' + esc(m.replyTo.sender || "") + '</b>' +
+              '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85">' + esc(m.replyTo.t || "") + '</div>' +
+            '</div>';
+          }
+          var fileHtml = "";
+          if(m.file){
+            if(m.file.isAudio && m.file.data){
+              fileHtml = '<div style="margin-top:5px;min-width:210px"><audio controls src="'+m.file.data+'" style="width:100%;height:34px"></audio></div>';
+            }else if(m.file.isImg && m.file.data){
+              fileHtml = '<div style="margin-top:5px"><img src="'+m.file.data+'" alt="" style="max-width:100%;max-height:220px;border-radius:10px;display:block">' +
+                '<button type="button" class="b s" style="width:100%;margin-top:5px;min-height:30px;padding:3px;font-size:11px" onclick="downloadChatAttachment('+mi+')">⬇️ حفظ الصورة</button></div>';
+            }else{
+              fileHtml = '<div class="wa-file-box">' +
+                '<div class="row"><span style="font-size:22px">📄</span><div class="grow" style="overflow:hidden"><b style="display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(m.file.name)+'</b><span style="font-size:11px;opacity:.8">'+esc(m.file.sizeTxt||'ملف مرفق')+'</span></div></div>' +
+                '<div class="grid" style="margin-top:6px">' +
+                  '<button type="button" class="b s" style="min-height:30px;padding:2px 6px;font-size:12px" onclick="openChatAttachmentInApp('+mi+')">👁️ فتح</button>' +
+                  '<button type="button" class="b s" style="min-height:30px;padding:2px 6px;font-size:12px" onclick="downloadChatAttachment('+mi+')">⬇️ تنزيل</button>' +
+                '</div>' +
+              '</div>';
+            }
+          }
+          var reactsObj = m.reacts || {};
+          var reactVals = Object.keys(reactsObj).map(function(k){ return reactsObj[k]; });
+          var reactHtml = reactVals.length ? '<div class="wa-react-bar" onclick="openMsgContextMenu('+mi+')">' + reactVals.join(" ") + '</div>' : '';
+
+          return '<div class="wa-bub '+(me?'out':'in')+'" data-mi="'+mi+'" data-msgid="'+esc(m.id||("idx_"+mi))+'" ondblclick="setReplyMsg('+mi+')">' +
+            (c.g && !me ? '<div style="font-size:11px;font-weight:800;color:#00a884;margin-bottom:2px">'+esc(m.sender)+'</div>' : '') +
+            replyHtml +
+            (m.t ? '<div>'+esc(m.t)+'</div>' : '') +
+            fileHtml +
+            '<div class="wa-bub-actions">' +
+              '<button type="button" class="wa-act-btn" title="رد" onclick="setReplyMsg('+mi+')">↩️</button>' +
+              '<button type="button" class="wa-act-btn" title="تفاعل وخيارات" onclick="openMsgContextMenu('+mi+')">☺️</button>' +
+              '<span>'+timeStr+(me?(m._fail?' ⚠️':(m._pend?' 🕓':' ✓✓')):'')+'</span>' +
+            '</div>' +
+            reactHtml +
+          '</div>';
+        }).join("") : '<div style="text-align:center;margin:24px auto;background:rgba(255,255,255,.88);color:#222;padding:8px 14px;border-radius:12px;font-size:12px;max-width:85%">🔒 الرسائل والملفات والبصمات الصوتية محفوظة بأمان. ابدأ المحادثة الآن!</div>') +
+      '</div>' +
+      (S.replyTo ? '<div class="wa-reply-bar">' +
+        '<div class="wa-reply-bar-inner"><b style="color:#00a884;display:block">الرد على: '+esc(S.replyTo.sender)+'</b><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(S.replyTo.t)+'</div></div>' +
+        '<button type="button" class="b d" style="min-height:28px;padding:2px 8px" onclick="cancelReplyMsg()">×</button>' +
+      '</div>' : '') +
+      '<div class="wa-foot">' +
+        '<button type="button" class="b s" style="min-height:40px;padding:0 11px;font-size:18px;border-radius:50%" title="إرفاق ملف أو صورة" onclick="attachChatFile()">📎</button>' +
+        '<button type="button" class="b s wa-rec-btn '+(S._isRecVoice?'rec-on':'')+'" style="min-height:40px;padding:0 11px;font-size:17px;border-radius:50%" title="تسجيل بصمة صوتية" onclick="toggleVoiceNoteRec()">🎤</button>' +
+        '<input id="mt" class="grow" style="margin:0" placeholder="اكتب رسالة..." onkeydown="if(event.key==\'Enter\')sendM()">' +
+        '<button type="button" class="b" style="min-height:40px;padding:0 14px;border-radius:20px;background:#00a884" onclick="sendM()">إرسال</button>' +
+      '</div>' +
+    '</div>';
+  };
+
+  window.sendM = function(fileObj){
+    var e = $("mt"), t = e ? e.value.trim() : "";
+    if(!t && !fileObj) return;
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; }); if(!c) return;
+    if(e) e.value = "";
+    var msgId = "m_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
+    var msg = {
+      id: msgId,
+      e: S.email,
+      sender: S.dispName || S.email.split("@")[0],
+      t: t,
+      file: fileObj || null,
+      replyTo: S.replyTo || null,
+      at: Date.now()
+    };
+    S.replyTo = null;
+    c.msgs = c.msgs || [];
+    c.msgs.push(msg);
+    c.lastPreview = fileObj ? (fileObj.isAudio ? "🎤 بصمة صوتية" : ("📎 " + fileObj.name)) : t;
+    c.updatedAt = msg.at;
+    c.lastFrom = S.email;
+    if(window.fbSendRoomMessage) window.fbSendRoomMessage(c, msg);
+    else if(window.fbSaveChatRoom) window.fbSaveChatRoom(c);
+    saveAllUserStorage();
+    draw();
+    setTimeout(function(){ var wb=$("waBody"); if(wb) wb.scrollTop=wb.scrollHeight; }, 30);
+  };
+
+  /* ٥) إصلاح زر الرجوع في الجهاز (History Stack + popstate) ليرجع خطوة للخلف دائماً */
+  var _isHandlingPop = false;
+  var _lastSnapKey = "";
+
+  function getNavSnap(){
+    return {
+      role: S.role,
+      tab: S.tab,
+      curChatId: S.curChatId,
+      proPortal: S.proPortal,
+      scnDocId: S.scnDocId,
+      openMat: S.openMat ? 1 : 0,
+      profileOpen: !!S.profileOpen,
+      subv: S.subv || 0,
+      gw: S.gw ? S.gw.view : null
+    };
+  }
+
+  var _origDraw = window.draw;
+  window.draw = function(){
+    _origDraw();
+    var inFullChat = (S.curChatId !== null) && ((S.role === "pro" && S.tab === 5) || (S.role === "stu" && S.tab === 4));
+    var hdr = document.querySelector("#app > header");
+    var nav = document.querySelector("#app > nav");
+    if(hdr) hdr.style.display = inFullChat ? "none" : "";
+    if(nav) nav.style.display = inFullChat ? "none" : "";
+    if(inFullChat){
+      attachSwipeReplyHandlers();
+      setTimeout(function(){ var wb = $("waBody"); if(wb) wb.scrollTop = wb.scrollHeight; }, 20);
+    }
+
+    if(!_isHandlingPop && S.authReady && S.uid){
+      var snap = getNavSnap();
+      var key = JSON.stringify(snap);
+      if(_lastSnapKey && _lastSnapKey !== key){
+        try { history.pushState(snap, ""); } catch(e){}
+      } else if(!_lastSnapKey){
+        try { history.replaceState(snap, ""); } catch(e){}
+      }
+      _lastSnapKey = key;
+    }
+  };
+
+  window.addEventListener("popstate", function(e){
+    e.stopImmediatePropagation();
+    _isHandlingPop = true;
+    var md = $("md");
+    if(md){ md.remove(); S.chatModal = null; S._wpDraft = null; _isHandlingPop = false; try{history.pushState(getNavSnap(), "");}catch(err){} return; }
+    if(S.profileOpen){ S.profileOpen = false; draw(); _isHandlingPop = false; return; }
+    if(S.subv){ S.subv = 0; draw(); _isHandlingPop = false; return; }
+    if(S.curChatId !== null){ S.curChatId = null; S.replyTo = null; draw(); _isHandlingPop = false; return; }
+    if(S.scnPrintDoc){ S.scnPrintDoc = null; draw(); _isHandlingPop = false; return; }
+    if(S.scnEd){ S.scnEd = null; draw(); _isHandlingPop = false; return; }
+    if(S.scnDocId !== null){ setOpenScnDoc(null); draw(); _isHandlingPop = false; return; }
+    if(S.openMat !== null){ S.openMat = null; S.out = ""; S.quiz = null; draw(); _isHandlingPop = false; return; }
+    if(S.pp !== null || S.bk !== null || S.gw !== null){ S.pp = null; S.bk = null; S.gw = null; draw(); _isHandlingPop = false; return; }
+    if(S.proPortal !== null){ S.proPortal = null; draw(); _isHandlingPop = false; return; }
+    if(S.role !== null && S.tab > 0){ S.tab = 0; draw(); _isHandlingPop = false; return; }
+    if(S.role !== null){
+      try { history.pushState(getNavSnap(), ""); } catch(err){}
+      toast("أنت في الصفحة الرئيسية · للتبديل بين الأستاذ والطالب اضغط زر 🔄 بالأعلى");
+      _isHandlingPop = false;
+      return;
+    }
+    _isHandlingPop = false;
+  }, true);
+})();
+</script>
+
+</body></html>';
   var blob=new Blob(["\ufeff",docHtml],{type:"application/msword;charset=utf-8"});
   var a=document.createElement("a");
   a.href=URL.createObjectURL(blob);
@@ -4279,5 +6343,693 @@ window.savePlans=function(){
   toast("تم حفظ الباقات ونشرها");
 };
 </script>
+
+<!-- ====== تحديث مسبار AI (v2.14.0): محادثة واتساب بملء الشاشة + الخلفيات + الرد بالسحب + البصمة الصوتية + التفاعلات + زر الرجوع ====== -->
+<style>
+  /* شاشة المحادثة الكاملة مثل واتساب */
+  .wa-room.wa-fullscreen {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 25 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100dvh !important;
+    width: 100vw !important;
+    background: #efeae2;
+  }
+  .wa-room.wa-fullscreen .wa-head {
+    background: #075e54;
+    color: #fff;
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) 12px 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.22);
+    z-index: 3;
+  }
+  @media (prefers-color-scheme: dark) {
+    .wa-room.wa-fullscreen .wa-head { background: #1f2c34; }
+  }
+  .wa-room.wa-fullscreen .wa-body {
+    flex: 1 !important;
+    max-height: none !important;
+    padding: 12px 10px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    position: relative;
+    background-size: cover !important;
+    background-position: center !important;
+  }
+  .wa-room.wa-fullscreen .wa-bub {
+    max-width: 82%;
+    padding: 7px 11px;
+    border-radius: 10px;
+    box-shadow: 0 1px 1.5px rgba(0,0,0,.15);
+    border: 0;
+    transition: transform .15s ease;
+    user-select: text;
+  }
+  .wa-room.wa-fullscreen .wa-bub.in {
+    background: #ffffff;
+    color: #111b21;
+    border-top-right-radius: 2px;
+  }
+  .wa-room.wa-fullscreen .wa-bub.out {
+    background: #d9fdd3;
+    color: #111b21;
+    border-top-left-radius: 2px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .wa-room.wa-fullscreen .wa-bub.in { background: #202c33; color: #e9edef; }
+    .wa-room.wa-fullscreen .wa-bub.out { background: #005c4b; color: #e9edef; }
+  }
+  .wa-reply-quote {
+    background: rgba(0,0,0,.06);
+    border-inline-start: 3.5px solid #00a884;
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin-bottom: 5px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  @media (prefers-color-scheme: dark) {
+    .wa-reply-quote { background: rgba(255,255,255,.08); }
+  }
+  .wa-reply-bar {
+    background: var(--sf);
+    border-top: 1px solid var(--ln);
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 2;
+  }
+  .wa-reply-bar-inner {
+    flex: 1;
+    background: var(--bg);
+    border-inline-start: 4px solid #00a884;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    overflow: hidden;
+  }
+  .wa-react-bar {
+    display: inline-flex;
+    gap: 3px;
+    background: var(--sf);
+    border: 1px solid var(--ln);
+    border-radius: 99px;
+    padding: 1px 6px;
+    font-size: 12px;
+    margin-top: 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.1);
+  }
+  .wa-bub-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: 3px;
+    font-size: 10px;
+    opacity: .78;
+  }
+  .wa-act-btn {
+    background: none;
+    border: 0;
+    padding: 0 3px;
+    cursor: pointer;
+    font-size: 12px;
+    opacity: .8;
+    color: inherit;
+  }
+  .wa-room.wa-fullscreen .wa-foot {
+    padding: 8px 10px calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+    background: #f0f2f5;
+    border-top: 0;
+    z-index: 2;
+  }
+  @media (prefers-color-scheme: dark) {
+    .wa-room.wa-fullscreen .wa-foot { background: #1f2c34; }
+  }
+  .wa-room.wa-fullscreen .wa-foot input {
+    border-radius: 22px !important;
+    padding: 10px 14px !important;
+    border: 0 !important;
+  }
+  .wa-rec-btn.rec-on {
+    background: #ef4444 !important;
+    color: #fff !important;
+    animation: waPulse 1s infinite;
+  }
+  @keyframes waPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  /* شبكة اختيار خلفيات واتساب */
+  .wa-wp-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+  .wa-wp-tile {
+    height: 82px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 2.5px solid var(--ln);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 4px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .wa-wp-tile.on { border-color: #25d366; transform: scale(0.98); }
+</style>
+
+<script>
+(function(){
+  /* ١) نقشة واتساب الأصلية (SVG Doodle) وقائمة الخلفيات */
+  var WA_DOODLE_SVG = "data:image/svg+xml;utf8," + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" opacity="0.09">' +
+    '<g fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round">' +
+    '<circle cx="24" cy="24" r="9"/><path d="M70 18h24v16H70z"/><path d="M18 76c10-8 22-8 32 0"/>' +
+    '<polygon points="85,70 97,92 73,92"/><circle cx="52" cy="54" r="4"/><path d="M22 102h28"/>' +
+    '</g></svg>'
+  );
+
+  var WA_WALLPAPERS = {
+    bright: [
+      {id:"b1", name:"كلاسيكي فاتح", bg:"#efeae2", doodle:true},
+      {id:"b2", name:"أخضر نعناعي", bg:"linear-gradient(135deg,#d4fc79,#96e6a1)", doodle:true},
+      {id:"b3", name:"سماء صافية",   bg:"linear-gradient(135deg,#a1c4fd,#c2e9fb)", doodle:true},
+      {id:"b4", name:"شروق دافئ",    bg:"linear-gradient(135deg,#ffecd2,#fcb69f)", doodle:true},
+      {id:"b5", name:"خزامى ناعم",   bg:"linear-gradient(135deg,#e0c3fc,#8ec5fc)", doodle:true},
+      {id:"b6", name:"وردي هادئ",    bg:"linear-gradient(135deg,#fad0c4,#ffd1ff)", doodle:true}
+    ],
+    dark: [
+      {id:"d1", name:"واتساب داكن",  bg:"#0b141a", doodle:true},
+      {id:"d2", name:"زمردي ليلي",   bg:"linear-gradient(135deg,#0f2027,#203a43,#2c5364)", doodle:true},
+      {id:"d3", name:"كحلي عميق",    bg:"linear-gradient(135deg,#141e30,#243b55)", doodle:true},
+      {id:"d4", name:"غسق بنفسجي",   bg:"linear-gradient(135deg,#200122,#6f0000)", doodle:true},
+      {id:"d5", name:"غابة داكنة",   bg:"linear-gradient(135deg,#093028,#237a57)", doodle:true},
+      {id:"d6", name:"فحمي أنيق",    bg:"linear-gradient(135deg,#232526,#414345)", doodle:true}
+    ],
+    solid: [
+      {id:"s1", name:"بيج واتساب",  bg:"#efeae2"},
+      {id:"s2", name:"أخضر فاتح",   bg:"#dcf8c6"},
+      {id:"s3", name:"تركواز",      bg:"#cbfdd9"},
+      {id:"s4", name:"أزرق سماوي",  bg:"#d2effa"},
+      {id:"s5", name:"بنفسجي فاتح", bg:"#e6d8fa"},
+      {id:"s6", name:"وردي فاتح",   bg:"#fce4ec"},
+      {id:"s7", name:"عنابي",       bg:"#5c1d24"},
+      {id:"s8", name:"زيتي غامق",   bg:"#1f3a34"},
+      {id:"s9", name:"أزرق ملكي",   bg:"#1b3b5c"},
+      {id:"s10",name:"رمادي داكن",  bg:"#262d31"},
+      {id:"s11",name:"بني دافئ",    bg:"#3e2723"},
+      {id:"s12",name:"أسود صافي",   bg:"#0b141a"}
+    ]
+  };
+
+  function getWpStore(){
+    try { return JSON.parse(localStorage.getItem(storagePrefix()+"wa_wp_v1") || "{}"); }
+    catch(e){ return {}; }
+  }
+  function saveWpStore(obj){
+    try { localStorage.setItem(storagePrefix()+"wa_wp_v1", JSON.stringify(obj)); } catch(e){}
+  }
+  function getActiveWallpaper(chatId){
+    var st = getWpStore();
+    return (chatId && st["chat_" + chatId]) || st.global || { bg:"#efeae2", doodle:true, dim:0, customImg:"" };
+  }
+  function buildWpStyle(wp){
+    var layers = [];
+    var dim = Number(wp.dim) || 0;
+    if(dim > 0){
+      layers.push("linear-gradient(rgba(0,0,0," + (dim/100).toFixed(2) + "),rgba(0,0,0," + (dim/100).toFixed(2) + "))");
+    }
+    if(wp.customImg){
+      layers.push("url('" + wp.customImg + "')");
+      return "background-image:" + layers.join(",") + ";background-size:cover;background-position:center;";
+    }
+    if(wp.doodle){
+      layers.push("url(\"" + WA_DOODLE_SVG + "\")");
+    }
+    if(wp.bg && wp.bg.indexOf("gradient") > -1){
+      layers.push(wp.bg);
+      return "background-image:" + layers.join(",") + ";";
+    }
+    var imgPart = layers.length ? ("background-image:" + layers.join(",") + ";background-repeat:repeat;") : "";
+    return "background-color:" + (wp.bg || "#efeae2") + ";" + imgPart;
+  }
+
+  /* ٢) نافذة اختيار خلفية المحادثة طبق الأصل من واتساب */
+  window.openWaWallpaperModal = function(){
+    var old = $("md"); if(old) old.remove();
+    var curWp = getActiveWallpaper(S.curChatId);
+    S._wpTab = S._wpTab || "bright";
+    S._wpScope = S._wpScope || "this";
+    S._wpDraft = S._wpDraft || Object.assign({}, curWp);
+
+    var tab = S._wpTab;
+    var list = WA_WALLPAPERS[tab] || WA_WALLPAPERS.bright;
+    var d = document.createElement("div"); d.id = "md";
+    d.innerHTML = '<div class="mc" style="width:min(410px,95%);max-height:90vh;overflow-y:auto">' +
+      '<div class="row" style="margin-bottom:8px"><b class="grow">🎨 خلفية المحادثة (مثل واتساب)</b><button class="b d" style="min-height:30px;padding:2px 9px" onclick="S._wpDraft=null;document.getElementById(\'md\').remove()">×</button></div>' +
+      '<div style="height:105px;border-radius:12px;padding:10px;margin-bottom:10px;display:flex;flex-direction:column;justify-content:space-between;border:1px solid var(--ln);' + buildWpStyle(S._wpDraft) + '">' +
+        '<div style="background:#fff;color:#111;padding:4px 10px;border-radius:8px;align-self:flex-start;font-size:12px;box-shadow:0 1px 2px rgba(0,0,0,.15)">معاينة رسالة واردة 👋</div>' +
+        '<div style="background:#d9fdd3;color:#111;padding:4px 10px;border-radius:8px;align-self:flex-end;font-size:12px;box-shadow:0 1px 2px rgba(0,0,0,.15)">معاينة رسالتك أنت ✓✓</div>' +
+      '</div>' +
+      '<div class="grid" style="grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:8px">' +
+        '<button class="b '+(tab==="bright"?"":"s")+'" style="font-size:11px;padding:6px 4px" onclick="S._wpTab=\'bright\';openWaWallpaperModal()">☀️ مشرقة</button>' +
+        '<button class="b '+(tab==="dark"?"":"s")+'" style="font-size:11px;padding:6px 4px" onclick="S._wpTab=\'dark\';openWaWallpaperModal()">🌙 داكنة</button>' +
+        '<button class="b '+(tab==="solid"?"":"s")+'" style="font-size:11px;padding:6px 4px" onclick="S._wpTab=\'solid\';openWaWallpaperModal()">🎨 ألوان ثابتة</button>' +
+        '<button class="b s" style="font-size:11px;padding:6px 4px" onclick="pickCustomWaWallpaper()">🖼️ معرضي</button>' +
+      '</div>' +
+      '<div class="wa-wp-grid">' +
+        list.map(function(item){
+          var isSel = !S._wpDraft.customImg && S._wpDraft.bg === item.bg;
+          return '<div class="wa-wp-tile '+(isSel?'on':'')+'" style="' + buildWpStyle({bg:item.bg,doodle:item.doodle!==false,dim:0}) + '" onclick="selectWaPreset(\''+tab+'\',\''+item.id+'\')">' +
+            '<span style="background:rgba(0,0,0,.55);color:#fff;padding:1px 6px;border-radius:6px">' + esc(item.name) + '</span>' +
+          '</div>';
+        }).join("") +
+      '</div>' +
+      '<label class="row" style="margin:8px 0;cursor:pointer"><input type="checkbox" style="width:auto;margin:0" ' + (S._wpDraft.doodle ? 'checked' : '') + ' onchange="S._wpDraft.doodle=this.checked;openWaWallpaperModal()"> إظهار رسومات خلفية واتساب (Doodle)</label>' +
+      '<label>تعتيم الخلفية (' + (S._wpDraft.dim || 0) + '%)</label>' +
+      '<input type="range" min="0" max="75" value="' + (S._wpDraft.dim || 0) + '" onchange="S._wpDraft.dim=+this.value;openWaWallpaperModal()" style="margin:2px 0 8px">' +
+      '<div class="row" style="gap:6px;margin-bottom:10px">' +
+        '<button type="button" class="chip '+(S._wpScope==="this"?"on":"")+' grow" onclick="S._wpScope=\'this\';openWaWallpaperModal()">لهذه المحادثة فقط</button>' +
+        '<button type="button" class="chip '+(S._wpScope==="all"?"on":"")+' grow" onclick="S._wpScope=\'all\';openWaWallpaperModal()">لجميع المحادثات</button>' +
+      '</div>' +
+      '<div class="row">' +
+        '<button class="b grow" style="background:#15803d" onclick="applyWaWallpaper()">✅ تعيين الخلفية</button>' +
+        '<button class="b s" onclick="resetWaWallpaper()">↺ الافتراضية</button>' +
+      '</div>' +
+    '</div>';
+    document.body.appendChild(d);
+  };
+
+  window.selectWaPreset = function(tab, id){
+    var arr = WA_WALLPAPERS[tab] || [];
+    var found = arr.find(function(x){ return x.id === id; });
+    if(!found) return;
+    S._wpDraft.customImg = "";
+    S._wpDraft.bg = found.bg;
+    if(tab !== "solid") S._wpDraft.doodle = true;
+    openWaWallpaperModal();
+  };
+
+  window.pickCustomWaWallpaper = function(){
+    var inp = document.createElement("input");
+    inp.type = "file"; inp.accept = "image/*";
+    inp.onchange = function(){
+      var f = inp.files[0]; if(!f) return;
+      var r = new FileReader();
+      r.onload = function(){
+        var im = new Image();
+        im.onload = function(){
+          var k = Math.min(1, 1000 / Math.max(im.width, im.height));
+          var c = document.createElement("canvas");
+          c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+          c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+          S._wpDraft.customImg = c.toDataURL("image/jpeg", 0.78);
+          openWaWallpaperModal();
+        };
+        im.src = r.result;
+      };
+      r.readAsDataURL(f);
+    };
+    inp.click();
+  };
+
+  window.applyWaWallpaper = function(){
+    var st = getWpStore();
+    var copy = Object.assign({}, S._wpDraft);
+    if(S._wpScope === "all") st.global = copy;
+    else if(S.curChatId) st["chat_" + S.curChatId] = copy;
+    saveWpStore(st);
+    S._wpDraft = null;
+    var md = $("md"); if(md) md.remove();
+    toast("✅ تم تغيير خلفية المحادثة");
+    draw();
+  };
+
+  window.resetWaWallpaper = function(){
+    var st = getWpStore();
+    if(S._wpScope === "all") delete st.global;
+    else if(S.curChatId) delete st["chat_" + S.curChatId];
+    saveWpStore(st);
+    S._wpDraft = null;
+    var md = $("md"); if(md) md.remove();
+    toast("↺ تمت استعادة خلفية واتساب الافتراضية");
+    draw();
+  };
+
+  /* ٣) ميزات غرفة المحادثة المتقدمة: الرد على رسالة (بالسحب أو الزر) + البصمة الصوتية + التفاعلات السريعة */
+  window.setReplyMsg = function(mi){
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c || !c.msgs || !c.msgs[mi]) return;
+    var m = c.msgs[mi];
+    S.replyTo = {
+      id: m.id || ("idx_" + mi),
+      sender: m.sender || (m.e === S.email ? "أنت" : "مستخدم"),
+      t: m.t || (m.file ? ("📎 " + m.file.name) : "رسالة صوتية 🎤")
+    };
+    draw();
+    var mt = $("mt"); if(mt) mt.focus();
+  };
+
+  window.cancelReplyMsg = function(){
+    S.replyTo = null;
+    draw();
+  };
+
+  window.scrollToMsgId = function(msgId){
+    var el = document.querySelector('[data-msgid="'+msgId+'"]');
+    if(el){
+      el.scrollIntoView({behavior:"smooth", block:"center"});
+      el.style.outline = "2px solid #00a884";
+      setTimeout(function(){ el.style.outline = ""; }, 1400);
+    }
+  };
+
+  window.openMsgContextMenu = function(mi){
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c || !c.msgs || !c.msgs[mi]) return;
+    var m = c.msgs[mi];
+    var old = $("md"); if(old) old.remove();
+    var emojis = ["❤️","👍","😂","😮","🙏","👏"];
+    var d = document.createElement("div"); d.id = "md";
+    d.innerHTML = '<div class="mc" style="width:min(330px,92%);text-align:center">' +
+      '<div class="row" style="justify-content:center;gap:8px;margin-bottom:12px">' +
+        emojis.map(function(em){
+          return '<button type="button" class="b s" style="font-size:20px;min-width:42px;padding:4px" onclick="reactToMsg('+mi+',\''+em+'\')">'+em+'</button>';
+        }).join("") +
+      '</div>' +
+      '<div class="grid">' +
+        '<button class="b s" onclick="document.getElementById(\'md\').remove();setReplyMsg('+mi+')">↩️ رد على الرسالة</button>' +
+        '<button class="b s" onclick="document.getElementById(\'md\').remove();if(navigator.clipboard)navigator.clipboard.writeText(\''+esc(m.t||"").replace(/'/g,"\\'")+'\');toast(\'تم نسخ النص\')">📋 نسخ النص</button>' +
+      '</div>' +
+      (m.e === S.email ? '<button class="b d" style="width:100%;margin-top:8px" onclick="deleteMyMsg('+mi+')">🗑️ حذف الرسالة</button>' : '') +
+      '<button class="b s" style="width:100%;margin-top:8px" onclick="document.getElementById(\'md\').remove()">إغلاق</button>' +
+    '</div>';
+    document.body.appendChild(d);
+  };
+
+  window.reactToMsg = function(mi, emoji){
+    var md = $("md"); if(md) md.remove();
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c || !c.msgs || !c.msgs[mi]) return;
+    var m = c.msgs[mi];
+    m.reacts = m.reacts || {};
+    if(m.reacts[S.email] === emoji) delete m.reacts[S.email];
+    else m.reacts[S.email] = emoji;
+    if(window.fbSendRoomMessage && c.id !== "local_notes") window.fbSendRoomMessage(c, m);
+    saveAllUserStorage();
+    draw();
+  };
+
+  window.deleteMyMsg = function(mi){
+    var md = $("md"); if(md) md.remove();
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c || !c.msgs || !c.msgs[mi]) return;
+    c.msgs.splice(mi, 1);
+    saveAllUserStorage();
+    toast("🗑️ تم حذف الرسالة");
+    draw();
+  };
+
+  /* تسجيل البصمة الصوتية (Voice Note) وإرسالها داخل المحادثة مثل واتساب */
+  var _mediaRec = null, _audioChunks = [], _recStart = 0;
+  window.toggleVoiceNoteRec = async function(){
+    if(S._isRecVoice){
+      if(_mediaRec && _mediaRec.state !== "inactive"){
+        _mediaRec.stop();
+      }
+      S._isRecVoice = false;
+      draw();
+      return;
+    }
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      toast("المتصفح لا يدعم تسجيل المايكروفون");
+      return;
+    }
+    try {
+      var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      _audioChunks = [];
+      _mediaRec = new MediaRecorder(stream);
+      _recStart = Date.now();
+      S._isRecVoice = true;
+      draw();
+      toast("🎙️ جاري تسجيل بصمة صوتية... اضغط زر المايك الأحمر للإرسال");
+      _mediaRec.ondataavailable = function(e){
+        if(e.data && e.data.size > 0) _audioChunks.push(e.data);
+      };
+      _mediaRec.onstop = function(){
+        stream.getTracks().forEach(function(t){ t.stop(); });
+        var durSec = Math.max(1, Math.round((Date.now() - _recStart) / 1000));
+        var blob = new Blob(_audioChunks, { type: _mediaRec.mimeType || "audio/webm" });
+        if(blob.size > 680000){
+          toast("البصمة الصوتية طويلة جداً، سجل مقطعاً أقصر");
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(){
+          sendM({
+            name: "بصمة صوتية (" + durSec + " ثانية)",
+            isAudio: true,
+            mime: blob.type,
+            data: reader.result,
+            sizeTxt: durSec + " ث"
+          });
+        };
+        reader.readAsDataURL(blob);
+      };
+      _mediaRec.start();
+    } catch(err){
+      S._isRecVoice = false;
+      toast("تعذر الوصول للمايكروفون: تأكد من إعطاء الإذن");
+      draw();
+    }
+  };
+
+  /* السحب على الرسالة للرد السريع مثل واتساب (Swipe-to-Reply) */
+  function attachSwipeReplyHandlers(){
+    var body = $("waBody");
+    if(!body) return;
+    var startX = 0, startY = 0, activeBub = null, activeIdx = -1;
+    body.ontouchstart = function(e){
+      var bub = e.target.closest ? e.target.closest(".wa-bub") : null;
+      if(!bub) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      activeBub = bub;
+      activeIdx = Number(bub.getAttribute("data-mi"));
+    };
+    body.ontouchmove = function(e){
+      if(!activeBub) return;
+      var dx = e.touches[0].clientX - startX;
+      var dy = Math.abs(e.touches[0].clientY - startY);
+      if(dy > 35){ activeBub.style.transform = ""; activeBub = null; return; }
+      if(Math.abs(dx) > 12 && Math.abs(dx) < 75){
+        activeBub.style.transform = "translateX(" + (dx * 0.55) + "px)";
+      }
+    };
+    body.ontouchend = function(e){
+      if(!activeBub) return;
+      var endX = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientX : startX;
+      var dx = endX - startX;
+      activeBub.style.transform = "";
+      if(Math.abs(dx) > 52 && activeIdx >= 0){
+        setReplyMsg(activeIdx);
+      }
+      activeBub = null;
+      activeIdx = -1;
+    };
+  }
+
+  /* ٤) استبدال roomV و sendM بنسخة واتساب المتكاملة بملء الشاشة */
+  window.roomV = function(){
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; });
+    if(!c){ S.curChatId = null; return cListV(); }
+    if(window.fbWatchRoomMessages) window.fbWatchRoomMessages(c.id);
+    markChatRead(c);
+    var ms = c.msgs || [];
+    var wp = getActiveWallpaper(S.curChatId);
+    var styleStr = buildWpStyle(wp);
+
+    return '<div class="wa-room wa-fullscreen">' +
+      '<div class="wa-head">' +
+        '<button class="b s" style="min-height:34px;padding:4px 10px;background:rgba(255,255,255,.15);color:#fff" onclick="S.curChatId=null;S.replyTo=null;draw()">←</button>' +
+        avatarHtml(chatTitle(c), chatPhoto(c)) +
+        '<div class="grow" style="overflow:hidden"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(c.g?'👥 ':'')+esc(chatTitle(c))+'</b>' +
+          '<div style="font-size:11px;opacity:.88">'+(c.g ? ((c.members?c.members.length:1)+' أعضاء · اسحب أي رسالة للرد عليها') : (chatPeerHandle(c) || 'متصل · اسحب الرسالة للرد'))+'</div>' +
+        '</div>' +
+        '<button class="b s" style="min-height:34px;padding:4px 9px;background:rgba(255,255,255,.18);color:#fff" onclick="openWaWallpaperModal()" title="تغيير خلفية المحادثة">🎨 خلفية</button>' +
+        (c.g ? '<button class="b s" style="min-height:34px;padding:4px 9px;background:rgba(255,255,255,.18);color:#fff" onclick="openChatPicker(\'add_member\')">+ عضو</button>' : '') +
+      '</div>' +
+      '<div class="wa-body" id="waBody" style="' + styleStr + '">' +
+        (ms.length ? ms.map(function(m, mi){
+          if(m.isSys || m.e === "sys"){
+            return '<div style="text-align:center;font-size:11px;color:#111;background:rgba(255,255,255,.85);padding:3px 10px;border-radius:99px;align-self:center;margin:4px 0;box-shadow:0 1px 2px rgba(0,0,0,.1)">'+esc(m.t)+'</div>';
+          }
+          var me = m.e === S.email;
+          var timeStr = m.at ? new Date(m.at).toLocaleTimeString("ar-IQ",{hour:"2-digit",minute:"2-digit"}) : "";
+          var replyHtml = "";
+          if(m.replyTo){
+            replyHtml = '<div class="wa-reply-quote" onclick="scrollToMsgId(\''+esc(m.replyTo.id||"")+'\')">' +
+              '<b style="color:#00a884;display:block">' + esc(m.replyTo.sender || "") + '</b>' +
+              '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85">' + esc(m.replyTo.t || "") + '</div>' +
+            '</div>';
+          }
+          var fileHtml = "";
+          if(m.file){
+            if(m.file.isAudio && m.file.data){
+              fileHtml = '<div style="margin-top:5px;min-width:210px"><audio controls src="'+m.file.data+'" style="width:100%;height:34px"></audio></div>';
+            }else if(m.file.isImg && m.file.data){
+              fileHtml = '<div style="margin-top:5px"><img src="'+m.file.data+'" alt="" style="max-width:100%;max-height:220px;border-radius:10px;display:block">' +
+                '<button type="button" class="b s" style="width:100%;margin-top:5px;min-height:30px;padding:3px;font-size:11px" onclick="downloadChatAttachment('+mi+')">⬇️ حفظ الصورة</button></div>';
+            }else{
+              fileHtml = '<div class="wa-file-box">' +
+                '<div class="row"><span style="font-size:22px">📄</span><div class="grow" style="overflow:hidden"><b style="display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(m.file.name)+'</b><span style="font-size:11px;opacity:.8">'+esc(m.file.sizeTxt||'ملف مرفق')+'</span></div></div>' +
+                '<div class="grid" style="margin-top:6px">' +
+                  '<button type="button" class="b s" style="min-height:30px;padding:2px 6px;font-size:12px" onclick="openChatAttachmentInApp('+mi+')">👁️ فتح</button>' +
+                  '<button type="button" class="b s" style="min-height:30px;padding:2px 6px;font-size:12px" onclick="downloadChatAttachment('+mi+')">⬇️ تنزيل</button>' +
+                '</div>' +
+              '</div>';
+            }
+          }
+          var reactsObj = m.reacts || {};
+          var reactVals = Object.keys(reactsObj).map(function(k){ return reactsObj[k]; });
+          var reactHtml = reactVals.length ? '<div class="wa-react-bar" onclick="openMsgContextMenu('+mi+')">' + reactVals.join(" ") + '</div>' : '';
+
+          return '<div class="wa-bub '+(me?'out':'in')+'" data-mi="'+mi+'" data-msgid="'+esc(m.id||("idx_"+mi))+'" ondblclick="setReplyMsg('+mi+')">' +
+            (c.g && !me ? '<div style="font-size:11px;font-weight:800;color:#00a884;margin-bottom:2px">'+esc(m.sender)+'</div>' : '') +
+            replyHtml +
+            (m.t ? '<div>'+esc(m.t)+'</div>' : '') +
+            fileHtml +
+            '<div class="wa-bub-actions">' +
+              '<button type="button" class="wa-act-btn" title="رد" onclick="setReplyMsg('+mi+')">↩️</button>' +
+              '<button type="button" class="wa-act-btn" title="تفاعل وخيارات" onclick="openMsgContextMenu('+mi+')">☺️</button>' +
+              '<span>'+timeStr+(me?(m._fail?' ⚠️':(m._pend?' 🕓':' ✓✓')):'')+'</span>' +
+            '</div>' +
+            reactHtml +
+          '</div>';
+        }).join("") : '<div style="text-align:center;margin:24px auto;background:rgba(255,255,255,.88);color:#222;padding:8px 14px;border-radius:12px;font-size:12px;max-width:85%">🔒 الرسائل والملفات والبصمات الصوتية محفوظة بأمان. ابدأ المحادثة الآن!</div>') +
+      '</div>' +
+      (S.replyTo ? '<div class="wa-reply-bar">' +
+        '<div class="wa-reply-bar-inner"><b style="color:#00a884;display:block">الرد على: '+esc(S.replyTo.sender)+'</b><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(S.replyTo.t)+'</div></div>' +
+        '<button type="button" class="b d" style="min-height:28px;padding:2px 8px" onclick="cancelReplyMsg()">×</button>' +
+      '</div>' : '') +
+      '<div class="wa-foot">' +
+        '<button type="button" class="b s" style="min-height:40px;padding:0 11px;font-size:18px;border-radius:50%" title="إرفاق ملف أو صورة" onclick="attachChatFile()">📎</button>' +
+        '<button type="button" class="b s wa-rec-btn '+(S._isRecVoice?'rec-on':'')+'" style="min-height:40px;padding:0 11px;font-size:17px;border-radius:50%" title="تسجيل بصمة صوتية" onclick="toggleVoiceNoteRec()">🎤</button>' +
+        '<input id="mt" class="grow" style="margin:0" placeholder="اكتب رسالة..." onkeydown="if(event.key==\'Enter\')sendM()">' +
+        '<button type="button" class="b" style="min-height:40px;padding:0 14px;border-radius:20px;background:#00a884" onclick="sendM()">إرسال</button>' +
+      '</div>' +
+    '</div>';
+  };
+
+  window.sendM = function(fileObj){
+    var e = $("mt"), t = e ? e.value.trim() : "";
+    if(!t && !fileObj) return;
+    var c = S.cv.find(function(x){ return x.id === S.curChatId; }); if(!c) return;
+    if(e) e.value = "";
+    var msgId = "m_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
+    var msg = {
+      id: msgId,
+      e: S.email,
+      sender: S.dispName || S.email.split("@")[0],
+      t: t,
+      file: fileObj || null,
+      replyTo: S.replyTo || null,
+      at: Date.now()
+    };
+    S.replyTo = null;
+    c.msgs = c.msgs || [];
+    c.msgs.push(msg);
+    c.lastPreview = fileObj ? (fileObj.isAudio ? "🎤 بصمة صوتية" : ("📎 " + fileObj.name)) : t;
+    c.updatedAt = msg.at;
+    c.lastFrom = S.email;
+    if(window.fbSendRoomMessage) window.fbSendRoomMessage(c, msg);
+    else if(window.fbSaveChatRoom) window.fbSaveChatRoom(c);
+    saveAllUserStorage();
+    draw();
+    setTimeout(function(){ var wb=$("waBody"); if(wb) wb.scrollTop=wb.scrollHeight; }, 30);
+  };
+
+  /* ٥) إصلاح زر الرجوع في الجهاز (History Stack + popstate) ليرجع خطوة للخلف دائماً */
+  var _isHandlingPop = false;
+  var _lastSnapKey = "";
+
+  function getNavSnap(){
+    return {
+      role: S.role,
+      tab: S.tab,
+      curChatId: S.curChatId,
+      proPortal: S.proPortal,
+      scnDocId: S.scnDocId,
+      openMat: S.openMat ? 1 : 0,
+      profileOpen: !!S.profileOpen,
+      subv: S.subv || 0,
+      gw: S.gw ? S.gw.view : null
+    };
+  }
+
+  var _origDraw = window.draw;
+  window.draw = function(){
+    _origDraw();
+    var inFullChat = (S.curChatId !== null) && ((S.role === "pro" && S.tab === 5) || (S.role === "stu" && S.tab === 4));
+    var hdr = document.querySelector("#app > header");
+    var nav = document.querySelector("#app > nav");
+    if(hdr) hdr.style.display = inFullChat ? "none" : "";
+    if(nav) nav.style.display = inFullChat ? "none" : "";
+    if(inFullChat){
+      attachSwipeReplyHandlers();
+      setTimeout(function(){ var wb = $("waBody"); if(wb) wb.scrollTop = wb.scrollHeight; }, 20);
+    }
+
+    if(!_isHandlingPop && S.authReady && S.uid){
+      var snap = getNavSnap();
+      var key = JSON.stringify(snap);
+      if(_lastSnapKey && _lastSnapKey !== key){
+        try { history.pushState(snap, ""); } catch(e){}
+      } else if(!_lastSnapKey){
+        try { history.replaceState(snap, ""); } catch(e){}
+      }
+      _lastSnapKey = key;
+    }
+  };
+
+  window.addEventListener("popstate", function(e){
+    e.stopImmediatePropagation();
+    _isHandlingPop = true;
+    var md = $("md");
+    if(md){ md.remove(); S.chatModal = null; S._wpDraft = null; _isHandlingPop = false; try{history.pushState(getNavSnap(), "");}catch(err){} return; }
+    if(S.profileOpen){ S.profileOpen = false; draw(); _isHandlingPop = false; return; }
+    if(S.subv){ S.subv = 0; draw(); _isHandlingPop = false; return; }
+    if(S.curChatId !== null){ S.curChatId = null; S.replyTo = null; draw(); _isHandlingPop = false; return; }
+    if(S.scnPrintDoc){ S.scnPrintDoc = null; draw(); _isHandlingPop = false; return; }
+    if(S.scnEd){ S.scnEd = null; draw(); _isHandlingPop = false; return; }
+    if(S.scnDocId !== null){ setOpenScnDoc(null); draw(); _isHandlingPop = false; return; }
+    if(S.openMat !== null){ S.openMat = null; S.out = ""; S.quiz = null; draw(); _isHandlingPop = false; return; }
+    if(S.pp !== null || S.bk !== null || S.gw !== null){ S.pp = null; S.bk = null; S.gw = null; draw(); _isHandlingPop = false; return; }
+    if(S.proPortal !== null){ S.proPortal = null; draw(); _isHandlingPop = false; return; }
+    if(S.role !== null && S.tab > 0){ S.tab = 0; draw(); _isHandlingPop = false; return; }
+    if(S.role !== null){
+      try { history.pushState(getNavSnap(), ""); } catch(err){}
+      toast("أنت في الصفحة الرئيسية · للتبديل بين الأستاذ والطالب اضغط زر 🔄 بالأعلى");
+      _isHandlingPop = false;
+      return;
+    }
+    _isHandlingPop = false;
+  }, true);
+})();
+</script>
+
 </body>
 </html>
