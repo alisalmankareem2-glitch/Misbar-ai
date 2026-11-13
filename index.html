@@ -3263,23 +3263,6 @@ function addG(){S.pend=$("gi").value;var m,re=/([^\d\s]+(?:\s[^\d\s]+)*)\s*(\d+(
 /* ============================================================================
    [الأساس ٨] نظام الاتصال الصوتي والمرئي (WebRTC + Firebase Signaling)
    ============================================================================ */
-var RTC = {
-  pc: null,
-  localStream: null,
-  remoteStream: null,
-  callId: null,
-  isCaller: false,
-  peerEmail: null,
-  callType: 'audio', // 'audio' or 'video'
-  unsubs: []
-};
-
-var iceServers = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' }
-  ]
-};
 
 function renderCallUI(){
   var old = $("callModal"); if(old) old.remove();
@@ -3289,28 +3272,132 @@ function renderCallUI(){
   var u = findUserByEmail(RTC.peerEmail) || {email: RTC.peerEmail};
   var disp = u.name || u.username || RTC.peerEmail.split("@")[0];
   
-  d.innerHTML = '<div style="position:fixed;inset:0;background:#0f172a;z-index:9999;display:flex;flex-direction:column;color:#fff;font-family:Cairo,sans-serif">' +
-    '<div style="padding:40px 20px;text-align:center;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative">' +
+  var waWp = 'background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'120\' height=\'120\' viewBox=\'0 0 120 120\'%3E%3Cg fill=\'none\' stroke=\'%23ffffff\' stroke-opacity=\'0.05\' stroke-width=\'1.6\' stroke-linecap=\'round\'%3E%3Ccircle cx=\'22\' cy=\'22\' r=\'8\'/%3E%3Cpath d=\'M60 15l8 14H52z\'/%3E%3Crect x=\'88\' y=\'14\' width=\'14\' height=\'14\' rx=\'3\'/%3E%3Cpath d=\'M16 66c6-6 14-6 20 0M54 62h18v12H54zM92 58l10 10-10 10-10-10z\'/%3E%3Ccircle cx=\'28\' cy=\'100\' r=\'6\'/%3E%3Cpath d=\'M58 96c4-5 12-5 16 0s12 5 16 0\'/%3E%3C/g%3E%3C/svg%3E");background-color:#0b141a;';
+
+  d.innerHTML = '<div style="position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;color:#fff;font-family:Cairo,sans-serif;' + waWp + '">' +
+    
+    // Top Bar
+    '<div style="display:flex;align-items:center;padding:env(safe-area-inset-top, 20px) 16px 10px;background:linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%);z-index:10">' +
+       '<button style="background:transparent;border:none;color:#fff;font-size:24px;padding:8px" onclick="endCall()">🡣</button>' +
+       '<div style="flex:1;text-align:center">' +
+          '<div style="font-size:18px;font-weight:700">' + esc(disp) + '</div>' +
+          '<div style="font-size:12px;color:#a8b3b9;display:flex;align-items:center;justify-content:center;gap:4px">🔒 مشفرة تماماً بين الطرفين</div>' +
+       '</div>' +
+       '<button style="background:transparent;border:none;color:#fff;font-size:24px;padding:8px">👥+</button>' +
+    '</div>' +
+
+    // Video Containers
+    '<div style="flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center">' +
       '<div id="remoteVideoContainer" style="position:absolute;inset:0;background:#000;display:'+(isVideo?'block':'none')+';z-index:1">' +
          '<video id="remoteVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover"></video>' +
       '</div>' +
-      '<div style="position:relative;z-index:2;width:100%;text-align:center;text-shadow:0 2px 10px rgba(0,0,0,0.5)">' +
-        '<div id="callAvatar" style="transform:scale(2.5);margin-bottom:30px;transition:0.3s">'+avatarHtml(disp, u.photo)+'</div>' +
-        '<h2 style="margin:0;font-size:28px">'+esc(disp)+'</h2>' +
-        '<div id="callStatus" style="font-size:16px;color:#cbd5e1;margin-top:8px">جاري الاتصال...</div>' +
+      
+      // Avatar Center (Hidden in active video)
+      '<div id="callAvatarCenter" style="position:relative;z-index:2;width:100%;text-align:center;transition:0.3s">' +
+        '<div style="transform:scale(3.5);margin:0 auto 40px">' + avatarHtml(disp, u.photo) + '</div>' +
+        '<div id="callStatus" style="font-size:16px;color:#cbd5e1;margin-top:20px;text-shadow:0 1px 4px rgba(0,0,0,0.8)">' + (RTC.isCaller ? 'جاري الاتصال...' : 'مكالمة واردة...') + '</div>' +
       '</div>' +
-      '<div id="localVideoContainer" style="position:absolute;bottom:120px;right:20px;width:100px;height:150px;background:#333;border-radius:12px;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.3);display:'+(isVideo?'block':'none')+';z-index:3">' +
+      
+      '<div id="localVideoContainer" style="position:absolute;bottom:20px;right:20px;width:110px;height:160px;background:#333;border-radius:12px;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.4);border:2px solid #333;display:'+(isVideo?'block':'none')+';z-index:3">' +
          '<video id="localVideo" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1)"></video>' +
       '</div>' +
     '</div>' +
-    '<div style="padding:30px 20px;background:linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);display:flex;justify-content:center;gap:24px;z-index:2">' +
-       '<button id="btnEndCall" style="width:64px;height:64px;border-radius:50%;background:#ef4444;color:#fff;border:none;font-size:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 15px rgba(239,68,68,0.4)" onclick="endCall()">📞</button>' +
-       '<button id="btnAcceptCall" style="width:64px;height:64px;border-radius:50%;background:#22c55e;color:#fff;border:none;font-size:28px;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 15px rgba(34,197,94,0.4)" onclick="answerCall()">📞</button>' +
+    
+    // Bottom Controls Panel (WhatsApp Style)
+    '<div id="callControlPanel" style="background:#1f2c34;border-top-left-radius:24px;border-top-right-radius:24px;padding:24px 20px env(safe-area-inset-bottom, 24px);z-index:10;display:flex;flex-direction:column;gap:20px">' +
+       
+       // Row 1
+       '<div style="display:flex;justify-content:space-around;align-items:center">' +
+          '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">' +
+             '<button id="btnMute" style="width:52px;height:52px;border-radius:50%;background:#374045;color:#fff;border:none;font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="toggleMute()">🎙️</button>' +
+             '<span style="font-size:12px;color:#a8b3b9">كتم</span>' +
+          '</div>' +
+          '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">' +
+             '<button id="btnVideo" style="width:52px;height:52px;border-radius:50%;background:#374045;color:#fff;border:none;font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="toggleVideo()">'+(isVideo?'📹':'📷')+'</button>' +
+             '<span style="font-size:12px;color:#a8b3b9">فيديو</span>' +
+          '</div>' +
+          '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">' +
+             '<button id="btnSpeaker" style="width:52px;height:52px;border-radius:50%;background:#374045;color:#fff;border:none;font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="toggleSpeaker()">🔊</button>' +
+             '<span style="font-size:12px;color:#a8b3b9">السماعة</span>' +
+          '</div>' +
+       '</div>' +
+       
+       // Row 2
+       '<div style="display:flex;justify-content:space-around;align-items:center">' +
+          '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">' +
+             '<button style="width:52px;height:52px;border-radius:50%;background:#ef4444;color:#fff;border:none;font-size:28px;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="endCall()">📞</button>' +
+             '<span style="font-size:12px;color:#a8b3b9">إنهاء</span>' +
+          '</div>' +
+          '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">' +
+             '<button style="width:52px;height:52px;border-radius:50%;background:#374045;color:#fff;border:none;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer">⬆️</button>' +
+             '<span style="font-size:12px;color:#a8b3b9">المشاركة</span>' +
+          '</div>' +
+          '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">' +
+             '<button style="width:52px;height:52px;border-radius:50%;background:#374045;color:#fff;border:none;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer">⋯</button>' +
+             '<span style="font-size:12px;color:#a8b3b9">المزيد</span>' +
+          '</div>' +
+       '</div>' +
+
+       // Accept Button (Overlay for incoming)
+       '<div id="incomingControls" style="position:absolute;bottom:40px;left:0;right:0;display:none;justify-content:center;gap:40px;align-items:center">' +
+          '<button style="width:70px;height:70px;border-radius:50%;background:#ef4444;color:#fff;border:none;font-size:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 15px rgba(239,68,68,0.4);transform:rotate(135deg)" onclick="endCall()">📞</button>' +
+          '<button style="width:70px;height:70px;border-radius:50%;background:#22c55e;color:#fff;border:none;font-size:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 15px rgba(34,197,94,0.4);animation:pulse-green 1.5s infinite" onclick="answerCall()">📞</button>' +
+       '</div>' +
+
     '</div>' +
     '<audio id="ringbackTone" loop src="https://assets.mixkit.co/active_storage/sfx/2188/2188-preview.mp3"></audio>' +
     '<audio id="ringtone" loop src="https://assets.mixkit.co/active_storage/sfx/2187/2187-preview.mp3"></audio>' +
+    '<style>@keyframes pulse-green{0%{box-shadow:0 0 0 0 rgba(34,197,94,0.7)}70%{box-shadow:0 0 0 15px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}</style>' +
   '</div>';
   document.body.appendChild(d);
+  
+  if(!RTC.isCaller){
+      document.getElementById("callControlPanel").style.visibility = "hidden";
+      document.getElementById("incomingControls").style.display = "flex";
+  }
+}
+
+var RTC = {
+  pc: null, localStream: null, remoteStream: null, callId: null, isCaller: false, peerEmail: null, callType: 'audio',
+  unsubs: [], isMuted: false, isVideoOff: false
+};
+
+var iceServers = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' }
+  ]
+};
+
+function toggleMute(){
+  if(RTC.localStream){
+    RTC.isMuted = !RTC.isMuted;
+    RTC.localStream.getAudioTracks().forEach(function(t){ t.enabled = !RTC.isMuted; });
+    var b = document.getElementById("btnMute");
+    if(b) b.style.background = RTC.isMuted ? "#ef4444" : "#374045";
+  }
+}
+function toggleVideo(){
+  if(RTC.localStream){
+    RTC.isVideoOff = !RTC.isVideoOff;
+    RTC.localStream.getVideoTracks().forEach(function(t){ t.enabled = !RTC.isVideoOff; });
+    var b = document.getElementById("btnVideo");
+    if(b) b.style.background = RTC.isVideoOff ? "#ef4444" : "#374045";
+  }
+}
+function toggleSpeaker(){
+  var rv = document.getElementById("remoteVideo");
+  if(rv && rv.srcObject){
+    // Web Audio speaker toggle is tricky on mobile web, but we can visually toggle the button
+    var b = document.getElementById("btnSpeaker");
+    if(b){
+      if(b.style.background === "rgb(239, 68, 68)") b.style.background = "#374045";
+      else b.style.background = "#ef4444";
+    }
+  }
 }
 
 function startCall(peerEmail, isVideo){
@@ -3318,6 +3405,8 @@ function startCall(peerEmail, isVideo){
   RTC.peerEmail = peerEmail;
   RTC.callType = isVideo ? 'video' : 'audio';
   RTC.isCaller = true;
+  RTC.isMuted = false;
+  RTC.isVideoOff = false;
   RTC.callId = "call_" + Date.now() + "_" + Math.random().toString(36).slice(2,8);
   
   renderCallUI();
@@ -3343,8 +3432,8 @@ function startCall(peerEmail, isVideo){
         if(!data || data.status === 'ended' || data.status === 'rejected'){
            endCall(true);
         } else if(data.status === 'answered' && data.answer){
-           if(RTC.pc.signalingState !== "stable"){
-             RTC.pc.setRemoteDescription(new RTCSessionDescription(data.answer)).catch(function(){});
+           if(RTC.pc && RTC.pc.signalingState !== "stable" && RTC.pc.signalingState !== "closed"){
+             RTC.pc.setRemoteDescription(new RTCSessionDescription(data.answer)).catch(function(e){ console.log("SetRemote error", e); });
            }
         }
       }));
@@ -3359,11 +3448,10 @@ function handleIncomingCall(callId, data){
   RTC.peerEmail = data.caller;
   RTC.callType = data.type;
   RTC.isCaller = false;
+  RTC.isMuted = false;
+  RTC.isVideoOff = false;
   
   renderCallUI();
-  document.getElementById("callStatus").innerText = "مكالمة " + (RTC.callType==='video'?'فيديو':'صوتية') + " واردة...";
-  document.getElementById("btnAcceptCall").style.display = "flex";
-  document.getElementById("btnEndCall").style.transform = "rotate(135deg)";
   var rt = document.getElementById("ringtone"); if(rt) rt.play().catch(function(){});
   
   var callDoc = window.fbGetDocRef("calls", RTC.callId);
@@ -3377,8 +3465,8 @@ function handleIncomingCall(callId, data){
 
 function answerCall(){
   var rt = document.getElementById("ringtone"); if(rt) { rt.pause(); rt.currentTime=0; }
-  document.getElementById("btnAcceptCall").style.display = "none";
-  document.getElementById("btnEndCall").style.transform = "none";
+  document.getElementById("incomingControls").style.display = "none";
+  document.getElementById("callControlPanel").style.visibility = "visible";
   document.getElementById("callStatus").innerText = "جاري الاتصال...";
   
   navigator.mediaDevices.getUserMedia({ video: RTC.callType === 'video', audio: true }).then(function(stream){
@@ -3391,6 +3479,18 @@ function answerCall(){
   }).catch(function(e){ toast("تعذر الوصول للمايكروفون/الكاميرا"); endCall(); });
 }
 
+var callTimerInt = null;
+var callSeconds = 0;
+function updateCallTimer(){
+  var cs = document.getElementById("callStatus");
+  if(cs){
+    var min = Math.floor(callSeconds / 60);
+    var sec = callSeconds % 60;
+    cs.innerText = (min<10?'0':'') + min + ":" + (sec<10?'0':'') + sec;
+    callSeconds++;
+  }
+}
+
 function setupWebRTC(){
   RTC.pc = new RTCPeerConnection(iceServers);
   
@@ -3400,17 +3500,20 @@ function setupWebRTC(){
   
   RTC.pc.ontrack = function(event){
     var rv = document.getElementById("remoteVideo");
+    var isVid = RTC.callType === 'video';
+    
     if(rv){
        rv.srcObject = event.streams[0];
-       document.getElementById("callAvatar").style.display = "none";
-       document.getElementById("callStatus").innerText = "00:00"; // Can add timer later
-    } else {
-       // Audio only fallback if video element missing
-       var aud = new Audio();
-       aud.autoplay = true;
-       aud.srcObject = event.streams[0];
-       document.getElementById("callStatus").innerText = "متصل 🎤";
+       if(isVid) {
+           document.getElementById("callAvatarCenter").style.display = "none";
+           rv.parentElement.style.display = "block";
+       }
+       if(!callTimerInt){
+           callSeconds = 0;
+           callTimerInt = setInterval(updateCallTimer, 1000);
+       }
     }
+    
     var rb = document.getElementById("ringbackTone"); if(rb) { rb.pause(); rb.currentTime=0; }
     var rt = document.getElementById("ringtone"); if(rt) { rt.pause(); rt.currentTime=0; }
   };
@@ -3421,7 +3524,7 @@ function setupWebRTC(){
   
   RTC.pc.onicecandidate = function(event){
     if(event.candidate){
-      window.fbAddDoc(candCol, event.candidate.toJSON());
+      window.fbAddDoc(candCol, event.candidate.toJSON()).catch(function(){});
     }
   };
   
@@ -3430,7 +3533,7 @@ function setupWebRTC(){
       return RTC.pc.setLocalDescription(offer);
     }).then(function(){
       return window.fbUpdateDoc(callDoc, { offer: { type: RTC.pc.localDescription.type, sdp: RTC.pc.localDescription.sdp } });
-    });
+    }).catch(function(e){ console.log("Offer err", e); });
   } else {
     window.fbGetDoc(callDoc).then(function(snap){
       var data = snap.data();
@@ -3445,14 +3548,16 @@ function setupWebRTC(){
         answer: { type: RTC.pc.localDescription.type, sdp: RTC.pc.localDescription.sdp },
         status: 'answered'
       });
-    });
+    }).catch(function(e){ console.log("Answer err", e); });
   }
   
   RTC.unsubs.push(window.fbOnSnapshot(remoteCandCol, function(snap){
     snap.docChanges().forEach(function(change){
       if(change.type === "added"){
         var cand = new RTCIceCandidate(change.doc.data());
-        RTC.pc.addIceCandidate(cand).catch(function(){});
+        if(RTC.pc && RTC.pc.signalingState !== "closed"){
+           RTC.pc.addIceCandidate(cand).catch(function(e){ console.log("Ice err", e); });
+        }
       }
     });
   }));
@@ -3462,6 +3567,8 @@ function endCall(isRemote){
   if(!RTC.callId) return;
   var rb = document.getElementById("ringbackTone"); if(rb) { rb.pause(); rb.currentTime=0; }
   var rt = document.getElementById("ringtone"); if(rt) { rt.pause(); rt.currentTime=0; }
+  clearInterval(callTimerInt);
+  callTimerInt = null;
   
   if(RTC.localStream){
     RTC.localStream.getTracks().forEach(function(track){ track.stop(); });
@@ -3476,13 +3583,12 @@ function endCall(isRemote){
   
   if(!isRemote && RTC.callId){
      var callDoc = window.fbGetDocRef("calls", RTC.callId);
-     window.fbUpdateDoc(callDoc, { status: RTC.isCaller && document.getElementById("btnAcceptCall") ? 'canceled' : 'ended' }).catch(function(){});
+     window.fbUpdateDoc(callDoc, { status: RTC.isCaller && document.getElementById("incomingControls") && document.getElementById("incomingControls").style.display === "none" ? 'canceled' : 'ended' }).catch(function(){});
   }
   
   RTC.callId = null;
   var mod = document.getElementById("callModal"); if(mod) mod.remove();
 }
-
 /* ==================== دمج الذكاء الاصطناعي ومختبر النص في أيقونة واحدة ==================== */
 function aiAndTextV(){
   var sub = S.aiSubTab || "ai";
