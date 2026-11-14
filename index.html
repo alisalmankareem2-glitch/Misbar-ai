@@ -171,7 +171,7 @@ header{background:color-mix(in srgb,var(--sf) 80%,transparent);backdrop-filter:b
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.55.1";
+var APP_VERSION = "2.55.2";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -280,7 +280,7 @@ document.addEventListener("visibilitychange", function(){ if (!document.hidden) 
    ============================================================================ */
 var S={
   authReady:false,uid:null,email:"",dispName:"",isOwner:false,username:"",customName:"",profLoaded:false,profileOpen:false,foundUsers:[],usersErr:"",
-  role:null,tab:0,taps:0,code:"1234",
+  role:null,tab:0,taps:0,code:(function(){try{return localStorage.getItem("misbar_ocode")||"1234"}catch(e){return "1234"}})(),
   userAiKey:"",busy:false,awaitingAutoKey:false,
   driveToken:"",driveFolderId:"",driveFileId:"",driveSyncing:false,driveLastSync:"",
   updatedAt:0,
@@ -635,7 +635,7 @@ var $=function(i){return document.getElementById(i)},tmr;
 function toast(t){var e=$("toast");e.textContent=t;e.style.display="block";clearTimeout(tmr);tmr=setTimeout(function(){e.style.display="none"},2600)}
 function ask(l,cb,pw,defVal){
   var d=document.createElement("div");d.id="md";
-  d.innerHTML='<div class="mc"><b>'+l+'</b><input id="mi" '+(pw?'type="password" inputmode="numeric" ':'')+'value="'+esc(defVal||"")+'"><div class="row"><button class="b grow" id="mk">موافق</button><button class="b s grow" id="mx">إلغاء</button></div></div>';
+  d.innerHTML='<div class="mc"><b>'+l+'</b><input id="mi" '+(pw?'type="password" '+(pw===1?'inputmode="numeric" ':'autocapitalize="off" autocomplete="off" '):'')+'value="'+esc(defVal||"")+'"><div class="row"><button class="b grow" id="mk">موافق</button><button class="b s grow" id="mx">إلغاء</button></div></div>';
   document.body.appendChild(d);var i=$("mi");i.focus();
   function c(){d.remove()}$("mx").onclick=c;
   $("mk").onclick=function(){var v=i.value.trim();c();if(v)cb(v)};
@@ -864,7 +864,7 @@ function tab(i){
 }
 function hat(){
   S.taps++;clearTimeout(S._t);S._t=setTimeout(function(){S.taps=0},2000);
-  if(S.taps>=5){S.taps=0;ask("أدخل رمز المالك",function(c){if(c===S.code)setRole("own");else toast("الرمز غير صحيح")},1)}
+  if(S.taps>=5){S.taps=0;ask("أدخل رمز المالك",function(c){if(c===S.code)setRole("own");else toast("الرمز غير صحيح")},2)}
 }
 function head(t){
   var me = findUserByEmail(S.email);
@@ -6424,7 +6424,7 @@ function reqV(){
 function plansV(){
   return '<h2>الباقات</h2>'+S.plans.map(function(x,i){return '<div class="card"><label>اسم الباقة</label><input value="'+esc(x.n)+'" onchange="S.plans['+i+'].n=this.value;draw()"><div class="grid"><div><label>السعر (د.ع)</label><input type="number" value="'+x.p+'" onchange="S.plans['+i+'].p=this.value"></div><div><label>المدة</label><div class="row"><input type="number" min="1" value="'+x.v+'" onchange="S.plans['+i+'].v=+this.value||1;draw()"><select onchange="S.plans['+i+'].u=this.value;draw()">'+["يوم","أسبوع","شهر"].map(function(u){return '<option'+(u==x.u?' selected':'')+'>'+u+'</option>'}).join("")+'</select></div></div></div><label>المميزات (تظهر للمستخدم)</label><textarea rows="2" onchange="S.plans['+i+'].f=this.value">'+esc(x.f||"")+'</textarea><div class="row"><span class="grow">إظهار الباقة للمستخدمين</span><button class="tog'+(x.hide?'':' on')+'" onclick="S.plans['+i+'].hide=!S.plans['+i+'].hide;draw()"></button></div><button class="b d" style="margin-top:8px" onclick="S.plans.splice('+i+',1);draw()">حذف الباقة</button></div>'}).join("")+'<button class="b" onclick="S.plans.push({n:\'باقة جديدة\',p:0,v:1,u:\'شهر\'});draw()">+ إضافة باقة</button><button class="b" style="width:100%;margin-top:8px" onclick="savePlans()">💾 حفظ الباقات ونشرها</button><h2>المشتركون الفعالون</h2>'+S.subs.map(function(s){var on=s.end>Date.now();return '<div class="card row"><span class="grow" dir="ltr">'+esc(s.e)+'<div class="mu" dir="rtl">'+esc(s.n)+' · '+(on?'ينتهي ':'منتهي ')+fd(s.end)+'</div></span></div>'}).join("")+'<div class="card" style="border-inline-start:4px solid #8b5cf6"><b>⚙️ إعدادات التطبيق العامة (للمالك)</b><label style="margin-top:8px">عدد المحاولات التجريبية المجانية (لكل مستخدم جديد)</label><input type="number" value="'+S.free+'" onchange="if(window.fbSaveAppConfig) window.fbSaveAppConfig({freeLimit: Number(this.value)})"><div class="mu">يتم تطبيق هذا التغيير فوراً على جميع مستخدمي التطبيق عبر السحابة. (إذا وضعت 0 فلن يتمكن أحد من تجربة التطبيق مجاناً).</div></div>';
 }
-function changeCode(){ask("اكتب الرمز الحالي",function(o){if(o!==S.code){toast("الرمز الحالي غير صحيح");return}ask("اكتب الرمز الجديد (4 أرقام أو أكثر)",function(n){if(n.length<4){toast("الرمز قصير");return}S.code=n;toast("تم تغيير الرمز")},1)},1)}
+function changeCode(){ask("اكتب الرمز الحالي",function(o){if(o!==S.code){toast("الرمز الحالي غير صحيح");return}ask("اكتب الرمز الجديد (4 خانات أو أكثر، حروف وأرقام)",function(n){if(n.length<4){toast("الرمز قصير");return}S.code=n;try{localStorage.setItem("misbar_ocode",n)}catch(e){}toast("تم تغيير الرمز وحُفظ على هذا الجهاز")},2)},2)}
 
 /* ===== إعداد سيرفر الاتصال TURN (يظهر للمالك فقط) ===== */
 function turnCardV(){
