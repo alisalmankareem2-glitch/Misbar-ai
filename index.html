@@ -126,7 +126,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.33.1";
+var APP_VERSION = "2.33.2";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -3599,7 +3599,7 @@ function setCallDoc(data){
 }
 
 var ICE_CACHE = { list: null, at: 0, p: null };
-function prefetchIce(){
+function fetchIceList(){
   if(!CALL_CFG.turnApiUrl) return Promise.resolve();
   if(ICE_CACHE.list && Date.now() - ICE_CACHE.at < 3600000) return Promise.resolve();
   if(ICE_CACHE.p) return ICE_CACHE.p;
@@ -3613,6 +3613,45 @@ function prefetchIce(){
     });
   });
   return ICE_CACHE.p;
+}
+
+/* قراءة إعدادات TURN التي حفظها المالك في Firestore (config/turn) */
+var TURN_LOAD = { p: null };
+function loadTurnConfig(force){
+  if(TURN_LOAD.p && !force) return TURN_LOAD.p;
+  if(!window.fbLoadTurnConfig) return Promise.resolve();
+  TURN_LOAD.p = window.fbLoadTurnConfig().then(function(c){
+    if(c){
+      CALL_CFG.turnApiUrl = c.api || '';
+      var arr = [];
+      if(c.servers){ try{ var j = JSON.parse(c.servers); if(Array.isArray(j)) arr = j; }catch(e){} }
+      CALL_CFG.turn = arr;
+      ICE_CACHE.list = null; ICE_CACHE.at = 0;
+    }
+    return fetchIceList();
+  }).catch(function(e){
+    console.log('turn config load error', e && e.code);
+    TURN_LOAD.p = null; /* نعيد المحاولة في المكالمة القادمة */
+  });
+  return TURN_LOAD.p;
+}
+function prefetchIce(){ return loadTurnConfig(false).then(fetchIceList); }
+
+/* اختبار سيرفر TURN: هل نحصل على مسار وسيط (relay) فعلاً؟ */
+function testTurnServer(){
+  toast('جاري اختبار السيرفر...');
+  loadTurnConfig(true).then(function(){
+    var servers = (ICE_CACHE.list || []).concat(CALL_CFG.turn || []);
+    if(!servers.length){ toast('⚠️ لا توجد سيرفرات TURN: احفظ الرابط أولاً أو تأكد أنه يرجع بيانات'); return; }
+    var pc = new RTCPeerConnection({ iceServers: servers, iceTransportPolicy: 'relay' }), found = false;
+    pc.onicecandidate = function(e){ if(e.candidate && / typ relay /.test(e.candidate.candidate)) found = true; };
+    pc.createDataChannel('t');
+    pc.createOffer().then(function(o){ return pc.setLocalDescription(o); }).catch(function(){});
+    setTimeout(function(){
+      try{ pc.close(); }catch(e){}
+      toast(found ? '✅ سيرفر TURN يعمل (' + servers.length + ' مسار)' : '❌ لم نحصل على مسار وسيط: تأكد من الرابط أو الحصة المتبقية');
+    }, 6000);
+  });
 }
 
 function callIceServers(){
@@ -5401,12 +5440,13 @@ function changeCode(){ask("اكتب الرمز الحالي",function(o){if(o!==
 
 /* ===== إعداد سيرفر الاتصال TURN (يظهر للمالك فقط) ===== */
 function turnCardV(){
-  var n = (typeof CALL_CFG !== 'undefined' && CALL_CFG.turn) ? CALL_CFG.turn.length : 0;
+  var n = (typeof CALL_CFG !== 'undefined') ? ((CALL_CFG.turn || []).length + ((typeof ICE_CACHE !== 'undefined' && ICE_CACHE.list) ? ICE_CACHE.list.length : 0)) : 0;
+  var hasApi = (typeof CALL_CFG !== 'undefined') && !!CALL_CFG.turnApiUrl;
   return '<h2>📞 سيرفر الاتصال (TURN)</h2><div class="card">' +
     '<div class="mu" style="font-size:13px;margin-bottom:8px">يحسّن نجاح المكالمات بين الشبكات المختلفة (موبايل ↔ موبايل). الصق رابط بيانات TURN من موقع الخدمة (مثل Metered) أو قائمة JSON، ثم احفظ واختبر.</div>' +
     '<textarea id="turnCfgIn" dir="ltr" rows="3" placeholder="https://YOURAPP.metered.live/api/v1/turn/credentials?apiKey=XXXX"></textarea>' +
     '<div class="grid" style="margin-top:8px"><button class="b" onclick="saveTurnCfg()">💾 حفظ</button><button class="b s" onclick="testTurnServer()">🧪 اختبار</button></div>' +
-    '<div class="mu" style="font-size:12px;margin-top:6px">الحالة الحالية: ' + (n ? ('محفوظ (' + n + ' سيرفر)') : 'غير مضاف') + '</div></div>';
+    '<div class="mu" style="font-size:12px;margin-top:6px">الحالة الحالية: ' + (n ? ('محفوظ (' + n + ' سيرفر)') : (hasApi ? 'الرابط محفوظ لكن لم تُجلب منه سيرفرات (اضغط اختبار)' : 'غير مضاف')) + '</div></div>';
 }
 function saveTurnCfg(){
   var el = document.getElementById('turnCfgIn'); var v = el ? el.value.trim() : '';
@@ -5630,6 +5670,7 @@ window.fbClaimUsername=function(handle,name,cb){
   window.fbGetDoc = function(ref) { return getDoc(ref); };
   window.fbOnSnapshot = function(ref, cb, eb) { return onSnapshot(ref, cb, eb || function(e){ console.log('snapshot error', e && e.code); }); };
   window.fbSaveTurnConfig = function(obj) { return setDoc(doc(db, "config", "turn"), obj); };
+  window.fbLoadTurnConfig = function() { return getDoc(doc(db, "config", "turn")).then(function(s){ return s.exists() ? s.data() : null; }); };
 
   window.fbFindUser=function(handle,cb){
   getDoc(doc(db,"usernames",String(handle||"").toLowerCase())).then(function(s){
