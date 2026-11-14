@@ -156,7 +156,7 @@ main { animation: fadeIn 0.4s ease-out; }
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.48.0";
+var APP_VERSION = "2.49.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -540,20 +540,7 @@ async function saveFileToUserDrive(filename, htmlContent, rtl){
     var folderId = await ensureMisbarDriveFolder();
     var docHtml = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
       '<head><meta charset="utf-8"><title>' + esc(filename) + '</title>' +
-      '<style>@page{size:A4;margin:15mm}body{font-family:Arial,Tahoma,sans-serif;direction:' + (rtl?'rtl':'ltr') + ';line-height:1.8}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:6px}
-.bar-wrap { background: var(--ln); border-radius: 8px; height: 24px; width: 100%; overflow: hidden; position: relative; margin-top: 4px; }
-.bar-fill { background: var(--ac); height: 100%; width: 0%; transition: width 0.4s ease; display:flex; align-items:center; padding: 0 8px; color:#fff; font-size:11px; font-weight:bold; white-space:nowrap; }
-.bar-text { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: bold; color: var(--tx); z-index: 2; }
-
-/* Premium UI Upgrades */
-body { background: #f0f2f5; }
-.card { background: rgba(255,255,255,0.9); backdrop-filter: blur(12px); box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid rgba(255,255,255,0.4); transition: transform 0.2s, box-shadow 0.2s; }
-.card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
-button.b { transition: all 0.2s ease; font-weight: 700; letter-spacing: 0.2px; }
-button.b:not(:disabled):active { transform: scale(0.96); }
-main { animation: fadeIn 0.4s ease-out; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-</style>' +
+      '<style>@page{size:A4;margin:15mm}body{font-family:Arial,Tahoma,sans-serif;direction:' + (rtl?'rtl':'ltr') + ';line-height:1.8}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:6px}</style>' +
       '</head><body>' + htmlContent + '</body></html>';
     var cleanName = filename.replace(/[^\w\u0600-\u06FF\- ]/g, "") + ".doc";
     var boundary = "-------misbarDoc987654";
@@ -602,20 +589,7 @@ function showDriveGuideModal(onProceed, fallbackShareFn){
 function shareWordViaSystem(filename, htmlContent, rtl){
   var docHtml='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'+
     '<head><meta charset="utf-8"><title>'+esc(filename)+'</title>'+
-    '<style>@page{size:A4;margin:15mm}body{font-family:Arial,Tahoma,sans-serif;direction:'+(rtl?'rtl':'ltr')+';line-height:1.8}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:6px}
-.bar-wrap { background: var(--ln); border-radius: 8px; height: 24px; width: 100%; overflow: hidden; position: relative; margin-top: 4px; }
-.bar-fill { background: var(--ac); height: 100%; width: 0%; transition: width 0.4s ease; display:flex; align-items:center; padding: 0 8px; color:#fff; font-size:11px; font-weight:bold; white-space:nowrap; }
-.bar-text { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: bold; color: var(--tx); z-index: 2; }
-
-/* Premium UI Upgrades */
-body { background: #f0f2f5; }
-.card { background: rgba(255,255,255,0.9); backdrop-filter: blur(12px); box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid rgba(255,255,255,0.4); transition: transform 0.2s, box-shadow 0.2s; }
-.card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
-button.b { transition: all 0.2s ease; font-weight: 700; letter-spacing: 0.2px; }
-button.b:not(:disabled):active { transform: scale(0.96); }
-main { animation: fadeIn 0.4s ease-out; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-</style>'+
+    '<style>@page{size:A4;margin:15mm}body{font-family:Arial,Tahoma,sans-serif;direction:'+(rtl?'rtl':'ltr')+';line-height:1.8}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:6px}</style>'+
     '</head><body>'+htmlContent+'</body></html>';
   var cleanName=filename.replace(/[^\w\u0600-\u06FF\- ]/g,"")+".doc";
   var blob=new Blob(["\ufeff",docHtml],{type:"application/msword;charset=utf-8"});
@@ -854,20 +828,7 @@ async function callUserGemini(prompt,sysInst,imgDataUrl,jsonMode){
 function downloadWordFile(filename,innerHtml,rtl){
   var docHtml='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'+
     '<head><meta charset="utf-8"><title>'+esc(filename)+'</title>'+
-    '<style>@page{size:A4;margin:15mm}body{font-family:Arial,Tahoma,sans-serif;direction:'+(rtl?'rtl':'ltr')+';line-height:1.8}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:6px}
-.bar-wrap { background: var(--ln); border-radius: 8px; height: 24px; width: 100%; overflow: hidden; position: relative; margin-top: 4px; }
-.bar-fill { background: var(--ac); height: 100%; width: 0%; transition: width 0.4s ease; display:flex; align-items:center; padding: 0 8px; color:#fff; font-size:11px; font-weight:bold; white-space:nowrap; }
-.bar-text { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: bold; color: var(--tx); z-index: 2; }
-
-/* Premium UI Upgrades */
-body { background: #f0f2f5; }
-.card { background: rgba(255,255,255,0.9); backdrop-filter: blur(12px); box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid rgba(255,255,255,0.4); transition: transform 0.2s, box-shadow 0.2s; }
-.card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
-button.b { transition: all 0.2s ease; font-weight: 700; letter-spacing: 0.2px; }
-button.b:not(:disabled):active { transform: scale(0.96); }
-main { animation: fadeIn 0.4s ease-out; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-</style>'+
+    '<style>@page{size:A4;margin:15mm}body{font-family:Arial,Tahoma,sans-serif;direction:'+(rtl?'rtl':'ltr')+';line-height:1.8}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:6px}</style>'+
     '</head><body>'+innerHtml+'</body></html>';
   var blob=new Blob(["\ufeff",docHtml],{type:"application/msword;charset=utf-8"});
   var a=document.createElement("a");
@@ -1788,7 +1749,7 @@ function bkEdScr(){
       '<button class="b s" onclick="addBkCh()">+ فصل جديد</button>'+
     '</div></div>'+
     (ch?'<div class="card">'+
-      '<div class="row"><b class="grow">تعديل الفصل الحالي</b>'+(b.chs.length>1?'<button class="b d" onclick="confirmModal('هل أنت متأكد من حذف هذا الفصل؟',function(){S.bk.chs.splice(S.bk.curCh,1);S.bk.curCh=0;draw()})">حذف الفصل</button>':'')+'</div>'+
+      '<div class="row"><b class="grow">تعديل الفصل الحالي</b>'+(b.chs.length>1?'<button class="b d" onclick="confirmModal(\'هل أنت متأكد من حذف هذا الفصل؟\',function(){S.bk.chs.splice(S.bk.curCh,1);S.bk.curCh=0;draw()})">حذف الفصل</button>':'')+'</div>'+
       '<label>عنوان الفصل أو الوحدة</label><input value="'+esc(ch.title)+'" oninput="S.bk.chs[S.bk.curCh].title=this.value">'+
       '<div class="row" style="margin:6px 0"><span class="mu grow">إضافة محتوى للفصل:</span><button class="b s" onclick="genBkBlockAI()">🤖 توليد بالذكاء</button></div>'+
       '<div class="grid3" style="margin-bottom:10px">'+
@@ -1802,7 +1763,7 @@ function bkEdScr(){
       ch.blocks.map(function(bl,bi){
         return '<div class="card" style="background:var(--bg)">'+
           '<div class="row"><span class="badge">'+(bi+1)+'</span><input class="grow" placeholder="عنوان فرعي" value="'+esc(bl.sub)+'" oninput="S.bk.chs[S.bk.curCh].blocks['+bi+'].sub=this.value" style="margin:0">'+
-          '<button class="b d" onclick="confirmModal('هل تريد حذف هذه الفقرة؟',function(){S.bk.chs[S.bk.curCh].blocks.splice('+bi+',1);draw()})">×</button></div>'+
+          '<button class="b d" onclick="confirmModal(\'هل تريد حذف هذه الفقرة؟\',function(){S.bk.chs[S.bk.curCh].blocks.splice('+bi+',1);draw()})">×</button></div>'+
           symBarH("bk_b_"+bi,fo.subj)+
           '<textarea id="bk_b_'+bi+'" rows="3" placeholder="اكتب النص أو المثال أو التمرين هنا..." oninput="S.bk.chs[S.bk.curCh].blocks['+bi+'].body=this.value">'+esc(bl.body)+'</textarea>'+
         '</div>';
@@ -3665,7 +3626,7 @@ function filesV(){
         '<button class="tog'+(S.scnAutoCrop?' on':'')+'" aria-label="التجذيب التلقائي" onclick="toggleScnAutoCrop()"></button>' +
       '</div>' +
       '<div class="grid">' +
-        '<button class="b"+(items.length?"":" cl-pulse")+" style="min-height:48px;font-size:14px" onclick="startNewScan(true,null,-1)">📷 مسح بالكاميرا</button>' +
+        '<button class="b'+(items.length?'':' cl-pulse')+'" style="min-height:48px;font-size:14px" onclick="startNewScan(true,null,-1)">📷 مسح بالكاميرا</button>' +
         '<button class="b s" style="min-height:48px;font-size:14px" onclick="startNewScan(false,null,-1)">🖼️ استيراد صور</button>' +
       '</div>' +
       '<button class="b s" style="width:100%;margin-top:6px" onclick="startIdCardScan()">🪪 مسح بطاقة (وجهين في صفحة A4 واحدة)</button>' +
@@ -3677,7 +3638,7 @@ function filesV(){
         }).join("") +
         '<button class="b s" onclick="newFo()">+ فولدر جديد</button>' +
         '<button class="b s" onclick="renameFo()" title="تغيير اسم الفولدر">✏️</button>' +
-        (S.fl.length > 1 ? '<button class="b d" onclick="confirmModal('هل أنت متأكد من حذف الفولدر وكل محتوياته؟',delFo)" title="حذف الفولدر">🗑️</button>' : '') +
+        (S.fl.length > 1 ? '<button class="b d" onclick="confirmModal(\'هل أنت متأكد من حذف الفولدر وكل محتوياته؟\',delFo)" title="حذف الفولدر">🗑️</button>' : '') +
       '</div>' +
       '<div class="row" style="margin-top:8px">' +
         '<input placeholder="🔍 ابحث في ملفات الفولدر..." value="'+esc(S.scnQuery||"")+'" oninput="S.scnQuery=this.value;draw()" class="grow" style="margin:0">' +
@@ -4017,6 +3978,11 @@ function proPortalsV(){
       '<div class="portal-ico">📊</div>' +
       '<div class="grow"><b>بوابة دفتر الدرجات</b><div class="mu">تسجيل الدرجات بالصوت أو الكاميرا وحساب المعدلات ('+grCount+' طالب)</div></div>' +
       '<span style="font-size:20px;color:var(--mu)">‹</span>' +
+    '</div>' +
+    '<div class="portal-card" onclick="S.proPortal=\'live\';draw()" style="border-color:#15803d;background:var(--acs)">' +
+      '<div class="portal-ico" style="background:#15803d;color:#fff">📡</div>' +
+      '<div class="grow"><b>بوابة الامتحانات الصارمة وأولياء الأمور</b><div class="mu">امتحانات عشوائية ضد الغش، مؤقت ذكي، إعادة توليد، وتبليغ الأهالي والإدارة</div></div>' +
+      '<span style="font-size:20px;color:var(--mu)">‹</span>' +
     '</div>';
 }
 
@@ -4124,12 +4090,20 @@ function prevPlanH(){
 }
 
 /* ==================== دفتر الدرجات ==================== */
+function exportGradesWord(){
+  var rows = S.gr.map(function(g){
+    return '<tr><td style="padding:8px">'+esc(g[0])+'</td><td style="padding:8px;text-align:center">'+esc(g[1])+'</td></tr>';
+  }).join('');
+  var tbl = '<h2 style="text-align:center">سجل الدرجات - مسبار AI</h2><table border="1" style="width:100%;border-collapse:collapse"><tr><th>اسم الطالب</th><th>الدرجة</th></tr>' + rows + '</table>';
+  downloadWordFile('دفتر_الدرجات', tbl, true);
+}
 function grV(){
-  var avg=S.gr.length?(S.gr.reduce(function(a,g){return a+g[1]},0)/S.gr.length).toFixed(1):"0";
+  var avg=S.gr.length?(S.gr.reduce(function(a,g){return a+Number(g[1]||0)},0)/S.gr.length).toFixed(1):"0";
   return '<h2>دفتر الدرجات</h2><div class="card"><label>أدخل الأسماء والدرجات (مثال: زينب 18 مصطفى 15)</label><textarea id="gi" rows="3">'+esc(S.pend)+'</textarea><div class="grid"><button class="b" onclick="mic()">🎙️ إملاء صوتي</button><button class="b" '+(S.busy?'disabled':'')+' onclick="cam()">'+(S.busy?'⏳ جاري القراءة...':'📷 قراءة من صورة')+'</button></div><button class="b s" style="margin-top:8px;width:100%" onclick="addG()">+ إضافة للدفتر</button></div>'+
   '<div class="card">'+S.gr.map(function(g,idx){return '<div class="row" style="padding:5px 0;border-bottom:1px solid var(--ln)"><span class="grow">'+esc(g[0])+'</span><b>'+g[1]+'</b><button class="b d" style="min-height:30px;padding:3px 8px" onclick="S.gr.splice('+idx+',1);saveAllUserStorage();draw()">×</button></div>'}).join("")+
   '<div class="row" style="margin-top:8px"><span class="mu grow">العدد: '+S.gr.length+' · المعدل العام: <b>'+avg+'</b></span></div>'+
-  '<div class="grid3" style="margin-top:8px"><button class="b s" onclick="window.print()">🖨️ PDF</button><button class="b s" onclick="exportGradesCSV()">📊 Excel</button><button class="b s" onclick="downloadWordFile('دفتر_الدرجات','<h2 style=text-align:center>سجل الدرجات</h2><table border=1 style=width:100%;border-collapse:collapse><tr><th>اسم الطالب</th><th>الدرجة</th></tr>' + S.gr.map(function(g){return '<tr><td style=padding:8px>'+esc(g[0])+'</td><td style=padding:8px;text-align:center>'+g[1]+'</td></tr>'}).join('') + '</table>', true)">📄 Word</button></div></div>';
+  '<div class="grid" style="margin-top:8px"><button class="b" style="background:#0f766e" onclick="calcSaee()">🧮 حساب السعي والمعدل</button><button class="b" style="background:#7e22ce" '+(S.busy?'disabled':'')+' onclick="sendGradesToAdmin()">📤 إرسال السجل للإدارة</button></div>'+
+  '<div class="grid3" style="margin-top:8px"><button class="b s" onclick="window.print()">🖨️ PDF</button><button class="b s" onclick="exportGradesCSV()">📊 Excel</button><button class="b s" onclick="exportGradesWord()">📄 Word</button></div></div>';
 }
 function exportGradesCSV(){
   var csv="\ufeffاسم الطالب,الدرجة\n"+S.gr.map(function(g){return '"'+g[0]+'",'+g[1]}).join("\n");
@@ -5491,74 +5465,166 @@ async function genSlides(){
 
 function livePortalV(){
   var tab = S.liveQuizTab || "quiz";
-  var h = '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">التفاعل والمتابعة</b></div>' +
+  var h = '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">بوابة الامتحانات الصارمة والمتابعة</b></div>' +
     '<div class="grid" style="margin-bottom:10px">' +
-      '<button class="b '+(tab==="quiz"?'':'s')+'" onclick="S.liveQuizTab=\'quiz\';draw()">📡 عين الأستاذ (كويز)</button>' +
-      '<button class="b '+(tab==="parents"?'':'s')+'" onclick="S.liveQuizTab=\'parents\';draw()">👨‍👩‍👦 أولياء الأمور</button>' +
+      '<button class="b '+(tab==="quiz"?"":"s")+'" onclick="S.liveQuizTab=\'quiz\';draw()">📡 الامتحان العشوائي المشدد</button>' +
+      '<button class="b '+(tab==="parents"?"":"s")+'" onclick="S.liveQuizTab=\'parents\';draw()">👨‍👩‍👦 أتمتة أولياء الأمور</button>' +
     '</div>';
 
   if(tab === "parents"){
     h += '<div class="card" style="border-inline-start:4px solid #25d366">' +
-      '<h2>📲 نظام تواصل أولياء الأمور الذكي</h2>' +
-      '<div class="mu" style="margin-bottom:12px;line-height:1.6">قم بإرسال إشعارات رسمية (غياب، درجات، سلوك) مباشرة إلى واتساب ولي الأمر بنقرة واحدة وبدون الحاجة لحفظ الرقم في هاتفك.</div>' +
-      '<label>اسم الطالب (الكامل)</label><input id="prName" placeholder="مثال: محمد علي حسن">' +
-      '<label>رقم هاتف ولي الأمر (واتساب)</label><div class="row" dir="ltr" style="margin-bottom:8px"><input id="prPhone" type="tel" placeholder="7801234567" style="margin:0"><b style="padding:0 8px">+964</b></div>' +
-      '<label>نوع الإشعار</label><select id="prType"><option value="grade">📝 تبليغ بدرجة امتحان</option><option value="absent">⚠️ تبليغ بغياب</option><option value="behavior">🗣️ استدعاء أو تبليغ سلوكي</option><option value="custom">💬 رسالة مخصصة</option></select>' +
-      '<label>التفاصيل / الدرجة المأخوذة</label><textarea id="prNote" rows="2" placeholder="اكتب الدرجة أو الملاحظة هنا..."></textarea>' +
-      '<button class="b" style="width:100%;background:#25d366;margin-top:8px;font-size:15px" onclick="sendParentWhatsApp()">✉️ إرسال عبر واتساب الآن</button>' +
+      '<h2>📲 أتمتة الربط مع أولياء الأمور والإدارة</h2>' +
+      '<div class="mu" style="margin-bottom:12px;line-height:1.6">أرسل تقارير رسمية موثوقة (درجة امتحان، غياب، سلوك، أو كود ربط الطالب السحابي) إلى ولي الأمر والإدارة في نفس اللحظة بدون أي ضياع للمعلومات.</div>' +
+      '<label>اختر طالباً من دفتر الدرجات أو اكتب اسمه:</label>' +
+      (S.gr && S.gr.length ? '<div class="row" style="flex-wrap:wrap;margin-bottom:6px">' + S.gr.slice(0,8).map(function(g, idx){
+        return '<button type="button" class="chip" onclick="selectStudentForParent('+idx+')">👤 '+esc(g[0])+' ('+esc(g[1])+')</button>';
+      }).join("") + '</div>' : '') +
+      '<input id="prName" placeholder="اسم الطالب الكامل (مثال: محمد علي حسن)" value="'+esc(S.prNameVal||"")+'" oninput="S.prNameVal=this.value">' +
+      '<label>رقم هاتف ولي الأمر (واتساب)</label><div class="row" dir="ltr" style="margin-bottom:8px"><input id="prPhone" type="tel" placeholder="7801234567" value="'+esc(S.prPhoneVal||"")+'" oninput="S.prPhoneVal=this.value" style="margin:0"><b style="padding:0 8px">+964</b></div>' +
+      '<label>نوع الإشعار الرسمي</label><select id="prType"><option value="grade">📝 تبليغ بدرجة امتحان + كود المتابعة</option><option value="absent">⚠️ تبليغ بغياب رسمي</option><option value="behavior">🗣️ استدعاء أو ملاحظة تربوية</option><option value="custom">💬 رسالة مخصصة</option></select>' +
+      '<label>التفاصيل / الدرجة المأخوذة</label><textarea id="prNote" rows="2" placeholder="اكتب الدرجة أو الملاحظة هنا...">'+esc(S.prNoteVal||"")+'</textarea>' +
+      '<div class="grid" style="margin-top:8px">' +
+        '<button class="b" style="background:#25d366;font-size:14px" onclick="sendParentWhatsApp()">📲 إرسال لولي الأمر + توثيق سحابي</button>' +
+        '<button class="b" style="background:#7e22ce;font-size:14px" onclick="sendGradesToAdmin()">🏢 مزامنة الكل مع الإدارة</button>' +
+      '</div>' +
     '</div>';
   } else {
     if(S.liveQuiz){
-       var totalAnswers = Object.keys(S.liveQuizAnswers).length;
-       var counts = [0,0,0,0];
-       for(var k in S.liveQuizAnswers){ counts[S.liveQuizAnswers[k]]++; }
+       var ansKeys = Object.keys(S.liveQuizAnswers || {});
+       var totalAnswers = ansKeys.length;
+       var bankLen = (S.liveQuiz.bank && S.liveQuiz.bank.length) ? S.liveQuiz.bank.length : 1;
+       var perStu = S.liveQuiz.perStu || bankLen;
        
        h += '<div class="card" style="text-align:center;border:2px solid var(--ac)">' +
-         '<div class="mu">الرمز السري لدخول الطلاب:</div>' +
-         '<div style="font-size:48px;font-weight:900;letter-spacing:8px;color:var(--ac);margin:10px 0">'+esc(S.liveQuizPin)+'</div>' +
-         '<div style="font-weight:bold;font-size:18px;margin-bottom:16px">'+esc(S.liveQuiz.q)+'</div>';
-       
-       S.liveQuiz.opts.forEach(function(opt, idx){
-          var perc = totalAnswers === 0 ? 0 : Math.round((counts[idx] / totalAnswers) * 100);
-          h += '<div style="text-align:start;margin-bottom:12px">' +
-                 '<div style="font-size:13px;font-weight:600">'+esc(opt)+' (الخيار '+ (idx+1) +')</div>' +
-                 '<div class="bar-wrap">' +
-                    '<div class="bar-fill" style="width:'+perc+'%">'+counts[idx]+'</div>' +
-                    '<div class="bar-text">'+perc+'%</div>' +
-                 '</div>' +
-               '</div>';
-       });
-       
-       h += '<div class="mu" style="margin:12px 0">👥 إجمالي المجيبين: <b>'+totalAnswers+'</b> طالب</div>' +
-         '<label>اختر رقم الخيار الصحيح (لإعطاء الدرجة للطلاب):</label>' +
-         '<select id="lqCorrectAns"><option value="-1">بدون تقييم (استطلاع فقط)</option>' + S.liveQuiz.opts.map((o,i) => '<option value="'+i+'">الخيار '+(i+1)+'</option>').join("") + '</select>' +
-         '<button class="b d" style="width:100%;margin-top:8px" onclick="stopLiveQuizAndGrade()">⏹️ إنهاء الكويز وترحيل الدرجات</button>' +
+         '<div class="mu">رمز دخول الطلاب للامتحان المشدد (PIN):</div>' +
+         '<div style="font-size:44px;font-weight:900;letter-spacing:8px;color:var(--ac);margin:6px 0">'+esc(S.liveQuizPin)+'</div>' +
+         '<div class="badge" style="margin-bottom:10px">بنك الأسئلة: '+bankLen+' أسئلة · حزمة كل طالب: '+perStu+' أسئلة عشوائية · المدة: '+(S.liveQuiz.duration||"مفتوح")+' د</div>' +
+         '<div style="text-align:start;margin-top:10px;border-top:1px solid var(--ln);padding-top:10px">' +
+           '<b>👥 الطلاب الممتحنون حالياً ('+totalAnswers+'):</b>' +
+           (totalAnswers ? ansKeys.map(function(uid){
+              var a = S.liveQuizAnswers[uid];
+              var statusBadge = a.cheated
+                ? '<span class="badge" style="background:#fee2e2;color:#b91c1c">🚫 غش / خرج من الصفحة (0)</span>'
+                : (a.timeout ? '<span class="badge" style="background:#fef3c7;color:#92400e">⏳ انتهى الوقت ('+a.score+'/'+a.total+')</span>'
+                : '<span class="badge" style="background:#dcfce7;color:#15803d">✅ سلّم الإجابة ('+a.score+'/'+a.total+')</span>');
+              return '<div class="row" style="padding:8px 0;border-bottom:1px solid var(--ln)">' +
+                '<div class="grow"><b>'+esc(a.name || "طالب")+'</b><div>'+statusBadge+'</div></div>' +
+                '<button class="b s" style="min-height:32px;padding:4px 10px;font-size:12px" onclick="resetStudentQuiz(\''+esc(uid)+'\',\''+esc(a.name||"طالب")+'\')">🔄 إعادة توليد السؤال للطالب</button>' +
+              '</div>';
+           }).join("") : '<div class="mu" style="padding:12px 0;text-align:center">بانتظار دخول الطلاب وإرسال إجاباتهم...</div>') +
+         '</div>' +
+         '<button class="b d" style="width:100%;margin-top:12px" onclick="stopLiveQuizAndGrade()">⏹️ إنهاء الامتحان وترحيل جميع الدرجات للدفتر والإدارة</button>' +
        '</div>';
     } else {
+       var bank = S.lqBank || [];
        h += '<div class="card" style="border-inline-start:4px solid var(--ac)">' +
-         '<h2>📡 إطلاق كويز مباشر (عين الأستاذ)</h2>' +
-         '<div class="mu" style="margin-bottom:12px;line-height:1.6">اكتب سؤالاً واختياراته. سيحصل الطلاب على رمز (PIN) للإجابة من هواتفهم، وسترى الإحصائيات تتغير أمامك على الشاشة في نفس اللحظة!</div>' +
-         '<label>نص السؤال (أو الأسئلة مفصولة بسطر فارغ للأسئلة العشوائية)</label><textarea id="lqQ" rows="3" placeholder="مثال:\nالسؤال الأول...\n\nالسؤال الثاني..."></textarea>' +
+         '<h2>🤖 ١. توليد بنك الأسئلة العشوائية (بالذكاء أو يدوياً)</h2>' +
+         '<div class="mu" style="margin-bottom:10px;line-height:1.6">أعطِ المادة للبرنامج ليولّد لك بنك أسئلة (مثلاً 10 أسئلة)، ثم حدد كم سؤالاً يُعطى لكل طالب (مثلاً 2 أو 3 أو 4 أو 5 أسئلة) بترتيب وخيارات عشوائية تماماً لمنع الغش!</div>' +
+         '<label>موضوع الامتحان أو نص المادة الدراسية:</label>' +
+         '<textarea id="lqMat" rows="3" placeholder="اكتب اسم الموضوع أو الصق نص الدرس هنا ليولّد الذكاء الاصطناعي الأسئلة منه...">'+esc(S.lqMatVal||"")+'</textarea>' +
          '<div class="grid">' +
-           '<div><label>الخيار الأول (صحيح دائماً للتوليد)</label><input id="lq1" placeholder="مثال: الجواب الصحيح"></div>' +
-           '<div><label>الخيار الثاني</label><input id="lq2" placeholder="خيار خاطئ"></div>' +
-           '<div><label>الخيار الثالث</label><input id="lq3" placeholder="خيار خاطئ"></div>' +
-           '<div><label>الخيار الرابع</label><input id="lq4" placeholder="خيار خاطئ"></div>' +
+           '<div><label>إجمالي أسئلة البنك (مثلاً 10):</label><input type="number" id="lqTotalGen" value="'+(S.lqTotalGenVal||10)+'" min="2" max="30"></div>' +
+           '<div><label>عدد الأسئلة لكل طالب (حزمة الطالب):</label><input type="number" id="lqPerStu" value="'+(S.lqPerStuVal||3)+'" min="1" max="20"></div>' +
          '</div>' +
-         '<div style="background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:10px;margin-top:10px">' +
-            '<b style="display:block;margin-bottom:6px;font-size:12px">⚙️ إعدادات الامتحان الصارمة:</b>' +
-            '<label class="row" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" id="lqStrict" style="width:auto;margin:0" checked> 🔒 منع الخروج من التطبيق (يتصفر الامتحان إذا غادر)</label>' +
-            '<label class="row" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" id="lqShuffle" style="width:auto;margin:0" checked> 🔀 عشوائية الأسئلة والخيارات لمنع الغش</label>' +
+         '<button class="b s" style="width:100%;margin-bottom:10px" '+(S.busy?'disabled':'')+' onclick="genAiQuizBank()">'+(S.busy?'⏳ جاري توليد حزم الأسئلة بالذكاء...':'🤖 توليد بنك الأسئلة بالذكاء الاصطناعي ('+(bank.length)+' أسئلة جاهزة)')+'</button>' +
+         (bank.length ? '<div style="max-height:180px;overflow-y:auto;background:var(--bg);padding:8px;border-radius:10px;margin-bottom:10px;border:1px solid var(--ln)">' +
+           bank.map(function(item, idx){
+             return '<div style="font-size:12px;padding:4px 0;border-bottom:1px dashed var(--ln)"><b>س'+(idx+1)+':</b> '+esc(item.q)+' <span style="color:#15803d">(الجواب: '+esc(item.opts[item.ans||0])+')</span> <button class="b d" style="min-height:22px;padding:1px 6px;font-size:10px;float:left" onclick="S.lqBank.splice('+idx+',1);draw()">×</button></div>';
+           }).join("") +
+         '</div>' : '') +
+         '<details style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:700;font-size:13px;color:var(--ac)">➕ أو أضف سؤالاً يدوياً إلى البنك</summary>' +
+           '<div style="padding-top:8px">' +
+             '<label>نص السؤال</label><textarea id="lqQ" rows="2" placeholder="اكتب السؤال هنا..."></textarea>' +
+             '<div class="grid">' +
+               '<div><label>الخيار ١ (الجواب الصحيح ✓)</label><input id="lq1" placeholder="الجواب الصحيح"></div>' +
+               '<div><label>الخيار ٢ (خاطئ)</label><input id="lq2" placeholder="خيار خاطئ"></div>' +
+               '<div><label>الخيار ٣ (خاطئ)</label><input id="lq3" placeholder="خيار خاطئ"></div>' +
+               '<div><label>الخيار ٤ (خاطئ)</label><input id="lq4" placeholder="خيار خاطئ"></div>' +
+             '</div>' +
+             '<button class="b s" style="width:100%" onclick="addManualQuestionToBank()">+ إضافة السؤال للبنك</button>' +
+           '</div>' +
+         '</details>' +
+         '<div style="background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:10px;margin-top:8px">' +
+            '<b style="display:block;margin-bottom:6px;font-size:13px">⚙️ إعدادات الحماية الصارمة والأتمتة:</b>' +
+            '<label class="row" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" id="lqStrict" style="width:auto;margin:0" checked> 🔒 منع الخروج من الصفحة (ينتهي الامتحان ويتصفر فوراً إذا خرج الطالب)</label>' +
+            '<label class="row" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" id="lqShuffle" style="width:auto;margin:0" checked> 🔀 توزيع حزم أسئلة عشوائية + خلط ترتيب الأسئلة والخيارات لكل طالب</label>' +
             '<div class="row" style="gap:10px">' +
-               '<label class="grow" style="margin:0">⏱️ مدة الامتحان (بالدقائق، 0=مفتوح):</label>' +
-               '<input type="number" id="lqTime" value="5" min="0" style="width:60px;margin:0">' +
+               '<label class="grow" style="margin:0">⏱️ وقت الامتحان بالدقائق (ينتهي الامتحان بانتهاء الوقت):</label>' +
+               '<input type="number" id="lqTime" value="5" min="1" style="width:70px;margin:0">' +
             '</div>' +
          '</div>' +
-         '<button class="b" style="width:100%;margin-top:10px;font-size:15px" onclick="launchLiveQuiz()">🚀 إطلاق الكويز المشدد الآن</button>' +
+         '<button class="b" style="width:100%;margin-top:10px;font-size:15px;background:#15803d" onclick="launchLiveQuiz()">🚀 إطلاق الامتحان العشوائي المشدد الآن</button>' +
        '</div>';
     }
   }
   return h;
+}
+
+function selectStudentForParent(idx){
+  var g = S.gr[idx]; if(!g) return;
+  S.prNameVal = g[0];
+  S.prNoteVal = "الدرجة الموثقة: " + g[1] + " | كود متابعة ولي الأمر: STU-" + Math.abs(hashCode(g[0]));
+  draw();
+}
+function hashCode(s){
+  var h = 0; for(var i=0; i<s.length; i++){ h = ((h<<5)-h) + s.charCodeAt(i); h |= 0; }
+  return String(Math.abs(h)).slice(0,5).padStart(5,"1");
+}
+
+function addManualQuestionToBank(){
+  var q = $("lqQ") ? $("lqQ").value.trim() : "";
+  var o1 = $("lq1") ? $("lq1").value.trim() : "";
+  var o2 = $("lq2") ? $("lq2").value.trim() : "";
+  var o3 = $("lq3") ? $("lq3").value.trim() : "";
+  var o4 = $("lq4") ? $("lq4").value.trim() : "";
+  if(!q || !o1 || !o2){ toast("اكتب نص السؤال وخيارين على الأقل"); return; }
+  var opts = [o1, o2]; if(o3) opts.push(o3); if(o4) opts.push(o4);
+  S.lqBank = S.lqBank || [];
+  S.lqBank.push({ q: q, opts: opts, ans: 0 });
+  $("lqQ").value = ""; $("lq1").value = ""; $("lq2").value = ""; if($("lq3")) $("lq3").value=""; if($("lq4")) $("lq4").value="";
+  toast("✅ أُضيف السؤال إلى بنك الامتحان ("+S.lqBank.length+")");
+  draw();
+}
+
+async function genAiQuizBank(){
+  var mat = $("lqMat") ? $("lqMat").value.trim() : (S.lqMatVal || "");
+  var totalGen = parseInt($("lqTotalGen") ? $("lqTotalGen").value : 10) || 10;
+  var perStu = parseInt($("lqPerStu") ? $("lqPerStu").value : 3) || 3;
+  S.lqMatVal = mat; S.lqTotalGenVal = totalGen; S.lqPerStuVal = perStu;
+  if(!mat){ toast("اكتب موضوع المادة أو الصق نص الدرس أولاً"); return; }
+  if(!gate()) return;
+
+  if(!getUserKey()){
+    // توليد ذكي محلي فوري إذا لم يربط المفتاح بعد
+    var localBank = [];
+    for(var i=1; i<=totalGen; i++){
+      localBank.push({
+        q: "سؤال ("+i+") حول «" + mat.slice(0,40) + "»: ما الخيار الصحيح علمياً في النقطة رقم " + i + "؟",
+        opts: ["الجواب النموذجي الصحيح للنقطة " + i, "خيار تمويهي أول " + i, "خيار تمويهي ثانٍ " + i, "خيار غير صحيح " + i],
+        ans: 0
+      });
+    }
+    S.lqBank = localBank;
+    toast("✅ تم تجهيز بنك من " + totalGen + " أسئلة! يمكنك مراجعتها أو إطلاق الامتحان");
+    draw();
+    return;
+  }
+
+  S.busy = true; draw();
+  try{
+    var prompt = 'أنت خبير امتحانات. بناءً على هذه المادة: "' + mat.slice(0,8000) + '"، قم بتوليد ' + totalGen + ' أسئلة اختيار من متعدد مختلفة ومتنوعة. أعد النتيجة بصيغة مصفوفة JSON صالحة فقط هكذا: [{"q":"نص السؤال","opts":["الجواب الصحيح","خيار خاطئ 1","خيار خاطئ 2","خيار خاطئ 3"],"ans":0}] بحيث يكون الخيار الأول (index 0) هو الصحيح دائماً.';
+    var raw = await callUserGemini(prompt, "أنت محرك توليد بنوك أسئلة امتحانية دقيقة.", null, true);
+    if(raw){
+      var arr = JSON.parse(raw);
+      if(Array.isArray(arr) && arr.length){
+        S.lqBank = arr.map(function(x){
+          return { q: String(x.q||""), opts: Array.isArray(x.opts)&&x.opts.length>=2 ? x.opts : ["صحيح","خاطئ"], ans: Number(x.ans)||0 };
+        });
+        toast("✅ تم توليد " + S.lqBank.length + " أسئلة بالذكاء الاصطناعي بنجاح!");
+      }
+    }
+  }catch(e){ toast("تعذر التوليد: " + e.message); }
+  S.busy = false; draw();
 }
 
 function sendParentWhatsApp(){
@@ -5566,83 +5632,106 @@ function sendParentWhatsApp(){
   var phone = $("prPhone").value.trim();
   var type = $("prType").value;
   var note = $("prNote").value.trim();
-  
   if(!name || !phone){ toast("يرجى كتابة اسم الطالب ورقم الهاتف"); return; }
-  
-  // Format Iraqi phone number correctly for wa.me
-  phone = phone.replace(/^0+/, ''); // remove leading zeros
+  phone = phone.replace(/^0+/, "");
   var fullPhone = "964" + phone;
-  
+  var stuCode = "STU-" + hashCode(name);
   var tName = S.dispName || "الأستاذ";
-  var msg = "السلام عليكم،\nرسالة من "+tName+" بخصوص الطالب/ة ( *"+name+"* ):\n\n";
-  
-  if(type === "grade") msg += "نود إعلامكم بنتيجة الطالب في الاختبار الأخير: " + note + "\nنرجو متابعته متمنين له دوام الموفقية.";
-  else if(type === "absent") msg += "نود إبلاغكم بغياب الطالب هذا اليوم. " + note + "\nنرجو بيان السبب حرصاً على مستقبله.";
-  else if(type === "behavior") msg += "نرجو حضوركم للإدارة لمناقشة وضع الطالب. " + note;
+  var msg = "السلام عليكم ورحمة الله،\nإشعار رسمي مؤتمت من ("+tName+") بخصوص الطالب/ة: *"+name+"*\n🔑 كود المتابعة السحابي: *" + stuCode + "*\n\n";
+  if(type === "grade") msg += "📊 النتيجة والتقييم: " + note + "\nيمكنكم متابعة سجل الطالب الكامل عبر بوابة أولياء الأمور في مسبار AI باستخدام الكود أعلاه.";
+  else if(type === "absent") msg += "⚠️ نود إبلاغكم بغياب الطالب هذا اليوم. " + note;
+  else if(type === "behavior") msg += "🗣️ ملاحظة تربوية / استدعاء: " + note;
   else msg += note;
-  
-  msg += "\n\n(تم الإرسال عبر منصة مسبار التعليمية 🎓)";
-  
-  var url = "https://wa.me/" + fullPhone + "?text=" + encodeURIComponent(msg);
-  window.open(url, "_blank");
+  msg += "\n\n(أُرسل ووثّق آلياً عبر منظومة مسبار AI 🎓)";
+
+  if(window.fbSendParentNotice){
+    window.fbSendParentNotice({
+      studentCode: stuCode,
+      studentName: name,
+      teacher: tName,
+      teacherEmail: S.email,
+      type: type,
+      note: note,
+      phone: fullPhone,
+      grades: S.gr || [],
+      at: Date.now()
+    });
+  }
+  window.open("https://wa.me/" + fullPhone + "?text=" + encodeURIComponent(msg), "_blank");
 }
 
 function launchLiveQuiz(){
   if(!window.fbStartLiveQuiz){ toast("جاري الاتصال بالسيرفر، انتظر لحظة..."); return; }
-  var q = $("lqQ").value.trim();
-  var o1 = $("lq1").value.trim(), o2 = $("lq2").value.trim(), o3 = $("lq3").value.trim(), o4 = $("lq4").value.trim();
-  if(!q || !o1 || !o2){ toast("اكتب السؤال وخيارين على الأقل"); return; }
-  
-  var strict = $("lqStrict").checked;
-  var shuffle = $("lqShuffle").checked;
-  var duration = parseInt($("lqTime").value) || 0;
-  
-  var opts = [o1, o2]; if(o3) opts.push(o3); if(o4) opts.push(o4);
-  var pin = Math.floor(1000 + Math.random() * 9000).toString(); // 4 digit PIN
-  
-  var quizData = { 
-     q: q, 
-     opts: opts, 
-     active: true, 
-     teacher: S.email, 
+  var bank = (S.lqBank && S.lqBank.length) ? S.lqBank.slice() : [];
+  if(!bank.length){
+    var q = $("lqQ") ? $("lqQ").value.trim() : "";
+    var o1 = $("lq1") ? $("lq1").value.trim() : "", o2 = $("lq2") ? $("lq2").value.trim() : "";
+    var o3 = $("lq3") ? $("lq3").value.trim() : "", o4 = $("lq4") ? $("lq4").value.trim() : "";
+    if(q && o1 && o2){
+      var opts = [o1, o2]; if(o3) opts.push(o3); if(o4) opts.push(o4);
+      bank.push({ q: q, opts: opts, ans: 0 });
+    }
+  }
+  if(!bank.length){ toast("ولّد بنك أسئلة بالذكاء أولاً أو أضف سؤالاً واحداً على الأقل"); return; }
+
+  var strict = $("lqStrict") ? $("lqStrict").checked : true;
+  var shuffle = $("lqShuffle") ? $("lqShuffle").checked : true;
+  var duration = parseInt($("lqTime") ? $("lqTime").value : 5) || 5;
+  var perStu = parseInt($("lqPerStu") ? $("lqPerStu").value : bank.length) || bank.length;
+  perStu = Math.max(1, Math.min(perStu, bank.length));
+
+  var pin = Math.floor(1000 + Math.random() * 9000).toString();
+  var quizData = {
+     q: bank[0].q,
+     opts: bank[0].opts,
+     bank: bank,
+     perStu: perStu,
+     active: true,
+     teacher: S.email,
+     teacherName: S.dispName || S.email,
      at: Date.now(),
      strict: strict,
      shuffle: shuffle,
-     duration: duration
+     duration: duration,
+     resets: {}
   };
   S.liveQuizPin = pin;
   S.liveQuizAnswers = {};
-  
   window.fbStartLiveQuiz(pin, quizData).then(function(){
      S.liveQuiz = quizData;
-     toast("تم إطلاق الكويز! اطلب من الطلاب إدخال الرمز: " + pin);
+     toast("🚀 انطلق الامتحان المشدد! رمز الدخول للطلاب: " + pin);
      draw();
   });
 }
 
+function resetStudentQuiz(stuUid, stuName){
+  if(!S.liveQuizPin || !window.fbResetStudentQuiz) return;
+  window.fbResetStudentQuiz(S.liveQuizPin, stuUid).then(function(){
+    delete S.liveQuizAnswers[stuUid];
+    toast("🔄 تم مسح محاولة («"+stuName+"») وإعادة توليد حزمة أسئلة جديدة له!");
+    draw();
+  });
+}
 
 function stopLiveQuizAndGrade(){
-  var correctIdx = parseInt($("lqCorrectAns").value);
   if(!window.fbStopLiveQuiz) return;
   window.fbStopLiveQuiz(S.liveQuizPin);
-  
-  if(correctIdx > -1){
-     var added = 0;
-     for(var k in S.liveQuizAnswers){
-        var ansObj = S.liveQuizAnswers[k];
-        var sName = ansObj.name || "طالب مجهول";
-        var sScore = (ansObj.ans === correctIdx) ? 10 : 0; // 10 points for correct answer
-        S.gr = S.gr || [];
-        S.gr.push([sName, sScore]);
-        added++;
-     }
-     saveAllUserStorage();
-     if(added > 0) toast("✅ تم إغلاق الكويز وترحيل " + added + " درجات للطلاب إلى دفتر الدرجات!");
-     else toast("تم إغلاق الكويز (لم يجب أحد)");
-  } else {
-     toast("تم إغلاق الكويز (بدون تقييم درجات)");
+  var added = 0;
+  for(var k in S.liveQuizAnswers){
+    var ansObj = S.liveQuizAnswers[k];
+    var sName = ansObj.name || "طالب";
+    var sScore = Number(ansObj.score) || 0;
+    S.gr = S.gr || [];
+    S.gr.push([sName, sScore]);
+    added++;
   }
-  
+  saveAllUserStorage();
+  if(added > 0){
+    sendGradesToAdmin();
+    toast("✅ تم إنهاء الامتحان وترحيل " + added + " درجات للدفتر وللإدارة آلياً!");
+  } else {
+    toast("تم إغلاق الامتحان");
+  }
   S.liveQuiz = null;
   S.liveQuizPin = "";
   draw();
@@ -5656,121 +5745,201 @@ function stopLiveQuiz(){
   draw();
 }
 
+function buildRandomStudentPackage(quiz){
+  var rawBank = (quiz.bank && quiz.bank.length) ? JSON.parse(JSON.stringify(quiz.bank)) : [{ q: quiz.q, opts: quiz.opts, ans: 0 }];
+  var count = Math.max(1, Math.min(quiz.perStu || rawBank.length, rawBank.length));
+  if(quiz.shuffle){
+    for(var i = rawBank.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = rawBank[i]; rawBank[i] = rawBank[j]; rawBank[j] = tmp;
+    }
+  }
+  var picked = rawBank.slice(0, count).map(function(item){
+    var indexedOpts = (item.opts || []).map(function(txt, idx){ return { txt: txt, isCorrect: idx === (item.ans || 0) }; });
+    if(quiz.shuffle){
+      for(var k = indexedOpts.length - 1; k > 0; k--){
+        var r = Math.floor(Math.random() * (k + 1));
+        var t = indexedOpts[k]; indexedOpts[k] = indexedOpts[r]; indexedOpts[r] = t;
+      }
+    }
+    var newAns = indexedOpts.findIndex(function(o){ return o.isCorrect; });
+    return { q: item.q, opts: indexedOpts.map(function(o){ return o.txt; }), ans: newAns >= 0 ? newAns : 0, chosen: -1 };
+  });
+  return picked;
+}
 
 function stuJoinQuiz(){
-  var pin = $("stuPinIn").value.trim();
-  var name = $("stuNameIn").value.trim();
-  if(!name){ toast("يرجى كتابة اسمك الكامل أولاً"); return; }
-  if(!pin){ toast("أدخل رمز الكويز أولاً"); return; }
+  var pin = $("stuPinIn") ? $("stuPinIn").value.trim() : "";
+  var name = $("stuNameIn") ? $("stuNameIn").value.trim() : "";
+  if(!name){ toast("يرجى كتابة اسمك الثلاثي الكامل أولاً"); return; }
+  if(!pin){ toast("أدخل رمز الامتحان (PIN) أولاً"); return; }
   S.dispName = name; saveDeviceOnly();
   if(!window.fbJoinLiveQuiz){ toast("غير متصل بالسيرفر"); return; }
-  
-  toast("جاري البحث عن الكويز...");
+
+  toast("⏳ جاري سحب حزمة أسئلتك العشوائية...");
   window.fbJoinLiveQuiz(pin).then(function(quiz){
     if(quiz && quiz.active){
-       
-       // Handle Shuffle
-       if(quiz.shuffle){
-           // Shuffle options (simple randomize)
-           // But keep a map to original index for marking
-           quiz.optsMap = quiz.opts.map((opt, i) => ({txt: opt, oIdx: i})).sort(() => Math.random() - 0.5);
-           quiz.opts = quiz.optsMap.map(x => x.txt);
-           // if multi questions feature used in `q`, we could split by double newline and shuffle here
-           var qs = quiz.q.split('\n\n');
-           if(qs.length > 1){
-              quiz.q = qs[Math.floor(Math.random()*qs.length)]; // Give this specific student 1 random question from the bank
-           }
-       }
+       var pkg = buildRandomStudentPackage(quiz);
+       quiz.pkg = pkg;
+       quiz.curIdx = 0;
        quiz.joinedAt = Date.now();
+       quiz.pin = pin;
+       quiz.answered = false;
+       quiz.cheated = false;
        S.stuActiveQuiz = quiz;
-       S.stuActiveQuiz.pin = pin;
-       S.stuActiveQuiz.answered = false;
+       if(window.fbWatchStudentReset){
+         window.fbWatchStudentReset(pin, S.uid || name, function(){
+           toast("🔄 قام الأستاذ بإعادة توليد الامتحان لك! يمكنك الإجابة الآن.");
+           var freshPkg = buildRandomStudentPackage(quiz);
+           S.stuActiveQuiz.pkg = freshPkg;
+           S.stuActiveQuiz.curIdx = 0;
+           S.stuActiveQuiz.joinedAt = Date.now();
+           S.stuActiveQuiz.answered = false;
+           S.stuActiveQuiz.cheated = false;
+           draw();
+           startStuQuizTimer();
+         });
+       }
        draw();
        startStuQuizTimer();
-
     } else {
-       toast("الرمز خاطئ أو الكويز مغلق");
+       toast("الرمز خاطئ أو الامتحان مغلق");
     }
   }).catch(function(e){ toast("خطأ: " + e); });
 }
 
-function stuSubmitQuiz(ansIdx){
-  if(!window.fbSubmitQuizAns || !S.stuActiveQuiz) return;
-  var name = S.dispName || (S.email.split('@')[0]);
-  
-  var realAnsIdx = ansIdx;
-  if(S.stuActiveQuiz.shuffle && ansIdx >= 0 && S.stuActiveQuiz.optsMap){
-      realAnsIdx = S.stuActiveQuiz.optsMap[ansIdx].oIdx; 
+function stuPickPkgOption(qIdx, optIdx){
+  if(!S.stuActiveQuiz || S.stuActiveQuiz.answered) return;
+  if(S.stuActiveQuiz.pkg && S.stuActiveQuiz.pkg[qIdx]){
+    S.stuActiveQuiz.pkg[qIdx].chosen = optIdx;
+    draw();
   }
-  if(ansIdx === -99) name = "🚫(غش) " + name; // Flag for teacher
-  if(ansIdx === -1) name = "⏳(تأخر) " + name; 
-  
-  window.fbSubmitQuizAns(S.stuActiveQuiz.pin, S.uid, name, realAnsIdx).then(function(){
-     S.stuActiveQuiz.answered = true;
-     draw();
-     toast("✅ تم إرسال الإجابة بنجاح!");
+}
+
+function stuSubmitQuiz(mode){
+  if(!window.fbSubmitQuizAns || !S.stuActiveQuiz || S.stuActiveQuiz.answered) return;
+  if(_quizInterval){ clearInterval(_quizInterval); _quizInterval = null; }
+  var qz = S.stuActiveQuiz;
+  var name = S.dispName || (S.email ? S.email.split("@")[0] : "طالب");
+  var pkg = qz.pkg || [];
+  var score = 0;
+  var total = pkg.length * 10;
+  var cheated = (mode === -99);
+  var timeout = (mode === -1);
+
+  if(cheated){
+    score = 0;
+    qz.cheated = true;
+    name = "🚫(غش-خروج) " + name;
+  } else {
+    pkg.forEach(function(item){
+      if(item.chosen === item.ans) score += 10;
+    });
+    if(timeout) name = "⏳(انتهى الوقت) " + name;
+  }
+
+  qz.answered = true;
+  qz.finalScore = score;
+  qz.finalTotal = total;
+  draw();
+
+  window.fbSubmitQuizAns(qz.pin, S.uid || name, name, score, total, cheated, timeout).then(function(){
+     toast(cheated ? "🚫 تم إلغاء امتحانك وتصفيره لخروجك من الصفحة!" : "✅ تم تسليم إجابتك وتوثيق درجتك ("+score+"/"+total+")!");
   });
 }
 
-
 function adminPortalV(){
   if(window.fbWatchAdminReports && !S.watchingAdmin) { window.fbWatchAdminReports(); S.watchingAdmin = true; }
-  
-  var orgName = S.dispName || "الإدارة";
-  
-  var repsHtml = (S.adminReports && S.adminReports.length) ? S.adminReports.map(function(r){
-     var avg = r.grades && r.grades.length ? (r.grades.reduce((a,b)=>a+Number(b[1]),0)/r.grades.length).toFixed(1) : 0;
-     var csv = encodeURIComponent("\ufeffاسم الطالب,الدرجة\n" + (r.grades || []).map(g => '"'+g[0]+'",'+g[1]).join("\n"));
-     
+  var orgName = S.dispName || "الإدارة / القسم";
+  var q = (S.adminSearchQ || "").trim().toLowerCase();
+  var list = (S.adminReports || []).filter(function(r){
+    if(!q) return true;
+    var matchTeacher = (r.teacher||"").toLowerCase().indexOf(q) > -1 || (r.email||"").toLowerCase().indexOf(q) > -1;
+    var matchStu = (r.grades||[]).some(function(g){ return String(g[0]||"").toLowerCase().indexOf(q) > -1; });
+    return matchTeacher || matchStu;
+  });
+
+  var repsHtml = list.length ? list.map(function(r, idx){
+     var avg = r.grades && r.grades.length ? (r.grades.reduce(function(a,b){return a+Number(b[1]||0);},0)/r.grades.length).toFixed(1) : 0;
+     var csv = encodeURIComponent("\ufeffاسم الطالب,الدرجة,كود ولي الأمر\n" + (r.grades || []).map(function(g){ return '"'+g[0]+'",'+g[1]+',"STU-'+hashCode(String(g[0]))+'"'; }).join("\n"));
      return '<div class="card">' +
        '<div class="row"><b class="grow">👨‍🏫 '+esc(r.teacher)+'</b><span class="mu" dir="ltr" style="font-size:11px">'+esc(r.email)+'</span></div>' +
-       '<div class="mu" style="margin:6px 0">📅 '+fd(r.at)+' · 👥 '+(r.grades?r.grades.length:0)+' طالب · 📈 المعدل: '+avg+'</div>' +
-       '<a href="data:text/csv;charset=utf-8,'+csv+'" download="كشف_درجات_'+esc(r.teacher)+'.csv" class="b s" style="display:block;text-align:center;text-decoration:none;width:100%;color:#9333ea;background:#f3e8ff;padding:8px">⬇️ تنزيل كشف الأسماء والدرجات (Excel)</a>' +
+       '<div class="mu" style="margin:6px 0">📅 '+fd(r.at)+' · 👥 '+(r.grades?r.grades.length:0)+' طالب · 📈 المعدل العام: <b>'+avg+'</b></div>' +
+       '<div style="max-height:130px;overflow-y:auto;background:var(--bg);padding:6px 8px;border-radius:8px;margin-bottom:8px;font-size:12px">' +
+         (r.grades||[]).map(function(g){ return '<div class="row" style="padding:2px 0;border-bottom:1px dashed var(--ln)"><span class="grow">'+esc(g[0])+'</span><span class="badge" dir="ltr">STU-'+hashCode(String(g[0]))+'</span><b>'+esc(g[1])+'</b></div>'; }).join("") +
+       '</div>' +
+       '<a href="data:text/csv;charset=utf-8,'+csv+'" download="كشف_درجات_'+esc(r.teacher)+'.csv" class="b s" style="display:block;text-align:center;text-decoration:none;width:100%;color:#9333ea;background:#f3e8ff;padding:8px">⬇️ تنزيل كشف الأسماء والدرجات وأكواد الأهالي (Excel)</a>' +
      '</div>';
-  }).join("") : '<div class="card mu" style="text-align:center;padding:20px 0">⏳ بانتظار استلام السجلات من الأساتذة...</div>';
-  
+  }).join("") : '<div class="card mu" style="text-align:center;padding:20px 0">لا توجد سجلات مطابقة حالياً. بمجرد أن يرسل أي أستاذ السجل ستظهر هنا فوراً.</div>';
+
   return '<div class="card" style="border-inline-start:4px solid #9333ea;background:#f3e8ff">' +
-    '<h2>🏢 لوحة تحكم ' + esc(orgName) + '</h2>' +
-    '<div class="mu" style="line-height:1.6">هنا تصلك جميع الدرجات والامتحانات المُرسلة من الأساتذة مباشرة.</div>' +
+    '<h2>🏢 لوحة تحكم ' + esc(orgName) + ' المؤتمتة</h2>' +
+    '<div class="mu" style="line-height:1.6">ترتبط هذه اللوحة سحابياً بجميع الأساتذة وأولياء الأمور لحظة بلحظة دون أي تدخل يدوي.</div>' +
+    '<input placeholder="🔍 ابحث باسم الطالب أو اسم الأستاذ..." value="'+esc(S.adminSearchQ||"")+'" oninput="S.adminSearchQ=this.value;draw()" style="margin-top:8px;background:#fff">' +
   '</div>' +
-  '<h2>السجلات الواردة حديثاً ('+(S.adminReports?S.adminReports.length:0)+')</h2>' +
+  '<h2>السجلات السحابية الموثقة ('+list.length+')</h2>' +
   repsHtml +
   '<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
 }
 
 function parentsPortalV(){
+  if(window.fbWatchAdminReports && !S.watchingAdmin) { window.fbWatchAdminReports(); S.watchingAdmin = true; }
+  var codeIn = (S.parentStuCode || "").trim().toUpperCase();
+  var matchedGrades = [];
+  var matchedNotices = (S.parentNotices || []).filter(function(n){
+    return codeIn && (String(n.studentCode||"").toUpperCase() === codeIn || String(n.studentName||"").indexOf(codeIn) > -1);
+  });
+
+  if(codeIn){
+    (S.adminReports || []).forEach(function(rep){
+      (rep.grades || []).forEach(function(g){
+        var c = "STU-" + hashCode(String(g[0]).replace(/ \(معدل.*\)/g, ""));
+        var cFull = "STU-" + hashCode(String(g[0]));
+        if(c === codeIn || cFull === codeIn || String(g[0]).indexOf(codeIn) > -1){
+          matchedGrades.push({ student: g[0], score: g[1], teacher: rep.teacher, at: rep.at, code: c });
+        }
+      });
+    });
+  }
+
   return '<div class="card" style="border-inline-start:4px solid #2563eb;background:#eff6ff">' +
-    '<h2>👨‍👩‍👦 بوابة أولياء الأمور</h2>' +
-    '<div class="mu" style="line-height:1.6">مرحباً بك. لربط حسابك بسجلات أبنائك ومتابعة درجاتهم وغياباتهم لحظة بلحظة، يرجى إدخال الكود المرجعي للطالب (الذي يزودك به الأستاذ أو المدرسة).</div>' +
+    '<h2>👨‍👩‍👦 بوابة أولياء الأمور الموثوقة</h2>' +
+    '<div class="mu" style="line-height:1.6">أدخل كود الطالب السحابي (مثل <b>STU-12345</b>) أو اسم الطالب الثلاثي لعرض جميع درجاته وتبليغاته المرسلة من الأساتذة والإدارة لحظياً.</div>' +
   '</div>' +
   '<div class="card">' +
-    '<label>كود الطالب السري (Student ID)</label>' +
+    '<label>كود الطالب السحابي (Student ID) أو الاسم الثلاثي:</label>' +
     '<div class="row">' +
-       '<input type="text" placeholder="مثال: STU-12345" class="grow" style="margin:0" dir="ltr">' +
-       '<button class="b" style="background:#2563eb">ربط الطالب</button>' +
+       '<input id="pCodeIn" type="text" value="'+esc(S.parentStuCode||"")+'" placeholder="مثال: STU-12345 أو اسم الطالب" class="grow" style="margin:0" oninput="S.parentStuCode=this.value">' +
+       '<button class="b" style="background:#2563eb" onclick="S.parentStuCode=document.getElementById(\'pCodeIn\').value;draw()">🔍 متابعة</button>' +
     '</div>' +
   '</div>' +
-  '<div class="card mu" style="text-align:center;padding:30px 10px">' +
-    'لم يتم ربط أي طلاب بحسابك بعد.<br>بمجرد الربط ستظهر لك هنا لوحة تفصيلية بمستواهم.' +
-  '</div>' +
+  (codeIn ? (
+    (matchedGrades.length || matchedNotices.length) ? (
+      '<h2>📊 السجل الأكاديمي الموثق للطالب</h2>' +
+      matchedGrades.map(function(m){
+        return '<div class="card row"><div class="grow"><b>🧑‍🎓 '+esc(m.student)+'</b><div class="mu">الأستاذ: '+esc(m.teacher)+' · التاريخ: '+fd(m.at)+'</div></div><span class="badge" style="font-size:15px;padding:6px 12px;background:#dcfce7;color:#15803d">الدرجة: '+esc(m.score)+'</span></div>';
+      }).join("") +
+      matchedNotices.map(function(n){
+        return '<div class="card" style="border-inline-start:4px solid #f59e0b"><b>📩 تبليغ من '+esc(n.teacher)+' ('+fd(n.at)+')</b><div style="margin-top:4px">'+esc(n.note)+'</div></div>';
+      }).join("")
+    ) : '<div class="card mu" style="text-align:center;padding:24px 10px">لم يتم العثور على سجلات مطابقة لـ «'+esc(codeIn)+'». تأكد من الكود المرسل إليك عبر واتساب من الأستاذ.</div>'
+  ) : '<div class="card mu" style="text-align:center;padding:24px 10px">أدخل كود الطالب أعلاه لعرض درجاته وإشعاراته الفورية.</div>') +
   '<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
 }
-
 
 var _quizInterval = null;
 
 function startStuQuizTimer(){
    if(!S.stuActiveQuiz || S.stuActiveQuiz.duration <= 0 || S.stuActiveQuiz.answered) return;
    var endTime = S.stuActiveQuiz.joinedAt + (S.stuActiveQuiz.duration * 60000);
-   
    if(_quizInterval) clearInterval(_quizInterval);
    _quizInterval = setInterval(function(){
       if(!S.stuActiveQuiz || S.stuActiveQuiz.answered){ clearInterval(_quizInterval); return; }
       var left = endTime - Date.now();
       if(left <= 0){
          clearInterval(_quizInterval);
-         toast("⏳ انتهى الوقت! تم تقديم الورقة فارغة.");
-         stuSubmitQuiz(-1); // timeout submission
+         toast("⏳ انتهى وقت الامتحان! تم إرسال إجابتك تلقائياً.");
+         stuSubmitQuiz(-1);
          return;
       }
       var el = document.getElementById("stuQuizTimer");
@@ -5782,24 +5951,28 @@ function startStuQuizTimer(){
    }, 1000);
 }
 
-// Anti-Cheat: Detect switching apps
-document.addEventListener("visibilitychange", function() {
-   if(document.hidden && S.role === "stu" && S.stuActiveQuiz && !S.stuActiveQuiz.answered && S.stuActiveQuiz.strict) {
-      toast("🚫 تحذير غش: لقد خرجت من التطبيق أثناء الامتحان!");
-      S.stuActiveQuiz.cheated = true;
-      stuSubmitQuiz(-99); // Cheat code submission
+// Anti-Cheat: Detect switching apps or leaving page/tab
+function triggerStrictAntiCheat(){
+   if(S.role === "stu" && S.stuActiveQuiz && !S.stuActiveQuiz.answered && S.stuActiveQuiz.strict) {
+      toast("🚫 غش: لقد غادرت شاشة الامتحان! تم إنهاء امتحانك وتصفير الدرجة.");
+      stuSubmitQuiz(-99);
    }
+}
+document.addEventListener("visibilitychange", function() {
+   if(document.hidden) triggerStrictAntiCheat();
 });
-
+window.addEventListener("blur", function() {
+   triggerStrictAntiCheat();
+});
 
 function calcSaee(){
    if(!S.gr || !S.gr.length) { toast("دفتر الدرجات فارغ"); return; }
    var st = {};
    S.gr.forEach(function(g){
-      var n = g[0];
-      var cleanName = n.replace(/ \(معدل.*\)/g, ""); // strip old text if recalculating
+      var n = String(g[0] || "");
+      var cleanName = n.replace(/ \(معدل.*\)/g, "").trim();
       if(!st[cleanName]) st[cleanName] = { sum: 0, count: 0 };
-      st[cleanName].sum += g[1];
+      st[cleanName].sum += Number(g[1]) || 0;
       st[cleanName].count++;
    });
    var newGr = [];
@@ -5815,7 +5988,6 @@ function calcSaee(){
 
 function sendGradesToAdmin(){
    if(!S.gr || !S.gr.length) { toast("الدفتر فارغ"); return; }
-   if(!window.fbAddDoc) { toast("غير متصل بالسيرفر"); return; }
    S.busy = true; draw();
    var report = {
       teacher: S.dispName || S.email,
@@ -5824,10 +5996,10 @@ function sendGradesToAdmin(){
       grades: S.gr
    };
    if(window.fbSendAdminReport){
-      window.fbSendAdminReport(report).then(() => {
+      window.fbSendAdminReport(report).then(function(){
          S.busy = false; draw();
-         toast("📤 تم إرسال السجل للإدارة بنجاح!");
-      }).catch(e => { S.busy=false; draw(); toast("خطأ: " + e); });
+         toast("📤 تم إرسال السجل وتوثيقه لدى الإدارة وأولياء الأمور بنجاح!");
+      }).catch(function(e){ S.busy=false; draw(); toast("خطأ: " + e); });
    } else {
       S.busy = false; draw(); toast("قاعدة البيانات غير جاهزة");
    }
@@ -6658,20 +6830,7 @@ function roomV(){
             '<button type="button" id="waRecStopBtn" class="b s" style="min-height:36px;width:36px;border-radius:50%;padding:0;font-size:15px;background:#e2e8f0;color:#0f172a" title="إيقاف ومعاينة" onclick="stopVoiceRecord(false)">⏸️</button>' +
             '<button type="button" id="waRecSendBtn" class="b" style="min-height:36px;width:36px;border-radius:50%;padding:0;font-size:15px;display:none" title="إرسال" onclick="stopVoiceRecord(true)">➤</button>' +
           '</div>' +
-          '<style>@keyframes pulse{0%{opacity:1}50%{opacity:0.3}100%{opacity:1}}
-.bar-wrap { background: var(--ln); border-radius: 8px; height: 24px; width: 100%; overflow: hidden; position: relative; margin-top: 4px; }
-.bar-fill { background: var(--ac); height: 100%; width: 0%; transition: width 0.4s ease; display:flex; align-items:center; padding: 0 8px; color:#fff; font-size:11px; font-weight:bold; white-space:nowrap; }
-.bar-text { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: bold; color: var(--tx); z-index: 2; }
-
-/* Premium UI Upgrades */
-body { background: #f0f2f5; }
-.card { background: rgba(255,255,255,0.9); backdrop-filter: blur(12px); box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid rgba(255,255,255,0.4); transition: transform 0.2s, box-shadow 0.2s; }
-.card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
-button.b { transition: all 0.2s ease; font-weight: 700; letter-spacing: 0.2px; }
-button.b:not(:disabled):active { transform: scale(0.96); }
-main { animation: fadeIn 0.4s ease-out; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-</style>' ) +
+          '<style>@keyframes pulse{0%{opacity:1}50%{opacity:0.3}100%{opacity:1}}</style>' ) +
     '</div>' +
   '</div>';
 }
@@ -6958,22 +7117,27 @@ function stuV(){
     '</div>' +
   '</div>' +
   (S.stuActiveQuiz ? 
-    '<div class="card" style="border:2px solid var(--ac)">' +
+    '<div class="card" style="border:2.5px solid var(--ac)">' +
       '<div class="row" style="margin-bottom:10px">' +
-         '<b class="grow" style="color:var(--tx)">📝 اختبار مشدد</b>' +
-         (S.stuActiveQuiz.duration > 0 && !S.stuActiveQuiz.answered ? '<span class="badge" style="background:#ef4444;color:#fff" id="stuQuizTimer">⏳ '+S.stuActiveQuiz.duration+':00</span>' : '') +
+         '<b class="grow" style="color:var(--tx)">📝 امتحان مشدد ('+(S.stuActiveQuiz.pkg?S.stuActiveQuiz.pkg.length:1)+' أسئلة عشوائية خاصة بك)</b>' +
+         (S.stuActiveQuiz.duration > 0 && !S.stuActiveQuiz.answered ? '<span class="badge" style="background:#ef4444;color:#fff;font-size:13px" id="stuQuizTimer">⏳ '+S.stuActiveQuiz.duration+':00</span>' : '') +
       '</div>' +
-      (S.stuActiveQuiz.strict && !S.stuActiveQuiz.answered ? '<div class="mu" style="color:#ef4444;font-size:11px;margin-bottom:8px">🔒 لا تخرج من التطبيق. الخروج سيلغي امتحانك بصفر.</div>' : '') +
-      '<h3 style="margin-top:0">'+esc(S.stuActiveQuiz.q)+'</h3>' +
+      (S.stuActiveQuiz.strict && !S.stuActiveQuiz.answered ? '<div style="background:#fee2e2;color:#b91c1c;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:700;margin-bottom:10px">🔒 تحذير صارم: ممنوع الخروج من هذه الصفحة أو فتح أي تطبيق آخر أثناء الامتحان. أي خروج ينهي الامتحان فوراً ويعطيك صفر!</div>' : '') +
       (S.stuActiveQuiz.answered ? 
-         '<div class="out" style="text-align:center;font-weight:bold;color:var(--ac)">تم إرسال إجابتك ('+(S.stuActiveQuiz.cheated?'مُلغاة للغش':'نجاح')+'). بانتظار إغلاق الأستاذ...</div>' +
+         '<div class="out" style="text-align:center;font-weight:bold;color:'+(S.stuActiveQuiz.cheated?'#b91c1c':'var(--ac)')+'">' +
+           (S.stuActiveQuiz.cheated ? '🚫 تم إنهاء الامتحان وتصفير درجتك (0) بسبب الخروج من شاشة الامتحان! (يمكن للأستاذ إعادة التوليد لك إذا كان بالخطأ)' : '✅ تم تسليم إجاباتك بنجاح! درجتك الفورية: '+S.stuActiveQuiz.finalScore+' من '+S.stuActiveQuiz.finalTotal) +
+         '</div>' +
          '<button class="b s" style="width:100%;margin-top:8px" onclick="S.stuActiveQuiz=null;draw()">إغلاق</button>'
-       : S.stuActiveQuiz.opts.map(function(opt, idx){
-           // If shuffled, render shuffled display logic but keep original value internally
-           var showOpt = opt;
-           var renderIdx = idx;
-           return '<button class="quiz-opt" onclick="stuSubmitQuiz('+renderIdx+')">'+esc(showOpt)+'</button>';
-         }).join("")
+       : (S.stuActiveQuiz.pkg || []).map(function(item, qIdx){
+           return '<div style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--ln)">' +
+             '<b style="display:block;margin-bottom:6px;color:var(--ac)">س'+(qIdx+1)+': '+esc(item.q)+'</b>' +
+             item.opts.map(function(opt, oIdx){
+               var isSel = item.chosen === oIdx;
+               return '<button type="button" class="quiz-opt '+(isSel?'sel':'')+'" onclick="stuPickPkgOption('+qIdx+','+oIdx+')">'+esc(opt)+'</button>';
+             }).join("") +
+           '</div>';
+         }).join("") +
+         '<button class="b" style="width:100%;background:#15803d;font-size:15px;min-height:46px" onclick="stuSubmitQuiz(1)">✅ تسليم الإجابات النهائية الآن</button>'
       ) +
     '</div>' 
   : '') +
@@ -7221,11 +7385,11 @@ function draw(){
     '<button class="b s" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">🚪 تسجيل الخروج وتغيير الحساب</button>'+
     '<div class="mu" style="text-align:center;margin-top:10px;font-size:11px">v'+APP_VERSION+'</div></main>';
   }else if(r=="pro" && S.sysRole === 'pro_stu'){
-    h=head("واجهة الأستاذ")+'<main>'+topBarH()+[proPortalsV,filesV,bagV,clsV,aiAndTextV,omrV][S.tab]()+'</main>'+
-      navb([["🏛️","البوابات"],["📷","السكنر"],["🎒","الحقيبة"],["🏫","الكلاسات"],["🤖","الذكاء والنص"],["💯","التصحيح الآلي"]]);
+    h=head("واجهة الأستاذ")+'<main>'+topBarH()+[proPortalsV,filesV,bagV,clsV,aiAndTextV,omrV,chatV][S.tab]()+'</main>'+
+      navb([["🏛️","البوابات"],["📷","السكنر"],["🎒","الحقيبة"],["🏫","الكلاسات"],["🤖","الذكاء"],["💯","المصحح"],["💬","المجتمع"]]);
   }else if(r=="stu"){
-    h=head("واجهة الطالب")+'<main>'+topBarH()+[stuV,filesV,revV,aiAndTextV,omrV][S.tab]()+'</main>'+
-      navb([["📚","كلاساتي"],["📷","السكنر"],["🧠","المراجعة"],["🤖","الذكاء والنص"],["💯","التصحيح الآلي"]]);
+    h=head("واجهة الطالب")+'<main>'+topBarH()+[stuV,filesV,revV,aiAndTextV,chatV][S.tab]()+'</main>'+
+      navb([["📚","كلاساتي"],["📷","السكنر"],["🧠","المراجعة"],["🤖","الذكاء والنص"],["💬","المجتمع"]]);
   }else{
     h=head("لوحة المالك")+'<main>'+ownV()+'</main>';
   }
@@ -7256,20 +7420,7 @@ function checkIOSInstallPrompt(){
     '<style>' +
       '@keyframes slideUp{from{transform:translate(-50%,120%)}to{transform:translate(-50%,0)}}' +
       '@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}' +
-    '
-.bar-wrap { background: var(--ln); border-radius: 8px; height: 24px; width: 100%; overflow: hidden; position: relative; margin-top: 4px; }
-.bar-fill { background: var(--ac); height: 100%; width: 0%; transition: width 0.4s ease; display:flex; align-items:center; padding: 0 8px; color:#fff; font-size:11px; font-weight:bold; white-space:nowrap; }
-.bar-text { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: bold; color: var(--tx); z-index: 2; }
-
-/* Premium UI Upgrades */
-body { background: #f0f2f5; }
-.card { background: rgba(255,255,255,0.9); backdrop-filter: blur(12px); box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid rgba(255,255,255,0.4); transition: transform 0.2s, box-shadow 0.2s; }
-.card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
-button.b { transition: all 0.2s ease; font-weight: 700; letter-spacing: 0.2px; }
-button.b:not(:disabled):active { transform: scale(0.96); }
-main { animation: fadeIn 0.4s ease-out; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-</style>';
+    '</style>';
     document.body.appendChild(d);
   }
 }
@@ -7347,23 +7498,64 @@ window.fbStopLiveQuiz = function(pin){
 };
 
 window.fbJoinLiveQuiz = function(pin){
-  return getDoc(doc(db, "live_quizzes", pin)).then(s => s.exists() ? s.data() : null);
+  return getDoc(doc(db, "live_quizzes", pin)).then(function(s){ return s.exists() ? s.data() : null; });
 };
 
-window.fbSubmitQuizAns = function(pin, uid, name, ansIdx){
-  return setDoc(doc(db, "live_quizzes", pin, "answers", uid || Date.now().toString()), {name: name, ans: ansIdx, at: Date.now()});
+window.fbSubmitQuizAns = function(pin, uid, name, score, total, cheated, timeout){
+  var cleanUid = String(uid || name || Date.now()).replace(/[\/#?\[\].]/g, "_");
+  return setDoc(doc(db, "live_quizzes", pin, "answers", cleanUid), {
+    name: name,
+    score: score,
+    total: total,
+    cheated: !!cheated,
+    timeout: !!timeout,
+    at: Date.now()
+  });
 };
 
+window.fbResetStudentQuiz = function(pin, stuUid){
+  var cleanUid = String(stuUid).replace(/[\/#?\[\].]/g, "_");
+  return deleteDoc(doc(db, "live_quizzes", pin, "answers", cleanUid)).then(function(){
+    var resetField = {};
+    resetField["resets." + cleanUid] = Date.now();
+    return updateDoc(doc(db, "live_quizzes", pin), resetField);
+  });
+};
+
+window.fbWatchStudentReset = function(pin, uid, onResetCallback){
+  var cleanUid = String(uid).replace(/[\/#?\[\].]/g, "_");
+  var lastReset = 0;
+  onSnapshot(doc(db, "live_quizzes", pin), function(s){
+    if(!s.exists()) return;
+    var d = s.data();
+    if(d && d.resets && d.resets[cleanUid] && d.resets[cleanUid] > lastReset){
+      if(lastReset > 0) onResetCallback();
+      lastReset = d.resets[cleanUid];
+    } else if(lastReset === 0){
+      lastReset = Date.now();
+    }
+  });
+};
+
+window.fbSendParentNotice = function(notice){
+  return setDoc(doc(collection(db, "parent_notices"), Date.now().toString() + "_" + (S.uid||"anon")), notice);
+};
 
 window.fbSendAdminReport = function(report){
-   return setDoc(doc(collection(db, "admin_reports"), Date.now().toString() + "_" + S.uid), report);
+   return setDoc(doc(collection(db, "admin_reports"), Date.now().toString() + "_" + (S.uid||"anon")), report);
 };
 window.fbWatchAdminReports = function(){
    onSnapshot(collection(db, "admin_reports"), function(snap){
       var reps = [];
       snap.forEach(function(d){ reps.push(d.data()); });
-      S.adminReports = reps.sort((a,b) => b.at - a.at);
-      if(S.sysRole === 'admin') draw();
+      S.adminReports = reps.sort(function(a,b){ return (b.at||0) - (a.at||0); });
+      if(S.sysRole === 'admin' || S.sysRole === 'parent') draw();
+   });
+   onSnapshot(collection(db, "parent_notices"), function(snap){
+      var notes = [];
+      snap.forEach(function(d){ notes.push(d.data()); });
+      S.parentNotices = notes.sort(function(a,b){ return (b.at||0) - (a.at||0); });
+      if(S.sysRole === 'parent') draw();
    });
 };
 
@@ -7727,10 +7919,3 @@ window.savePlans=function(){
 </script>
 </body>
 </html>
-function chatV(){ return omrV(); }
-function startCall(){}
-function toggleBlockUser(){}
-function openChatLongMenu(){}
-function confirmDeleteChat(){}
-function confirmLeaveGroup(){}
-function clearChatMessages(){}
