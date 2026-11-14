@@ -126,7 +126,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.34.0";
+var APP_VERSION = "2.35.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -1113,11 +1113,13 @@ function paperH(){
   var tdg=function(t){return convDigits(esc(t),o.txtDigits)};
   var lab=function(i){
     var n=dg(i+1);
-    if(o.qn=="Q1")return "Q"+n+":";
-    if(o.qn=="Q:")return "Q"+n+" /";
-    if(o.qn=="Question")return "Question "+n+":";
-    if(o.qn=="س:")return "س"+n+":";
-    if(o.qn=="السؤال")return "السؤال "+n+":";
+    var arNums = ["الأول","الثاني","الثالث","الرابع","الخامس","السادس","السابع","الثامن","التاسع","العاشر"];
+    if(o.qn=="السؤال"){
+       return (i<10) ? "السؤال "+arNums[i]+" :" : "السؤال "+n+" :";
+    }
+    if(o.qn=="Question") return "Question "+n+" :";
+    if(o.qn=="Q") return "Q"+n+" :";
+    if(o.qn=="س:") return "س"+n+":";
     return "س"+n;
   };
   var mk=function(j){
@@ -1203,6 +1205,80 @@ async function genPaperAI(){
     }
     draw();
   });
+}
+
+
+var Q_TYPES = [
+  "اختيار من متعدد (MCQ)","صح أو خطأ","أكمل الفراغ","التعاريف والمصطلحات",
+  "علل","اذكر","قارن بين","عدد","اشرح","أسئلة مقالية","مسائل حسابية ورياضية",
+  "أسئلة علمية وتطبيقية","أسئلة التوصيل والمطابقة","إجابات قصيرة/طويلة","رسوم وأشكال توضيحية"
+];
+
+function ppAutoDir(text){
+  if(!text) return "rtl";
+  var ar = (text.match(/[\u0600-\u06FF]/g) || []).length;
+  var en = (text.match(/[a-zA-Z]/g) || []).length;
+  return en > ar ? "ltr" : "rtl";
+}
+
+function startVoiceInput(inputId){
+  var R = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!R) { toast("متصفحك لا يدعم الإملاء الصوتي"); return; }
+  var r = new R();
+  r.lang = S.pp.o.wlang === 'en' ? 'en-US' : 'ar-IQ';
+  r.continuous = true;
+  r.interimResults = true;
+  
+  var el = document.getElementById(inputId);
+  if(!el) return;
+  var orig = el.value;
+  
+  r.onresult = function(e){
+    var finalTxt = "", intTxt = "";
+    for(var i=e.resultIndex; i<e.results.length; i++){
+       if(e.results[i].isFinal) finalTxt += e.results[i][0].transcript;
+       else intTxt += e.results[i][0].transcript;
+    }
+    if(finalTxt) {
+       orig += (orig ? " " : "") + finalTxt;
+       el.value = orig;
+       el.dispatchEvent(new Event("input"));
+    }
+  };
+  r.onerror = function(){ toast("توقف التسجيل"); };
+  r.start();
+  toast("🎤 جاري التسجيل.. تحدث الآن");
+}
+
+function ocrQuestionImage(i, target, inp){
+  var x = inp.files[0]; if(!x) return;
+  toast("🤖 جاري استخراج النص من الصورة...");
+  var r = new FileReader();
+  r.onload = async function(){
+    if(!getUserKey()){
+       toast("⚠️ يرجى ربط حساب Gemini من تبويب الذكاء الاصطناعي لاستخراج النص"); return;
+    }
+    try{
+       var prompt = "استخرج النص المكتوب في هذه الصورة (سواء كان بخط اليد أو مطبوعاً) كما هو بدقة. إذا كان هناك معادلات أو رموز علمية حافظ عليها.";
+       var txt = await callUserGemini(prompt, "أنت نظام OCR دقيق.", r.result, false);
+       if(txt){
+           var el = document.getElementById(target + "_" + i);
+           if(el){
+              el.value += (el.value ? "\n" : "") + txt;
+              pq(i, target === 'qt' ? 't' : 's', el.value);
+              toast("✅ تم استخراج النص بنجاح");
+              draw();
+           }
+       }
+    }catch(e){ toast("خطأ في الاستخراج: " + e.message); }
+  };
+  r.readAsDataURL(x);
+}
+
+function dupQ(i){
+  var q = JSON.parse(JSON.stringify(S.pp.q[i]));
+  S.pp.q.splice(i+1, 0, q);
+  draw();
 }
 
 function ppEdScr(){
@@ -1291,8 +1367,8 @@ function ppEdScr(){
         ppSel("o.size","حجم الخط",[14,15,16,18,20],o.size)+
       '</div>'+
       '<div class="grid">'+
-        ppSel("o.qn","ترقيم الأسئلة",[["س","س1 س2"],["س:","س1: س2:"],["السؤال","السؤال 1:"],["Q1","Q1: Q2:"],["Q:","Q1 / Q2 /"],["Question","Question 1:"]],o.qn)+
-        ppSel("o.sub","ترقيم الفروع",[["أ،","أ، ب، ج،"],["أ/","أ/ ب/ ج/"],["أ)","أ) ب) ج)"],["1.","1. 2. 3."],["1)","1) 2) 3)"],["1/","1/ 2/ 3/"],["a)","a) b) c)"],["a/","a/ b/ c/"]],o.sub)+
+        ppSel("o.qn","نمط ترقيم الأسئلة",[["س","س1 / س2"],["س:","س1: / س2:"],["السؤال","السؤال الأول / السؤال الثاني"],["Q","Q1 / Q2"],["Question","Question 1 / Question 2"]],o.qn)+
+        ppSel("o.sub","نمط الفروع والاختيارات",[["أ،","أ، ب، ج،"],["أ/","أ/ ب/ ج/"],["أ)","أ) ب) ج)"],["1.","1. 2. 3."],["1)","1) 2) 3)"],["1/","1/ 2/ 3/"],["a)","a) b) c)"],["a/","a/ b/ c/"]],o.sub)+
       '</div>'+
       ppInp("o.close","عبارة الختام (مثل: مع تمنياتي لكم بالتوفيق / Good luck)",o.close)+
       '<label>مسافة نزول عبارة الختام والتوقيع ('+o.closeSpace+'px)</label>'+
@@ -1304,23 +1380,32 @@ function ppEdScr(){
     body='<div class="noprint">'+
     '<div class="row" style="margin-bottom:8px"><h2 class="grow" style="margin:0">الأسئلة ('+p.q.length+')</h2><button class="b s" onclick="genPaperAI()">🤖 توليد سؤال بالذكاء</button></div>'+
     p.q.map(function(q,i){
+      var dirT = ppAutoDir(q.t), dirS = ppAutoDir(q.s);
       return '<div class="card">'+
-        '<div class="row"><b>السؤال '+(i+1)+'</b><span class="grow"></span>'+
-          '<button class="b s" onclick="mvQ('+i+',-1)">↑</button>'+
-          '<button class="b s" onclick="mvQ('+i+',1)">↓</button>'+
-          '<button class="b d" onclick="delQ('+i+')">حذف</button>'+
+        '<div class="row"><span class="badge">السؤال '+(i+1)+'</span><span class="grow"></span>'+
+          '<button class="b s" style="padding:4px 8px" onclick="mvQ('+i+',-1)" title="أعلى">↑</button>'+
+          '<button class="b s" style="padding:4px 8px" onclick="mvQ('+i+',1)" title="أسفل">↓</button>'+
+          '<button class="b s" style="padding:4px 8px" onclick="dupQ('+i+')" title="نسخ وتكرار">📑</button>'+
+          '<button class="b d" style="padding:4px 8px" onclick="delQ('+i+')" title="حذف">×</button>'+
         '</div>'+
-        '<label>نص السؤال</label>'+
+        '<div class="row" style="margin-top:8px">'+
+           '<select style="width:auto;margin:0" onchange="pq('+i+',\'k\',this.value)">'+Q_TYPES.map(function(k){return opt1(k,q.k||"")}).join("")+'</select>'+
+           '<input type="number" style="width:60px;margin:0" placeholder="الدرجة" value="'+esc(q.m)+'" oninput="pq('+i+',\'m\',this.value)">'+
+           '<select style="width:auto;margin:0" onchange="S.pp.q['+i+'].horiz=this.value==\'1\';updSheet()"><option value="0"'+(!q.horiz?' selected':'')+'>عمودي</option><option value="1"'+(q.horiz?' selected':'')+'>أفقي</option></select>'+
+        '</div>'+
+        '<div class="row" style="margin-top:8px"><label class="grow" style="margin:0">نص السؤال</label>'+
+           '<button class="b s" style="padding:3px 8px" onclick="startVoiceInput(\'qt_'+i+'\')" title="إملاء صوتي">🎙️</button>'+
+           '<div style="position:relative"><button class="b s" style="padding:3px 8px" title="استخراج نص من صورة">📸 OCR</button><input type="file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer" onchange="ocrQuestionImage('+i+',\'qt\',this)"></div>'+
+        '</div>'+
         symBarH("qt_"+i,fo.subj)+
-        '<textarea id="qt_'+i+'" rows="2" placeholder="اكتب نص السؤال هنا..." oninput="pq('+i+',\'t\',this.value)">'+esc(q.t)+'</textarea>'+
-        '<div class="grid">'+
-          '<div><label>الدرجة</label><input type="number" placeholder="10" value="'+esc(q.m)+'" oninput="pq('+i+',\'m\',this.value)"></div>'+
-          '<div><label>تخطيط الفروع</label><select onchange="S.pp.q['+i+'].horiz=this.value==\'1\';updSheet()"><option value="0"'+(!q.horiz?' selected':'')+'>سطر لكل فرع</option><option value="1"'+(q.horiz?' selected':'')+'>أفقي جنب بعض</option></select></div>'+
+        '<textarea id="qt_'+i+'" dir="'+dirT+'" rows="2" placeholder="اكتب نص السؤال..." oninput="pq('+i+',\'t\',this.value)">'+esc(q.t)+'</textarea>'+
+        '<div class="row" style="margin-top:4px"><label class="grow" style="margin:0">الفروع والاختيارات (سطر لكل خيار/فراغ)</label>'+
+           '<button class="b s" style="padding:3px 8px" onclick="startVoiceInput(\'qs_'+i+'\')" title="إملاء صوتي">🎙️</button>'+
+           '<div style="position:relative"><button class="b s" style="padding:3px 8px" title="استخراج فروع من صورة">📸 OCR</button><input type="file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer" onchange="ocrQuestionImage('+i+',\'qs\',this)"></div>'+
         '</div>'+
-        '<label>الفروع / الخيارات (كل سطر فرع جديد)</label>'+
         symBarH("qs_"+i,fo.subj)+
-        '<textarea id="qs_'+i+'" rows="3" placeholder="الفرع الأول&#10;الفرع الثاني" oninput="pq('+i+',\'s\',this.value)">'+esc(q.s)+'</textarea>'+
-        '<div class="row"><label class="grow">صورة توضيحية للسؤال (اختياري)</label><input type="file" accept="image/*" onchange="qImg('+i+',this)" style="width:auto">'+(q.img?'<button class="b d" onclick="S.pp.q['+i+'].img=\'\';draw()">إزالة</button>':'')+'</div>'+
+        '<textarea id="qs_'+i+'" dir="'+dirS+'" rows="3" placeholder="الفرع الأول&#10;الفرع الثاني" oninput="pq('+i+',\'s\',this.value)">'+esc(q.s)+'</textarea>'+
+        '<div class="row"><label class="grow">صورة توضيحية مع السؤال</label><input type="file" accept="image/*" onchange="qImg('+i+',this)" style="width:auto">'+(q.img?'<button class="b d" style="padding:4px 8px" onclick="S.pp.q['+i+'].img=\'\';draw()">إزالة</button>':'')+'</div>'+
       '</div>';
     }).join("")+
     '<div class="grid"><button class="b" onclick="addQ()">+ إضافة سؤال</button><button class="b s" onclick="S.pp.tab=\'prev\';draw()">معاينة الورقة A4 ←</button></div>'+
