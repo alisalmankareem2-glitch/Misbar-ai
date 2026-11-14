@@ -126,7 +126,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.32.0";
+var APP_VERSION = "2.33.1";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -283,6 +283,8 @@ function loadUserDeviceData(){
     try{ S.hiddenMsgs = JSON.parse(localStorage.getItem(p+"hiddenMsgs")||"{}"); }catch(e){}
     try{ S.blocked = JSON.parse(localStorage.getItem(p+"blocked")||"[]"); }catch(e){}
     try{ S.pinnedChats = JSON.parse(localStorage.getItem(p+"pinnedChats")||"{}"); }catch(e){}
+    try{ S.favChats = JSON.parse(localStorage.getItem(p+"favChats")||"{}"); }catch(e){}
+    try{ S.hiddenChats = JSON.parse(localStorage.getItem(p+"hiddenChats")||"{}"); }catch(e){}
     try{ S.mutedChats = JSON.parse(localStorage.getItem(p+"mutedChats")||"{}"); }catch(e){}
     migrateScannerFolders();
   }catch(e){}
@@ -3275,7 +3277,10 @@ var CALL_CFG = {
   connectTimeout: 30000,   /* مدة انتظار ربط الجهازين بعد القبول */
   /* اختياري: سيرفر TURN لتحسين الاتصال على بعض شبكات الموبايل. مثال:
      { urls: 'turn:YOUR_HOST:3478', username: 'USER', credential: 'PASS' } */
-  turn: []
+  turn: [],
+  /* الأفضل: رابط Metered الذي يعطيك قائمة سيرفرات TURN جاهزة (بين علامتي الاقتباس):
+     'https://اسم-تطبيقك.metered.live/api/v1/turn/credentials?apiKey=مفتاحك' */
+  turnApiUrl: ''
 };
 
 var RTC = null;
@@ -3287,7 +3292,7 @@ function resetRTC(){
     negReady: false, makingOffer: false, pending: [], chain: Promise.resolve(), seqN: 0,
     finishing: false, remoteCam: null, remoteMic: true, camBusy: false, hidePip: false,
     status: '', override: '', timer: null, ringT: null, connT: null, reconT: null, failT: null,
-    wake: null, tracksAdded: false
+    wake: null, tracksAdded: false, sigErr: false, sigToast: false, gotRemote: false
   };
 }
 resetRTC();
@@ -3575,10 +3580,15 @@ function videoTransceiver(){
 /* ------------------------------- الإشارة ------------------------------- */
 function callRef(){ return window.fbGetDocRef('calls', RTC.callId); }
 function sigCol(){ return window.fbGetColRef(callRef(), 'signals'); }
+function onSigErr(e){
+  console.log('signals listener error', e && e.code);
+  RTC.sigErr = true;
+  if(e && e.code === 'permission-denied') toast('⚠️ قواعد Firestore لا تسمح بإشارات المكالمة، انشر ملف firestore.rules الجديد');
+}
 function sendSignal(o){
   if(!RTC.callId) return Promise.resolve();
   o.from = S.email; o.at = Date.now(); o.seq = Date.now() * 100 + (RTC.seqN++ % 100);
-  return window.fbAddDoc(sigCol(), o).catch(function(e){ console.log('signal send error', e); });
+  return window.fbAddDoc(sigCol(), o).catch(function(e){ console.log('signal send error', e); RTC.sigErr = true; if(e && e.code === 'permission-denied' && !RTC.sigToast){ RTC.sigToast = true; toast('⚠️ قواعد Firestore لا تسمح بإشارات المكالمة، انشر ملف firestore.rules الجديد'); } });
 }
 function sendCallState(){
   if(RTC.pc) sendSignal({ type: 'state', cam: !!RTC.camOn, mic: !RTC.muted });
@@ -3588,12 +3598,29 @@ function setCallDoc(data){
   return window.fbUpdateDoc(callRef(), data).catch(function(e){ console.log('call doc update error', e); });
 }
 
+var ICE_CACHE = { list: null, at: 0, p: null };
+function prefetchIce(){
+  if(!CALL_CFG.turnApiUrl) return Promise.resolve();
+  if(ICE_CACHE.list && Date.now() - ICE_CACHE.at < 3600000) return Promise.resolve();
+  if(ICE_CACHE.p) return ICE_CACHE.p;
+  ICE_CACHE.p = new Promise(function(res){
+    var done = false;
+    var t = setTimeout(function(){ if(!done){ done = true; res(); } }, 4000);
+    fetch(CALL_CFG.turnApiUrl).then(function(r){ return r.json(); }).then(function(j){
+      if(Array.isArray(j) && j.length){ ICE_CACHE.list = j; ICE_CACHE.at = Date.now(); }
+    }).catch(function(e){ console.log('turn fetch error', e); }).then(function(){
+      clearTimeout(t); ICE_CACHE.p = null; if(!done){ done = true; res(); }
+    });
+  });
+  return ICE_CACHE.p;
+}
+
 function callIceServers(){
   var list = [
     { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
     { urls: ['stun:stun2.l.google.com:19302', 'stun:stun3.l.google.com:19302'] }
   ];
-  return { iceServers: list.concat(CALL_CFG.turn || []), bundlePolicy: 'max-bundle', iceCandidatePoolSize: 2 };
+  return { iceServers: list.concat(ICE_CACHE.list || [], CALL_CFG.turn || []), bundlePolicy: 'max-bundle', iceCandidatePoolSize: 4 };
 }
 
 function createPeer(){
@@ -3609,7 +3636,7 @@ function createPeer(){
   };
   pc.onnegotiationneeded = function(){ if(RTC.negReady) makeOffer(false); };
   pc.oniceconnectionstatechange = onIceState;
-  RTC.unsubs.push(window.fbOnSnapshot(sigCol(), onSignals));
+  RTC.unsubs.push(window.fbOnSnapshot(sigCol(), onSignals, onSigErr));
 }
 
 function makeOffer(restart){
@@ -3662,6 +3689,7 @@ function handleSignal(d){
     return p.then(function(){
       return pc.setRemoteDescription({ type: 'offer', sdp: d.sdp });
     }).then(function(){
+      RTC.gotRemote = true;
       if(!RTC.isCaller && !RTC.tracksAdded && RTC.local){
         RTC.tracksAdded = true;
         RTC.local.getTracks().forEach(function(t){ pc.addTrack(t, RTC.local); });
@@ -3676,9 +3704,16 @@ function handleSignal(d){
   }
   if(d.type === 'answer'){
     if(pc.signalingState !== 'have-local-offer') return Promise.resolve();
-    return pc.setRemoteDescription({ type: 'answer', sdp: d.sdp }).then(flushPending);
+    return pc.setRemoteDescription({ type: 'answer', sdp: d.sdp }).then(function(){ RTC.gotRemote = true; return flushPending(); });
   }
   return Promise.resolve();
+}
+
+/* سبب فشل الاتصال بشكل واضح بدل "جاري الاتصال" للأبد */
+function connectFailReason(){
+  if(RTC.sigErr) return 'تعذر الاتصال: قواعد Firestore تمنع المكالمة';
+  if(!RTC.gotRemote) return 'تعذر الاتصال: لم يصل رد من الطرف الآخر';
+  return (ICE_CACHE.list || (CALL_CFG.turn && CALL_CFG.turn.length)) ? 'تعذر الاتصال: الشبكة تمنع الاتصال' : 'تعذر الاتصال: الشبكة تحتاج سيرفر TURN';
 }
 
 /* ---------------------------- حالة الاتصال ---------------------------- */
@@ -3698,7 +3733,7 @@ function onIceState(){
     clearTimeout(RTC.failT);
     RTC.failT = setTimeout(function(){
       var s2 = RTC.pc && RTC.pc.iceConnectionState;
-      if(s2 !== 'connected' && s2 !== 'completed') finalizeCall('ended', false, 'انقطع الاتصال');
+      if(s2 !== 'connected' && s2 !== 'completed') finalizeCall('ended', false, RTC.connected ? 'انقطع الاتصال' : connectFailReason());
     }, 15000);
   }
 }
@@ -3749,12 +3784,12 @@ function startNegotiation(){
   clearTimeout(RTC.ringT);
   CallTones.stop();
   setCallStatus('جاري الاتصال...');
-  createPeer();
+  if(!RTC.pc) createPeer();
   RTC.negReady = true;
   RTC.local.getTracks().forEach(function(t){ RTC.pc.addTrack(t, RTC.local); });
   RTC.tracksAdded = true;
   RTC.connT = setTimeout(function(){
-    if(!RTC.connected) finalizeCall('ended', false, 'تعذر الاتصال بين الجهازين');
+    if(!RTC.connected) finalizeCall('ended', false, connectFailReason());
   }, CALL_CFG.connectTimeout);
 }
 
@@ -3775,7 +3810,8 @@ function startCall(peerEmail, wantVideo){
   renderCallUI();
   setCallStatus('جاري الاتصال...');
 
-  getCallMedia(wantVideo).then(function(stream){
+  Promise.all([getCallMedia(wantVideo), prefetchIce()]).then(function(r){
+    var stream = r[0];
     if(RTC.callId !== myId){ stopStream(stream); return; }
     RTC.local = stream;
     RTC.camOn = stream.getVideoTracks().length > 0;
@@ -3787,6 +3823,7 @@ function startCall(peerEmail, wantVideo){
     }).then(function(){
       if(RTC.callId !== myId) return;
       RTC.unsubs.push(window.fbOnSnapshot(callRef(), onCallDoc));
+      createPeer(); /* نجهّز الاتصال مبكراً حتى يبدأ بسرعة عند الرد */
       CallTones.ringback();
       RTC.ringT = setTimeout(function(){
         if(!RTC.connected && !RTC.offerStarted) finalizeCall('missed', false, 'لم يرد');
@@ -3817,6 +3854,7 @@ function handleIncomingCall(callId, d){
   }catch(e){}
   window.fbUpdateDoc(ref, { status: 'ringing' }).catch(function(){});
   RTC.unsubs.push(window.fbOnSnapshot(ref, onCallDoc));
+  prefetchIce().then(function(){ if(RTC.callId === callId && !RTC.pc && !RTC.finishing) createPeer(); });
   RTC.ringT = setTimeout(function(){ if(!RTC.answered) finalizeCall('missed', false, 'مكالمة فائتة'); }, CALL_CFG.ringTimeout + 8000);
 }
 
@@ -3829,15 +3867,16 @@ function answerCall(){
   var inc = document.getElementById('incomingControls'); if(inc) inc.style.display = 'none';
   var pan = document.getElementById('callControlPanel'); if(pan) pan.style.display = 'flex';
   setCallStatus('جاري الاتصال...');
-  getCallMedia(RTC.type === 'video').then(function(stream){
+  Promise.all([getCallMedia(RTC.type === 'video'), prefetchIce()]).then(function(r){
+    var stream = r[0];
     if(RTC.callId !== myId){ stopStream(stream); return; }
     RTC.local = stream;
     RTC.camOn = stream.getVideoTracks().length > 0;
     attachLocal(); updateCallButtons();
-    createPeer();
+    if(!RTC.pc) createPeer();
     return window.fbUpdateDoc(callRef(), { status: 'accepted', answeredAt: Date.now() }).then(function(){
       RTC.connT = setTimeout(function(){
-        if(!RTC.connected) finalizeCall('ended', false, 'تعذر الاتصال بين الجهازين');
+        if(!RTC.connected) finalizeCall('ended', false, connectFailReason());
       }, CALL_CFG.connectTimeout + 5000);
     });
   }).catch(function(e){
@@ -3891,7 +3930,8 @@ function finalizeCall(status, remote, msg, silent){
       var s = Math.floor((Date.now() - sTime) / 1000), m = Math.floor(s / 60), ss = s % 60;
       durTxt = m + ':' + (ss < 10 ? '0' + ss : ss);
     }
-    var reason = status === 'rejected' ? 'رفض المكالمة' : status === 'busy' ? 'الخط مشغول' : (msg === 'تعذر الاتصال بين الجهازين' || msg === 'انقطع الاتصال') ? msg : 'لم يرد عليها';
+    var isFail = /^(تعذر|انقطع)/.test(msg || '');
+    var reason = status === 'rejected' ? 'رفض المكالمة' : status === 'busy' ? 'الخط مشغول' : isFail ? msg : 'لم يرد عليها';
     var txt = (cType === 'video' ? '📹 مكالمة فيديو' : '📞 مكالمة صوتية') + (wasConnected ? ' (' + durTxt + ')' : ' (' + reason + ')');
     var msgObj = {
       id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), e: S.email,
@@ -3912,7 +3952,7 @@ function finalizeCall(status, remote, msg, silent){
   if(msg && !silent){
     var el = document.getElementById('callStatus'); if(el) el.textContent = msg;
     var sheet = document.getElementById('callSheet'); if(sheet) sheet.remove();
-    setTimeout(closeNow, 1300);
+    setTimeout(closeNow, /^(تعذر|انقطع)/.test(msg) ? 3800 : 1300);
   } else closeNow();
 }
 
@@ -4218,17 +4258,26 @@ function cListV(){
     if(pinA !== pinB) return pinB - pinA;
     return (b.updatedAt || 0) - (a.updatedAt || 0);
   });
-  return nag + '<h2>💬 المحادثات والكروبات والملاحظات</h2>' +
-  list.map(function(c, i){
+  S.favChats = S.favChats || {};
+  var flt = S.chatFilter === 'fav' ? 'fav' : 'all';
+  var shown = flt === 'fav' ? list.filter(function(c){ return S.favChats[c.id]; }) : list;
+  var chips = '<div class="row" style="gap:8px;margin:4px 0 8px">' +
+    '<button class="b ' + (flt === 'all' ? '' : 's') + '" style="min-height:34px;padding:4px 14px" onclick="S.chatFilter=\'all\';draw()">الكل</button>' +
+    '<button class="b ' + (flt === 'fav' ? '' : 's') + '" style="min-height:34px;padding:4px 14px" onclick="S.chatFilter=\'fav\';draw()">⭐ المفضلة</button></div>';
+  return nag + '<h2>💬 المحادثات والكروبات والملاحظات</h2>' + chips +
+  (flt === 'fav' && !shown.length ? '<div class="card mu">لا توجد محادثات مفضلة بعد. اضغط مطولاً على أي محادثة لإضافتها.</div>' : '') +
+  shown.map(function(c, i){
     if(!c.id) c.id = "chat_loc_" + i;
     var ms = c.msgs || [];
     var l = ms[ms.length - 1];
     var preview = l ? (l.file ? ('📎 ' + l.file.name) : (l.t || '')) : (c.lastPreview || 'ابدأ المراسلة الآن');
     var un = chatUnread(c);
-    return '<div class="card row" style="cursor:pointer" onclick="S.curChatId=\'' + esc(c.id) + '\';draw()">' +
+    return '<div class="card row" data-cid="' + esc(c.id) + '" style="cursor:pointer" onclick="S.curChatId=\'' + esc(c.id) + '\';draw()">' +
       avatarHtml(chatTitle(c), chatPhoto(c)) +
       '<span class="grow" style="overflow:hidden"><b>' + (c.g ? '👥 ' : '') + esc(chatTitle(c)) + '</b><div class="mu" style="' + (un ? 'font-weight:800;color:var(--tx);' : '') + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(preview) + '</div></span>' +
       '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
+        '<button type="button" aria-label="خيارات المحادثة" style="background:none;border:none;color:var(--mu);font-size:22px;line-height:1;padding:2px 8px;cursor:pointer" onclick="event.stopPropagation();openChatLongMenu(\'' + esc(c.id) + '\')">⋮</button>' +
+        (S.favChats && S.favChats[c.id] ? '<span style="font-size:14px" title="مفضلة">⭐</span>' : '') +
         (S.pinnedChats && S.pinnedChats[c.id] ? '<span style="font-size:14px" title="مثبتة">📌</span>' : '') +
         (S.mutedChats && S.mutedChats[c.id] ? '<span style="font-size:12px;color:var(--mu)" title="مكتومة">🔇</span>' : '') +
         (un ? '<span class="badge" style="background:#ef4444;color:#fff">جديد</span>' : '') +
@@ -4671,6 +4720,93 @@ window.toggleMuteChat = function(chatId){
 };
 
 /* ==================== حذف الرسائل والمحادثات ==================== */
+
+/* ==================== قائمة الضغط المطوّل على المحادثات ==================== */
+window.toggleFavChat = function(chatId){
+  S.favChats = S.favChats || {};
+  if(S.favChats[chatId]) delete S.favChats[chatId]; else S.favChats[chatId] = Date.now();
+  try{ localStorage.setItem(storagePrefix()+"favChats", JSON.stringify(S.favChats)); }catch(e){}
+  toast(S.favChats[chatId] ? "⭐ أُضيفت للمفضلة" : "أُزيلت من المفضلة");
+  draw();
+};
+window.closeChatLongMenu = function(){ var m = document.getElementById("chatLP"); if(m) m.remove(); };
+window.openChatLongMenu = function(chatId){
+  var c = S.cv.find(function(x){ return x.id === chatId; }); if(!c) return;
+  var old = document.getElementById("chatLP");
+  if(old && old.getAttribute("data-for") === chatId) return;
+  closeChatLongMenu();
+  var isNotes = chatId === "local_notes";
+  var peer = (!c.g && !isNotes) ? chatPeerEmail(c) : "";
+  var blocked = !!(peer && S.blocked && S.blocked.indexOf(peer) > -1);
+  var fav = !!(S.favChats && S.favChats[chatId]), pin = !!(S.pinnedChats && S.pinnedChats[chatId]), mute = !!(S.mutedChats && S.mutedChats[chatId]);
+  var ov = document.createElement("div"); ov.id = "chatLP"; ov.setAttribute("data-for", chatId);
+  ov.style.cssText = "position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center";
+  var sh = document.createElement("div");
+  sh.style.cssText = "width:min(520px,100%);background:var(--sf);color:var(--tx);border-radius:20px 20px 0 0;padding:6px 0 calc(env(safe-area-inset-bottom,0px) + 10px);box-shadow:0 -8px 30px rgba(0,0,0,.35);font-weight:600";
+  ov.appendChild(sh);
+  function head(){
+    var h = document.createElement("div");
+    h.style.cssText = "display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--ln)";
+    h.innerHTML = avatarHtml(chatTitle(c), chatPhoto(c)) + '<b style="flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">' + (c.g ? "👥 " : "") + esc(chatTitle(c)) + "</b>";
+    return h;
+  }
+  function row(icon, label, fn, danger){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.style.cssText = "display:flex;align-items:center;gap:14px;width:100%;background:none;border:none;color:" + (danger ? "#ef4444" : "var(--tx)") + ";font:inherit;font-size:16px;padding:15px 20px;text-align:start;cursor:pointer";
+    b.innerHTML = '<span style="font-size:20px;width:26px;text-align:center">' + icon + "</span><span>" + label + "</span>";
+    b.onclick = function(){ fn(); };
+    return b;
+  }
+  function render(view){
+    sh.innerHTML = ""; sh.appendChild(head());
+    if(view === "del"){
+      sh.appendChild(row("📱", "حذف المحادثة من جهازي فقط", function(){ closeChatLongMenu(); confirmDeleteChat(chatId, false); }, true));
+      sh.appendChild(row("🗑️", "حذف المحادثة من الطرفين", function(){ closeChatLongMenu(); confirmDeleteChat(chatId, true); }, true));
+      sh.appendChild(row("↩️", "رجوع", function(){ render("main"); }));
+      return;
+    }
+    sh.appendChild(row("⭐", fav ? "إزالة من المفضلة" : "إضافة للمفضلة", function(){ closeChatLongMenu(); toggleFavChat(chatId); }));
+    sh.appendChild(row("📌", pin ? "إلغاء التثبيت" : "تثبيت المحادثة", function(){ closeChatLongMenu(); togglePinChat(chatId); }));
+    sh.appendChild(row(mute ? "🔊" : "🔇", mute ? "تفعيل الإشعارات" : "كتم الإشعارات", function(){ closeChatLongMenu(); toggleMuteChat(chatId); }));
+    if(peer) sh.appendChild(row("🚫", blocked ? "فك الحظر" : "حظر المستخدم", function(){ closeChatLongMenu(); toggleBlockUser(peer); }, !blocked));
+    if(!isNotes){
+      if(c.g) sh.appendChild(row("🚪", "مغادرة المجموعة", function(){ closeChatLongMenu(); confirmLeaveGroup(chatId); }, true));
+      else sh.appendChild(row("🗑️", "حذف المحادثة", function(){ render("del"); }, true));
+    }
+  }
+  render("main");
+  ov.addEventListener("click", function(e){ if(e.target === ov) closeChatLongMenu(); });
+  document.body.appendChild(ov);
+};
+(function(){
+  var st = document.createElement("style");
+  st.textContent = "[data-cid]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}";
+  document.head.appendChild(st);
+  var timer = null, sx = 0, sy = 0, suppress = false;
+  function clear(){ if(timer){ clearTimeout(timer); timer = null; } }
+  function hold(){ suppress = true; setTimeout(function(){ suppress = false; }, 700); }
+  document.addEventListener("pointerdown", function(e){
+    if(e.pointerType === "mouse" && e.button !== 0) return;
+    var el = e.target.closest ? e.target.closest("[data-cid]") : null; if(!el) return;
+    sx = e.clientX; sy = e.clientY; clear();
+    timer = setTimeout(function(){
+      timer = null; hold();
+      try{ if(navigator.vibrate) navigator.vibrate(15); }catch(_){}
+      openChatLongMenu(el.getAttribute("data-cid"));
+    }, 480);
+  }, true);
+  ["pointerup", "touchend"].forEach(function(ev){ document.addEventListener(ev, clear, true); });
+  window.addEventListener("scroll", clear, true);
+  document.addEventListener("touchmove", function(e){ if(timer && e.touches && e.touches[0] && (Math.abs(e.touches[0].clientX - sx) > 14 || Math.abs(e.touches[0].clientY - sy) > 14)) clear(); }, { passive: true, capture: true });
+  document.addEventListener("pointermove", function(e){ if(timer && (Math.abs(e.clientX - sx) > 12 || Math.abs(e.clientY - sy) > 12)) clear(); }, true);
+  document.addEventListener("contextmenu", function(e){
+    var el = e.target.closest ? e.target.closest("[data-cid]") : null; if(!el) return;
+    e.preventDefault(); clear(); hold(); openChatLongMenu(el.getAttribute("data-cid"));
+  }, true);
+  document.addEventListener("click", function(e){ if(suppress){ e.stopPropagation(); e.preventDefault(); suppress = false; } }, true);
+})();
+
 window.confirmLeaveGroup = function(chatId){
   var md = document.getElementById('waMenuDropdown'); if(md) md.style.display = 'none';
   var c = S.cv.find(function(x){ return x.id === chatId; }); if(!c) return;
@@ -4695,6 +4831,7 @@ window.confirmDeleteChat = function(chatId, forEveryone){
   ask(msg, function(conf){
     if(conf !== "نعم"){ toast("اكتب نعم للتأكيد"); return; }
     if(forEveryone && window.fbDeleteChatEntirely){ window.fbDeleteChatEntirely(chatId); }
+    else { S.hiddenChats = S.hiddenChats || {}; S.hiddenChats[chatId] = Date.now(); try{ localStorage.setItem(storagePrefix()+"hiddenChats", JSON.stringify(S.hiddenChats)); }catch(e){} }
     S.cv = S.cv.filter(function(x){ return x.id !== chatId; });
     if(S.curChatId === chatId) S.curChatId = null;
     saveAllUserStorage();
@@ -5261,6 +5398,28 @@ function plansV(){
   return '<h2>الباقات</h2>'+S.plans.map(function(x,i){return '<div class="card"><label>اسم الباقة</label><input value="'+esc(x.n)+'" onchange="S.plans['+i+'].n=this.value;draw()"><div class="grid"><div><label>السعر (د.ع)</label><input type="number" value="'+x.p+'" onchange="S.plans['+i+'].p=this.value"></div><div><label>المدة</label><div class="row"><input type="number" min="1" value="'+x.v+'" onchange="S.plans['+i+'].v=+this.value||1;draw()"><select onchange="S.plans['+i+'].u=this.value;draw()">'+["يوم","أسبوع","شهر"].map(function(u){return '<option'+(u==x.u?' selected':'')+'>'+u+'</option>'}).join("")+'</select></div></div></div><label>المميزات (تظهر للمستخدم)</label><textarea rows="2" onchange="S.plans['+i+'].f=this.value">'+esc(x.f||"")+'</textarea><div class="row"><span class="grow">إظهار الباقة للمستخدمين</span><button class="tog'+(x.hide?'':' on')+'" onclick="S.plans['+i+'].hide=!S.plans['+i+'].hide;draw()"></button></div><button class="b d" style="margin-top:8px" onclick="S.plans.splice('+i+',1);draw()">حذف الباقة</button></div>'}).join("")+'<button class="b" onclick="S.plans.push({n:\'باقة جديدة\',p:0,v:1,u:\'شهر\'});draw()">+ إضافة باقة</button><button class="b" style="width:100%;margin-top:8px" onclick="savePlans()">💾 حفظ الباقات ونشرها</button><h2>المشتركون الفعالون</h2>'+S.subs.map(function(s){var on=s.end>Date.now();return '<div class="card row"><span class="grow" dir="ltr">'+esc(s.e)+'<div class="mu" dir="rtl">'+esc(s.n)+' · '+(on?'ينتهي ':'منتهي ')+fd(s.end)+'</div></span></div>'}).join("")+'<div class="card"><label>دخولات الذكاء الاصطناعي المجانية يومياً</label><input type="number" value="'+S.free+'" onchange="S.free=+this.value"></div>';
 }
 function changeCode(){ask("اكتب الرمز الحالي",function(o){if(o!==S.code){toast("الرمز الحالي غير صحيح");return}ask("اكتب الرمز الجديد (4 أرقام أو أكثر)",function(n){if(n.length<4){toast("الرمز قصير");return}S.code=n;toast("تم تغيير الرمز")},1)},1)}
+
+/* ===== إعداد سيرفر الاتصال TURN (يظهر للمالك فقط) ===== */
+function turnCardV(){
+  var n = (typeof CALL_CFG !== 'undefined' && CALL_CFG.turn) ? CALL_CFG.turn.length : 0;
+  return '<h2>📞 سيرفر الاتصال (TURN)</h2><div class="card">' +
+    '<div class="mu" style="font-size:13px;margin-bottom:8px">يحسّن نجاح المكالمات بين الشبكات المختلفة (موبايل ↔ موبايل). الصق رابط بيانات TURN من موقع الخدمة (مثل Metered) أو قائمة JSON، ثم احفظ واختبر.</div>' +
+    '<textarea id="turnCfgIn" dir="ltr" rows="3" placeholder="https://YOURAPP.metered.live/api/v1/turn/credentials?apiKey=XXXX"></textarea>' +
+    '<div class="grid" style="margin-top:8px"><button class="b" onclick="saveTurnCfg()">💾 حفظ</button><button class="b s" onclick="testTurnServer()">🧪 اختبار</button></div>' +
+    '<div class="mu" style="font-size:12px;margin-top:6px">الحالة الحالية: ' + (n ? ('محفوظ (' + n + ' سيرفر)') : 'غير مضاف') + '</div></div>';
+}
+function saveTurnCfg(){
+  var el = document.getElementById('turnCfgIn'); var v = el ? el.value.trim() : '';
+  if(!v){ toast('الصق الرابط أو قائمة السيرفرات أولاً'); return; }
+  var obj;
+  if(/^https:\/\//i.test(v)) obj = { api: v, servers: '' };
+  else if(v.charAt(0) === '['){ try{ JSON.parse(v); }catch(e){ toast('صيغة JSON غير صحيحة'); return; } obj = { api: '', servers: v }; }
+  else { toast('الصيغة غير مفهومة: يجب أن يبدأ بـ https:// أو [ '); return; }
+  obj.at = Date.now();
+  if(!window.fbSaveTurnConfig){ toast('الاتصال بالسيرفر غير جاهز'); return; }
+  window.fbSaveTurnConfig(obj).then(function(){ toast('✅ تم الحفظ'); if(el) el.value = ''; return loadTurnConfig(true); }).then(function(){ draw(); }).catch(function(e){ toast('تعذر الحفظ: ' + ((e && e.code) || e)); });
+}
+
 function ownV(){
   var activeSubs=S.subs.filter(function(s){return s.end>Date.now()}).length;
   var fbs=S.feedbacks||[];
@@ -5272,6 +5431,7 @@ function ownV(){
   }).join(""):'<div class="card mu">لا توجد مقترحات مرسلة بعد.</div>')+
   reqV()+
   plansV()+
+  turnCardV()+
   '<h2>رمز المالك</h2><button class="b s" onclick="changeCode()">تغيير الرمز</button>'+
   '<div class="mu" style="text-align:center;margin-top:16px">إصدار التطبيق: v'+APP_VERSION+'</div>';
 }
@@ -5468,7 +5628,8 @@ window.fbClaimUsername=function(handle,name,cb){
   window.fbUpdateDoc = function(ref, data) { return updateDoc(ref, data); };
   window.fbAddDoc = function(colRef, data) { return setDoc(doc(colRef, "cand_" + Date.now() + "_" + Math.random().toString(36).slice(2,6)), data); };
   window.fbGetDoc = function(ref) { return getDoc(ref); };
-  window.fbOnSnapshot = function(ref, cb) { return onSnapshot(ref, cb); };
+  window.fbOnSnapshot = function(ref, cb, eb) { return onSnapshot(ref, cb, eb || function(e){ console.log('snapshot error', e && e.code); }); };
+  window.fbSaveTurnConfig = function(obj) { return setDoc(doc(db, "config", "turn"), obj); };
 
   window.fbFindUser=function(handle,cb){
   getDoc(doc(db,"usernames",String(handle||"").toLowerCase())).then(function(s){
@@ -5569,6 +5730,7 @@ onAuthStateChanged(auth,function(u){
   }
 
 
+  setTimeout(function(){ if(typeof loadTurnConfig === "function") loadTurnConfig(true); }, 1500);
   /* المكالمات الواردة: فقط التي حالتها "calling" وموجهة لهذا الحساب */
   unsubs.push(onSnapshot(query(collection(db,"calls"),where("callee","==",S.email),where("status","==","calling")),function(s){
     s.docChanges().forEach(function(ch){
@@ -5624,6 +5786,8 @@ onAuthStateChanged(auth,function(u){
     var remote=[], ids={};
     s.forEach(function(d){
       var x=d.data(); x.id=d.id;
+      var hid = (S.hiddenChats || {})[d.id];
+      if(hid){ if((x.updatedAt||0) <= hid) return; delete S.hiddenChats[d.id]; try{ localStorage.setItem(storagePrefix()+"hiddenChats", JSON.stringify(S.hiddenChats)); }catch(e){} }
       var old = prev[d.id];
       x.msgs = (old && Array.isArray(old.msgs)) ? old.msgs : [];
       remote.push(x); ids[d.id]=1;
