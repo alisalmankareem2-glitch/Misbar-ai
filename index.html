@@ -171,7 +171,7 @@ header{background:color-mix(in srgb,var(--sf) 80%,transparent);backdrop-filter:b
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.51.0";
+var APP_VERSION = "2.53.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -5488,6 +5488,7 @@ function livePortalV(){
     '</div>';
 
   if(tab === "parents"){
+    h += instKeyCardV();
     h += '<div class="card" style="border-inline-start:4px solid #25d366">' +
       '<h2>📲 أتمتة الربط مع أولياء الأمور والإدارة</h2>' +
       '<div class="mu" style="margin-bottom:12px;line-height:1.6">أرسل تقارير رسمية موثوقة (درجة امتحان، غياب، سلوك، أو كود ربط الطالب السحابي) إلى ولي الأمر والإدارة في نفس اللحظة بدون أي ضياع للمعلومات.</div>' +
@@ -5496,14 +5497,17 @@ function livePortalV(){
         return '<button type="button" class="chip" onclick="selectStudentForParent('+idx+')">👤 '+esc(g[0])+' ('+esc(g[1])+')</button>';
       }).join("") + '</div>' : '') +
       '<input id="prName" placeholder="اسم الطالب الكامل (مثال: محمد علي حسن)" value="'+esc(S.prNameVal||"")+'" oninput="S.prNameVal=this.value">' +
-      '<label>رقم هاتف ولي الأمر (واتساب)</label><div class="row" dir="ltr" style="margin-bottom:8px"><input id="prPhone" type="tel" placeholder="7801234567" value="'+esc(S.prPhoneVal||"")+'" oninput="S.prPhoneVal=this.value" style="margin:0"><b style="padding:0 8px">+964</b></div>' +
+      '<label>رقم هاتف ولي الأمر (للواتساب فقط)</label><div class="row" dir="ltr" style="margin-bottom:8px"><input id="prPhone" type="tel" placeholder="7801234567" value="'+esc(S.prPhoneVal||"")+'" oninput="S.prPhoneVal=this.value" style="margin:0"><b style="padding:0 8px">+964</b></div>' +
       '<label>نوع الإشعار الرسمي</label><select id="prType"><option value="grade">📝 تبليغ بدرجة امتحان + كود المتابعة</option><option value="absent">⚠️ تبليغ بغياب رسمي</option><option value="behavior">🗣️ استدعاء أو ملاحظة تربوية</option><option value="custom">💬 رسالة مخصصة</option></select>' +
       '<label>التفاصيل / الدرجة المأخوذة</label><textarea id="prNote" rows="2" placeholder="اكتب الدرجة أو الملاحظة هنا...">'+esc(S.prNoteVal||"")+'</textarea>' +
       '<div class="grid" style="margin-top:8px">' +
-        '<button class="b" style="background:#25d366;font-size:14px" onclick="sendParentWhatsApp()">📲 إرسال لولي الأمر + توثيق سحابي</button>' +
-        '<button class="b" style="background:#7e22ce;font-size:14px" onclick="sendGradesToAdmin()">🏢 مزامنة الكل مع الإدارة</button>' +
+        '<button class="b" style="background:#25d366;font-size:14px" onclick="sendParentWhatsApp()">📲 إرسال عبر واتساب</button>' +
+        '<button class="b" style="font-size:14px" onclick="sendParentInApp()">📱 إرسال داخل التطبيق</button>' +
       '</div>' +
+      '<div class="mu" style="font-size:11px;margin:6px 0">الإرسال داخل التطبيق لا يحتاج رقم واتساب: يدخل ولي الأمر بكود الطالب ويشوف التبليغ.</div>' +
+      '<button class="b" style="width:100%;background:#7e22ce;font-size:14px" onclick="sendGradesToAdmin()">🏢 إرسال درجات الجميع للإدارة والأهالي (كل طالب بكوده)</button>' +
     '</div>';
+    h += absenceCardV();
   } else {
     if(S.liveQuiz){
        var ansKeys = Object.keys(S.liveQuizAnswers || {});
@@ -5579,7 +5583,7 @@ function livePortalV(){
 function selectStudentForParent(idx){
   var g = S.gr[idx]; if(!g) return;
   S.prNameVal = g[0];
-  S.prNoteVal = "الدرجة الموثقة: " + g[1] + " | كود متابعة ولي الأمر: STU-" + Math.abs(hashCode(g[0]));
+  S.prNoteVal = "الدرجة الموثقة: " + g[1] + " | كود متابعة ولي الأمر: " + stuCode(g[0]);
   draw();
 }
 function hashCode(s){
@@ -5644,36 +5648,18 @@ async function genAiQuizBank(){
 }
 
 function sendParentWhatsApp(){
-  var name = $("prName").value.trim();
-  var phone = $("prPhone").value.trim();
-  var type = $("prType").value;
-  var note = $("prNote").value.trim();
-  if(!name || !phone){ toast("يرجى كتابة اسم الطالب ورقم الهاتف"); return; }
-  phone = phone.replace(/^0+/, "");
-  var fullPhone = "964" + phone;
-  var stuCode = "STU-" + hashCode(name);
-  var tName = S.dispName || "الأستاذ";
-  var msg = "السلام عليكم ورحمة الله،\nإشعار رسمي مؤتمت من ("+tName+") بخصوص الطالب/ة: *"+name+"*\n🔑 كود المتابعة السحابي: *" + stuCode + "*\n\n";
-  if(type === "grade") msg += "📊 النتيجة والتقييم: " + note + "\nيمكنكم متابعة سجل الطالب الكامل عبر بوابة أولياء الأمور في مسبار AI باستخدام الكود أعلاه.";
-  else if(type === "absent") msg += "⚠️ نود إبلاغكم بغياب الطالب هذا اليوم. " + note;
-  else if(type === "behavior") msg += "🗣️ ملاحظة تربوية / استدعاء: " + note;
-  else msg += note;
-  msg += "\n\n(أُرسل ووثّق آلياً عبر منظومة مسبار AI 🎓)";
-
-  if(window.fbSendParentNotice){
-    window.fbSendParentNotice({
-      studentCode: stuCode,
-      studentName: name,
-      teacher: tName,
-      teacherEmail: S.email,
-      type: type,
-      note: note,
-      phone: fullPhone,
-      grades: S.gr || [],
-      at: Date.now()
-    });
-  }
-  window.open("https://wa.me/" + fullPhone + "?text=" + encodeURIComponent(msg), "_blank");
+  var name=$("prName").value.trim(),phone=$("prPhone").value.trim(),type=$("prType").value,note=$("prNote").value.trim();
+  if(!name||!phone){toast("يرجى كتابة اسم الطالب ورقم الهاتف");return}
+  if(!requireKey())return;
+  var fullPhone="964"+phone.replace(/^0+/,""),code=stuCode(name),tName=S.dispName||"الأستاذ";
+  var msg="السلام عليكم ورحمة الله،\nإشعار رسمي مؤتمت من ("+tName+") بخصوص الطالب/ة: *"+name+"*\n🔑 كود المتابعة السحابي: *"+code+"*\n\n";
+  if(type==="grade")msg+="📊 النتيجة والتقييم: "+note+"\nيمكنكم متابعة سجل الطالب الكامل عبر بوابة أولياء الأمور في مسبار AI باستخدام الكود أعلاه.";
+  else if(type==="absent")msg+="⚠️ نود إبلاغكم بغياب الطالب هذا اليوم. "+note;
+  else if(type==="behavior")msg+="🗣️ ملاحظة تربوية / استدعاء: "+note;
+  else msg+=note;
+  msg+="\n\n(أُرسل ووثّق آلياً عبر منظومة مسبار AI 🎓)";
+  if(window.fbPutCardItem)window.fbPutCardItem(code,{student:name,teacher:tName,teacherEmail:S.email,type:type,note:note,at:Date.now()},0).catch(function(){});
+  window.open("https://wa.me/"+fullPhone+"?text="+encodeURIComponent(msg),"_blank");
 }
 
 function launchLiveQuiz(){
@@ -5865,81 +5851,44 @@ function stuSubmitQuiz(mode){
 }
 
 function adminPortalV(){
-  if(window.fbWatchAdminReports && !S.watchingAdmin) { window.fbWatchAdminReports(); S.watchingAdmin = true; }
-  var orgName = S.dispName || "الإدارة / القسم";
-  var q = (S.adminSearchQ || "").trim().toLowerCase();
-  var list = (S.adminReports || []).filter(function(r){
-    if(!q) return true;
-    var matchTeacher = (r.teacher||"").toLowerCase().indexOf(q) > -1 || (r.email||"").toLowerCase().indexOf(q) > -1;
-    var matchStu = (r.grades||[]).some(function(g){ return String(g[0]||"").toLowerCase().indexOf(q) > -1; });
-    return matchTeacher || matchStu;
+  if(window.fbWatchMyInsts&&!S.watchingInsts){window.fbWatchMyInsts();S.watchingInsts=true}
+  var ins=S.myInsts||[],cur=ins.filter(function(x){return x.id===S.curInstId})[0]||ins[0];
+  if(cur&&S.curInstId!==cur.id){S.curInstId=cur.id;S.instKey=cur.id+"."+cur.secret;S.adminReports=[];if(window.fbWatchInstReports)window.fbWatchInstReports(cur.id)}
+  var out='<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;S.watchingInsts=false;S.curInstId=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
+  var head='<div class="card" style="border-inline-start:4px solid #9333ea;background:#f3e8ff"><h2>🏢 لوحة الإدارة / القسم</h2><div class="mu" style="line-height:1.6">تستلم هنا درجات وغيابات الأساتذة المرتبطين بمؤسستك فقط.</div></div>';
+  var create='<div class="card"><b>➕ إنشاء مؤسسة جديدة</b><input id="instName" placeholder="اسم المدرسة / القسم" style="margin-top:6px"><button class="b" style="width:100%;background:#9333ea" onclick="createInst()">إنشاء وتوليد المفتاح</button></div>';
+  if(!cur)return head+'<div class="card mu" style="text-align:center">ما عندك مؤسسة بعد. أنشئ واحدة وسلّم مفتاحها للأساتذة.</div>'+create+out;
+  var keyCard='<div class="card"><b>🔑 مفتاح «'+esc(cur.name)+'» (للأساتذة فقط، لا تنشره)</b><div dir="ltr" style="user-select:all;font-family:monospace;background:var(--bg);padding:8px;border-radius:8px;margin:6px 0;word-break:break-all">'+esc(cur.id+"."+cur.secret)+'</div><button class="b s" style="width:100%" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+esc(cur.id+"."+cur.secret)+'\');toast(\'تم النسخ\')">📋 نسخ المفتاح</button></div>';
+  var q=(S.adminSearchQ||"").trim().toLowerCase();
+  var list=(S.adminReports||[]).filter(function(r){
+    if(!q)return true;
+    return (r.teacher||"").toLowerCase().indexOf(q)>-1||(r.email||"").toLowerCase().indexOf(q)>-1||(r.grades||[]).some(function(g){return String(g[0]||"").toLowerCase().indexOf(q)>-1})||(r.absent||[]).some(function(a){return String(a[0]||"").toLowerCase().indexOf(q)>-1});
   });
-
-  var repsHtml = list.length ? list.map(function(r, idx){
-     var avg = r.grades && r.grades.length ? (r.grades.reduce(function(a,b){return a+Number(b[1]||0);},0)/r.grades.length).toFixed(1) : 0;
-     var csv = encodeURIComponent("\ufeffاسم الطالب,الدرجة,كود ولي الأمر\n" + (r.grades || []).map(function(g){ return '"'+g[0]+'",'+g[1]+',"STU-'+hashCode(String(g[0]))+'"'; }).join("\n"));
-     return '<div class="card">' +
-       '<div class="row"><b class="grow">👨‍🏫 '+esc(r.teacher)+'</b><span class="mu" dir="ltr" style="font-size:11px">'+esc(r.email)+'</span></div>' +
-       '<div class="mu" style="margin:6px 0">📅 '+fd(r.at)+' · 👥 '+(r.grades?r.grades.length:0)+' طالب · 📈 المعدل العام: <b>'+avg+'</b></div>' +
-       '<div style="max-height:130px;overflow-y:auto;background:var(--bg);padding:6px 8px;border-radius:8px;margin-bottom:8px;font-size:12px">' +
-         (r.grades||[]).map(function(g){ return '<div class="row" style="padding:2px 0;border-bottom:1px dashed var(--ln)"><span class="grow">'+esc(g[0])+'</span><span class="badge" dir="ltr">STU-'+hashCode(String(g[0]))+'</span><b>'+esc(g[1])+'</b></div>'; }).join("") +
-       '</div>' +
-       '<a href="data:text/csv;charset=utf-8,'+csv+'" download="كشف_درجات_'+esc(r.teacher)+'.csv" class="b s" style="display:block;text-align:center;text-decoration:none;width:100%;color:#9333ea;background:#f3e8ff;padding:8px">⬇️ تنزيل كشف الأسماء والدرجات وأكواد الأهالي (Excel)</a>' +
-     '</div>';
-  }).join("") : '<div class="card mu" style="text-align:center;padding:20px 0">لا توجد سجلات مطابقة حالياً. بمجرد أن يرسل أي أستاذ السجل ستظهر هنا فوراً.</div>';
-
-  return '<div class="card" style="border-inline-start:4px solid #9333ea;background:#f3e8ff">' +
-    '<h2>🏢 لوحة تحكم ' + esc(orgName) + ' المؤتمتة</h2>' +
-    '<div class="mu" style="line-height:1.6">ترتبط هذه اللوحة سحابياً بجميع الأساتذة وأولياء الأمور لحظة بلحظة دون أي تدخل يدوي.</div>' +
-    '<input placeholder="🔍 ابحث باسم الطالب أو اسم الأستاذ..." value="'+esc(S.adminSearchQ||"")+'" oninput="S.adminSearchQ=this.value;draw()" style="margin-top:8px;background:#fff">' +
-  '</div>' +
-  '<h2>السجلات السحابية الموثقة ('+list.length+')</h2>' +
-  repsHtml +
-  '<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
+  var reps=list.length?list.map(function(r){
+    if(r.kind==="absence")return adminAbsCardH(r);
+    var avg=r.grades&&r.grades.length?(r.grades.reduce(function(a,b){return a+Number(b[1]||0)},0)/r.grades.length).toFixed(1):0;
+    var csv=encodeURIComponent("\ufeffاسم الطالب,الدرجة,كود ولي الأمر\n"+(r.grades||[]).map(function(g){return '"'+g[0]+'",'+g[1]+',"'+stuCode(g[0])+'"'}).join("\n"));
+    return '<div class="card"><div class="row"><b class="grow">👨‍🏫 '+esc(r.teacher)+'</b><span class="mu" dir="ltr" style="font-size:11px">'+esc(r.email)+'</span></div><div class="mu" style="margin:6px 0">📅 '+fd(r.at)+' · 👥 '+(r.grades?r.grades.length:0)+' طالب · 📈 المعدل: <b>'+avg+'</b></div>'+
+      '<div style="max-height:130px;overflow-y:auto;background:var(--bg);padding:6px 8px;border-radius:8px;margin-bottom:8px;font-size:12px">'+(r.grades||[]).map(function(g){return '<div class="row" style="padding:2px 0;border-bottom:1px dashed var(--ln)"><span class="grow">'+esc(g[0])+'</span><span class="badge" dir="ltr">'+esc(stuCode(g[0]))+'</span><b>'+esc(g[1])+'</b></div>'}).join("")+'</div>'+
+      '<a href="data:text/csv;charset=utf-8,'+csv+'" download="كشف_درجات_'+esc(r.teacher)+'.csv" class="b s" style="display:block;text-align:center;text-decoration:none;width:100%;color:#9333ea;background:#f3e8ff;padding:8px">⬇️ تنزيل كشف الدرجات والأكواد (Excel)</a></div>';
+  }).join(""):'<div class="card mu" style="text-align:center;padding:20px 0">لا توجد سجلات بعد. تظهر هنا فور إرسال الأساتذة.</div>';
+  return head+keyCard+'<input placeholder="🔍 ابحث باسم الطالب أو الأستاذ..." value="'+esc(S.adminSearchQ||"")+'" oninput="S.adminSearchQ=this.value;draw()"><h2>السجلات ('+list.length+')</h2>'+reps+out;
 }
 
 function parentsPortalV(){
-  if(window.fbWatchAdminReports && !S.watchingAdmin) { window.fbWatchAdminReports(); S.watchingAdmin = true; }
-  var codeIn = (S.parentStuCode || "").trim().toUpperCase();
-  var matchedGrades = [];
-  var matchedNotices = (S.parentNotices || []).filter(function(n){
-    return codeIn && (String(n.studentCode||"").toUpperCase() === codeIn || String(n.studentName||"").indexOf(codeIn) > -1);
-  });
-
-  if(codeIn){
-    (S.adminReports || []).forEach(function(rep){
-      (rep.grades || []).forEach(function(g){
-        var c = "STU-" + hashCode(String(g[0]).replace(/ \(معدل.*\)/g, ""));
-        var cFull = "STU-" + hashCode(String(g[0]));
-        if(c === codeIn || cFull === codeIn || String(g[0]).indexOf(codeIn) > -1){
-          matchedGrades.push({ student: g[0], score: g[1], teacher: rep.teacher, at: rep.at, code: c });
-        }
-      });
-    });
-  }
-
-  return '<div class="card" style="border-inline-start:4px solid #2563eb;background:#eff6ff">' +
-    '<h2>👨‍👩‍👦 بوابة أولياء الأمور الموثوقة</h2>' +
-    '<div class="mu" style="line-height:1.6">أدخل كود الطالب السحابي (مثل <b>STU-12345</b>) أو اسم الطالب الثلاثي لعرض جميع درجاته وتبليغاته المرسلة من الأساتذة والإدارة لحظياً.</div>' +
-  '</div>' +
-  '<div class="card">' +
-    '<label>كود الطالب السحابي (Student ID) أو الاسم الثلاثي:</label>' +
-    '<div class="row">' +
-       '<input id="pCodeIn" type="text" value="'+esc(S.parentStuCode||"")+'" placeholder="مثال: STU-12345 أو اسم الطالب" class="grow" style="margin:0" oninput="S.parentStuCode=this.value">' +
-       '<button class="b" style="background:#2563eb" onclick="S.parentStuCode=document.getElementById(\'pCodeIn\').value;draw()">🔍 متابعة</button>' +
-    '</div>' +
-  '</div>' +
-  (codeIn ? (
-    (matchedGrades.length || matchedNotices.length) ? (
-      '<h2>📊 السجل الأكاديمي الموثق للطالب</h2>' +
-      matchedGrades.map(function(m){
-        return '<div class="card row"><div class="grow"><b>🧑‍🎓 '+esc(m.student)+'</b><div class="mu">الأستاذ: '+esc(m.teacher)+' · التاريخ: '+fd(m.at)+'</div></div><span class="badge" style="font-size:15px;padding:6px 12px;background:#dcfce7;color:#15803d">الدرجة: '+esc(m.score)+'</span></div>';
-      }).join("") +
-      matchedNotices.map(function(n){
-        return '<div class="card" style="border-inline-start:4px solid #f59e0b"><b>📩 تبليغ من '+esc(n.teacher)+' ('+fd(n.at)+')</b><div style="margin-top:4px">'+esc(n.note)+'</div></div>';
-      }).join("")
-    ) : '<div class="card mu" style="text-align:center;padding:24px 10px">لم يتم العثور على سجلات مطابقة لـ «'+esc(codeIn)+'». تأكد من الكود المرسل إليك عبر واتساب من الأستاذ.</div>'
-  ) : '<div class="card mu" style="text-align:center;padding:24px 10px">أدخل كود الطالب أعلاه لعرض درجاته وإشعاراته الفورية.</div>') +
+  var codeIn=(S.parentStuCode||"").trim().toUpperCase().replace(/\s+/g,""),okFmt=/^STU-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(codeIn);
+  if(okFmt&&S.watchedCode!==codeIn&&window.fbWatchCard){S.watchedCode=codeIn;S.cardItems=[];window.fbWatchCard(codeIn)}
+  var items=okFmt?(S.cardItems||[]):[];
+  var body;
+  if(!codeIn)body='<div class="card mu" style="text-align:center;padding:24px 10px">أدخل كود الطالب أعلاه لعرض درجاته وتبليغاته.</div>';
+  else if(!okFmt)body='<div class="card mu" style="text-align:center;padding:24px 10px">الكود يكون بهذا الشكل: STU-XXXX-XXXX-XXXX</div>';
+  else if(!items.length)body='<div class="card mu" style="text-align:center;padding:24px 10px">ما كو سجلات لهذا الكود لحد الآن. تأكد من الكود المرسل لك من الأستاذ.</div>';
+  else body='<h2>📊 سجل الطالب: '+esc(items[0].student||"")+'</h2>'+items.map(function(n){
+    if(n.type==="grade")return '<div class="card row"><div class="grow"><b>🧑‍🎓 '+esc(n.student||"")+'</b><div class="mu">الأستاذ: '+esc(n.teacher)+' · '+fd(n.at)+'</div></div><span class="badge" style="font-size:15px;padding:6px 12px;background:#dcfce7;color:#15803d">الدرجة: '+esc(n.score)+'</span></div>';
+    return '<div class="card" style="border-inline-start:4px solid '+(n.type==="absent"?"#dc2626":"#f59e0b")+'"><b>'+(n.type==="absent"?"⚠️ تبليغ غياب من ":"📩 تبليغ من ")+esc(n.teacher)+' ('+fd(n.at)+')</b><div style="margin-top:4px">'+esc(n.note)+'</div></div>';
+  }).join("");
+  return '<div class="card" style="border-inline-start:4px solid #2563eb;background:#eff6ff"><h2>👨‍👩‍👦 بوابة أولياء الأمور</h2><div class="mu" style="line-height:1.6">أدخل كود ابنك (مثل <b>STU-AB12-CD34-EF56</b>) اللي استلمته من الأستاذ لعرض درجاته وغياباته وتبليغاته. تشوف ابنك فقط.</div></div>'+
+  '<div class="card"><label>كود الطالب:</label><div class="row"><input id="pCodeIn" dir="ltr" type="text" value="'+esc(S.parentStuCode||"")+'" placeholder="STU-XXXX-XXXX-XXXX" class="grow" style="margin:0" oninput="S.parentStuCode=this.value"><button class="b" style="background:#2563eb" onclick="S.parentStuCode=document.getElementById(\'pCodeIn\').value;draw()">🔍 متابعة</button></div></div>'+body+
   '<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
 }
 
@@ -6002,23 +5951,108 @@ function calcSaee(){
    draw();
 }
 
+
+
+/* ===== v2.53: خصوصية — مفتاح مؤسسة + أكواد غير قابلة للتخمين ===== */
+var B32="ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+function cyr(s,seed){var h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(var i=0;i<s.length;i++){var c=s.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677)}h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);return [h1>>>0,h2>>>0]}
+function randStr(n){var a=new Uint8Array(n),o="";crypto.getRandomValues(a);for(var i=0;i<n;i++)o+=B32[a[i]%31];return o}
+function getInstKey(){if(S.instKey===undefined){try{S.instKey=localStorage.getItem("misbar_inst_key_"+(S.uid||"anon"))||""}catch(e){S.instKey=""}}return S.instKey}
+function keyParts(){var k=String(getInstKey()||"").split(".");return (k.length==2&&k[0]&&k[1])?{id:k[0],sec:k[1]}:null}
+function setInstKey(v){v=(v||"").trim().toUpperCase();S.instKey=v;try{localStorage.setItem("misbar_inst_key_"+(S.uid||"anon"),v)}catch(e){}if(v&&!keyParts())toast("صيغة المفتاح غير صحيحة");draw()}
+function requireKey(){if(!keyParts()){toast("أدخل مفتاح المؤسسة أولاً (أعلى هذه الصفحة)");return false}return true}
+function stuCode(name){
+  var kp=keyParts();if(!kp)return "";
+  var s=kp.sec+"|"+normNm(String(name).replace(/ \(معدل.*\)/g,"")),a=cyr(s,1),b=cyr(s,7),n=[a[0],a[1],b[0],b[1]],o="";
+  for(var i=0;i<12;i++)o+=B32[((n[i%4]>>>(Math.floor(i/4)*8))&255)%31];
+  return "STU-"+o.slice(0,4)+"-"+o.slice(4,8)+"-"+o.slice(8,12);
+}
+function instKeyCardV(){
+  var kp=keyParts();
+  return '<div class="card" style="border-inline-start:4px solid #7e22ce"><b>🏫 مفتاح المؤسسة</b>'+
+    '<div class="mu" style="line-height:1.7;margin:4px 0">'+(kp?'مربوط ✅ — أكواد الطلاب والتبليغات وتقارير الإدارة كلها ترتبط بهذا المفتاح.':'خذ المفتاح من إدارة مدرستك/قسمك (من بوابة الإدارة). بدونه ما تكدر ترسل للأهالي أو الإدارة.')+'</div>'+
+    '<input id="instKeyIn" dir="ltr" placeholder="XXXXXXXX.XXXXXXXXXXXXXXXX" value="'+esc(getInstKey())+'" onchange="setInstKey(this.value)" style="margin-bottom:0"></div>';
+}
+function createInst(){
+  var n=($("instName")?$("instName").value:"").trim();
+  if(!n){toast("اكتب اسم المؤسسة");return}
+  if(!S.uid||!window.fbCreateInst){toast("سجّل الدخول أولاً");return}
+  window.fbCreateInst(randStr(8),{name:n,secret:randStr(16),adminUid:S.uid,adminEmail:S.email,at:Date.now()}).then(function(){toast("✅ تم إنشاء المؤسسة")}).catch(function(e){toast("تعذر الإنشاء: "+(e&&e.message||e))});
+}
+
+/* ===== v2.52: التبليغ داخل التطبيق + أتمتة الغياب ===== */
+function sendParentInApp(){
+  var name=($("prName").value||"").trim(),type=$("prType").value,note=($("prNote").value||"").trim();
+  if(!name){toast("اكتب اسم الطالب");return}
+  if(!requireKey())return;
+  if(!window.fbPutCardItem){toast("قاعدة البيانات غير جاهزة");return}
+  var code=stuCode(name);
+  window.fbPutCardItem(code,{student:name,teacher:S.dispName||"الأستاذ",teacherEmail:S.email,type:type,note:note||(type==="absent"?"غاب الطالب اليوم":""),at:Date.now()},0)
+    .then(function(){toast("✅ وصل التبليغ داخل التطبيق · كود الطالب: "+code)})
+    .catch(function(e){toast("تعذر الإرسال: "+(e&&e.message||e))});
+}
+
+function normNm(s){ return String(s||"").replace(/[\u064B-\u0652\u0640]/g,"").replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/\s+/g," ").trim(); }
+function rosterList(){
+  if(S.rosterTxt === undefined){ try{ S.rosterTxt = localStorage.getItem("misbar_roster_" + (S.uid||"anon")) || ""; }catch(e){ S.rosterTxt = ""; } }
+  return String(S.rosterTxt).split("\n").map(function(x){ return x.trim(); }).filter(Boolean);
+}
+function presentSet(){
+  var s = {};
+  (S.gr || []).forEach(function(g){ s[normNm(String(g[0]).replace(/ \(معدل.*\)/g,""))] = 1; });
+  Object.keys(S.liveQuizAnswers || {}).forEach(function(k){ var a = S.liveQuizAnswers[k]; if(a && a.name) s[normNm(a.name)] = 1; });
+  return s;
+}
+function absentList(){ var p = presentSet(); return rosterList().filter(function(n){ return !p[normNm(n)]; }); }
+function saveRoster(v){ S.rosterTxt = v; S.absSkip = {}; try{ localStorage.setItem("misbar_roster_" + (S.uid||"anon"), v); }catch(e){} }
+function absenceCardV(){
+  var ro = rosterList(), ab = absentList(); S.absSkip = S.absSkip || {};
+  return '<div class="card" style="border-inline-start:4px solid #dc2626">' +
+    '<h2>🚫 الغياب المؤتمت</h2>' +
+    '<div class="mu" style="line-height:1.7">ألصق أسماء كل طلاب الصف مرة وحدة (اسم بكل سطر). الحاضر = من عنده درجة بالدفتر أو دخل الامتحان المباشر، والباقي يُحسب غائب.</div>' +
+    '<textarea rows="5" placeholder="أسماء كل الطلاب، اسم بكل سطر" onchange="saveRoster(this.value);draw()">' + esc(S.rosterTxt || "") + '</textarea>' +
+    '<input id="absSubj" placeholder="المادة / الامتحان (اختياري)" value="' + esc(S.absSubjVal || "") + '" oninput="S.absSubjVal=this.value">' +
+    (ro.length ? '<div class="mu" style="margin:4px 0">👥 ' + ro.length + ' طالب · ✅ حاضر ' + (ro.length - ab.length) + ' · 🚫 غائب <b>' + ab.length + '</b></div>' : '') +
+    (ab.length ? '<div style="max-height:180px;overflow-y:auto;background:var(--bg);border-radius:10px;padding:6px 8px;margin-bottom:8px">' +
+      ab.map(function(n, i){ return '<label class="row" style="margin:0;padding:3px 0;color:var(--tx);cursor:pointer"><input type="checkbox" style="width:auto;margin:0" ' + (S.absSkip[i] ? '' : 'checked') + ' onchange="S.absSkip[' + i + ']=!this.checked"><span class="grow">' + esc(n) + '</span><span class="badge" dir="ltr">' + esc(stuCode(n) || "—") + '</span></label>'; }).join("") + '</div>' +
+      '<div class="mu" style="font-size:11px;margin-bottom:6px">شيل العلامة عن أي طالب لا تريد تبلغ عنه (مثلاً عنده عذر).</div>' +
+      '<button class="b" style="width:100%;background:#dc2626" ' + (S.busy ? 'disabled' : '') + ' onclick="sendAbsence()">📤 تبليغ الغياب تلقائياً للأهالي والإدارة</button>' : '') +
+  '</div>';
+}
+function sendAbsence(){
+  var list = absentList().filter(function(n, i){ return !S.absSkip[i]; });
+  if(!list.length){ toast("ما كو غياب للإرسال"); return; }
+  if(!requireKey()) return;
+  if(!window.fbPutCardItem || !window.fbSendReport){ toast("قاعدة البيانات غير جاهزة"); return; }
+  var tName = S.dispName || S.email, now = Date.now(), d = new Date(now).toLocaleDateString("ar-IQ");
+  var subj = ($("absSubj") ? $("absSubj").value.trim() : "") || S.absSubjVal || "";
+  S.busy = true; draw();
+  Promise.all(list.map(function(n, i){
+    return window.fbPutCardItem(stuCode(n), { student: n, teacher: tName, teacherEmail: S.email, type: "absent", note: "غاب الطالب عن الامتحان" + (subj ? " (" + subj + ")" : "") + " بتاريخ " + d, at: now + i }, i + 1);
+  })).then(function(){
+    return window.fbSendReport(keyParts().id, { teacher: tName, email: S.email, at: now, kind: "absence", subject: subj, grades: [], absent: list.map(function(n){ return [n, stuCode(n)]; }), rosterCount: rosterList().length });
+  }).then(function(){ S.busy = false; draw(); toast("✅ تم تبليغ غياب " + list.length + " طالب للأهالي والإدارة"); })
+    .catch(function(e){ S.busy = false; draw(); toast("تعذر الإرسال: " + (e && e.message || e)); });
+}
+function adminAbsCardH(r){
+  var csv = encodeURIComponent("\ufeffاسم الطالب,كود ولي الأمر\n" + (r.absent || []).map(function(a){ return '"' + a[0] + '","' + a[1] + '"'; }).join("\n"));
+  return '<div class="card" style="border-inline-start:4px solid #dc2626">' +
+    '<div class="row"><b class="grow">🚫 غياب · ' + esc(r.teacher) + (r.subject ? ' · ' + esc(r.subject) : '') + '</b><span class="mu" style="font-size:11px">' + fd(r.at) + '</span></div>' +
+    '<div class="mu" style="margin:6px 0">غائبون: <b>' + (r.absent ? r.absent.length : 0) + '</b> من ' + (r.rosterCount || "؟") + ' طالب</div>' +
+    '<div style="max-height:130px;overflow-y:auto;background:var(--bg);padding:6px 8px;border-radius:8px;margin-bottom:8px;font-size:12px">' +
+      (r.absent || []).map(function(a){ return '<div class="row" style="padding:2px 0;border-bottom:1px dashed var(--ln)"><span class="grow">' + esc(a[0]) + '</span><span class="badge" dir="ltr">' + esc(a[1]) + '</span></div>'; }).join("") + '</div>' +
+    '<a href="data:text/csv;charset=utf-8,' + csv + '" download="كشف_غياب_' + esc(r.teacher) + '.csv" class="b s" style="display:block;text-align:center;text-decoration:none;width:100%;color:#b91c1c;background:#fee2e2;padding:8px">⬇️ تنزيل كشف الغياب (Excel)</a></div>';
+}
+
 function sendGradesToAdmin(){
-   if(!S.gr || !S.gr.length) { toast("الدفتر فارغ"); return; }
-   S.busy = true; draw();
-   var report = {
-      teacher: S.dispName || S.email,
-      email: S.email,
-      at: Date.now(),
-      grades: S.gr
-   };
-   if(window.fbSendAdminReport){
-      window.fbSendAdminReport(report).then(function(){
-         S.busy = false; draw();
-         toast("📤 تم إرسال السجل وتوثيقه لدى الإدارة وأولياء الأمور بنجاح!");
-      }).catch(function(e){ S.busy=false; draw(); toast("خطأ: " + e); });
-   } else {
-      S.busy = false; draw(); toast("قاعدة البيانات غير جاهزة");
-   }
+  if(!S.gr||!S.gr.length){toast("الدفتر فارغ");return}
+  if(!requireKey())return;
+  if(!window.fbSendReport||!window.fbPutCardItem){toast("قاعدة البيانات غير جاهزة");return}
+  var tName=S.dispName||S.email,now=Date.now();S.busy=true;draw();
+  Promise.all(S.gr.map(function(g,i){var nm=String(g[0]).replace(/ \(معدل.*\)/g,"").trim();return window.fbPutCardItem(stuCode(nm),{student:nm,teacher:tName,teacherEmail:S.email,type:"grade",score:g[1],note:"الدرجة: "+g[1],at:now+i},i+1)}))
+   .then(function(){return window.fbSendReport(keyParts().id,{teacher:tName,email:S.email,at:now,grades:S.gr})})
+   .then(function(){S.busy=false;draw();toast("📤 وصلت الدرجات للإدارة ولكل ولي أمر بكود ابنه")})
+   .catch(function(e){S.busy=false;draw();toast("خطأ: "+(e&&e.message||e))});
 }
 
 function avatarHtml(name, photo){
@@ -6480,27 +6514,13 @@ window.fbWatchStudentReset = function(pin, uid, onResetCallback){
   });
 };
 
-window.fbSendParentNotice = function(notice){
-  return setDoc(doc(collection(db, "parent_notices"), Date.now().toString() + "_" + (S.uid||"anon")), notice);
-};
-
-window.fbSendAdminReport = function(report){
-   return setDoc(doc(collection(db, "admin_reports"), Date.now().toString() + "_" + (S.uid||"anon")), report);
-};
-window.fbWatchAdminReports = function(){
-   onSnapshot(collection(db, "admin_reports"), function(snap){
-      var reps = [];
-      snap.forEach(function(d){ reps.push(d.data()); });
-      S.adminReports = reps.sort(function(a,b){ return (b.at||0) - (a.at||0); });
-      if(S.sysRole === 'admin' || S.sysRole === 'parent') draw();
-   });
-   onSnapshot(collection(db, "parent_notices"), function(snap){
-      var notes = [];
-      snap.forEach(function(d){ notes.push(d.data()); });
-      S.parentNotices = notes.sort(function(a,b){ return (b.at||0) - (a.at||0); });
-      if(S.sysRole === 'parent') draw();
-   });
-};
+var _wc=null,_wr=null,_wi=null;
+window.fbPutCardItem=function(code,item,sfx){return setDoc(doc(collection(db,"parent_cards",code,"items"),Date.now()+"_"+(sfx||0)+"_"+(S.uid||"anon")),item)};
+window.fbSendReport=function(inst,rep){return setDoc(doc(collection(db,"inst",inst,"reports"),Date.now()+"_"+(S.uid||"anon")),rep)};
+window.fbCreateInst=function(id,d){return setDoc(doc(db,"inst",id),d)};
+window.fbWatchMyInsts=function(){if(_wi)_wi();_wi=onSnapshot(query(collection(db,"inst"),where("adminUid","==",S.uid)),function(s){var a=[];s.forEach(function(d){var x=d.data();x.id=d.id;a.push(x)});S.myInsts=a;if(S.sysRole==="admin")draw()},function(e){toast("تعذر قراءة المؤسسات: "+e.message)})};
+window.fbWatchInstReports=function(id){if(_wr)_wr();_wr=onSnapshot(collection(db,"inst",id,"reports"),function(s){var r=[];s.forEach(function(d){r.push(d.data())});S.adminReports=r.sort(function(a,b){return (b.at||0)-(a.at||0)});if(S.sysRole==="admin")draw()},function(e){toast("تعذر قراءة التقارير: "+e.message)})};
+window.fbWatchCard=function(code){if(_wc)_wc();_wc=onSnapshot(collection(db,"parent_cards",code,"items"),function(s){var r=[];s.forEach(function(d){r.push(d.data())});S.cardItems=r.sort(function(a,b){return (b.at||0)-(a.at||0)});if(S.sysRole==="parent")draw()},function(e){S.cardItems=[];toast("تعذر القراءة: "+e.message)})};
 
 window.fbSyncUserProfile=function(){
   if(!S.uid||!S.profLoaded)return;
