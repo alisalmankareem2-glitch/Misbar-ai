@@ -5260,8 +5260,8 @@ function omrV(){
   var st = S.aiSubTab2 || 'omr';
   var h = '<h2>💯 خدمات الأستاذ المتقدمة</h2>' +
     '<div class="grid" style="margin-bottom:10px">' +
-      '<button class="b '+(st==='omr'?'':'s')+'" onclick="S.aiSubTab2='omr';draw()">💯 المصحح الآلي</button>' +
-      '<button class="b '+(st==='slides'?'':'s')+'" onclick="S.aiSubTab2='slides';draw()">📊 صانع العروض</button>' +
+      '<button class="b '+(st==='omr'?'':'s')+'" onclick="S.aiSubTab2=\'omr\';draw()">💯 المصحح الآلي</button>' +
+      '<button class="b '+(st==='slides'?'':'s')+'" onclick="S.aiSubTab2=\'slides\';draw()">📊 صانع العروض</button>' +
     '</div>';
     
   if(st === 'omr'){
@@ -5273,7 +5273,7 @@ function omrV(){
       '</div>' +
       '<div class="grid" style="margin-top:12px">' +
         '<button class="b" onclick="startBatchAIOmr()">📸 تصحيح أوراق الطلاب (دفعة كاملة)</button>' +
-        '<button class="b s" onclick="S.proPortal='grades';S.tab=0;draw()">📊 عرض وتصدير كل الدرجات</button>' +
+        '<button class="b s" onclick="S.proPortal=\'grades\';S.tab=0;draw()">📊 عرض وتصدير كل الدرجات</button>' +
       '</div>' +
       (S.omrResult ? '<div class="out" style="margin-top:12px"><b>نتيجة التصحيح:</b><br>' + esc(S.omrResult) + '</div>' : '') +
     '</div>';
