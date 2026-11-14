@@ -171,7 +171,7 @@ header{background:color-mix(in srgb,var(--sf) 80%,transparent);backdrop-filter:b
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.53.0";
+var APP_VERSION = "2.55.1";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -387,7 +387,7 @@ function getUserKey(){
 }
 function setUserKey(k){
   k = (k||"").trim();
-  S.userAiKey = k;
+  S.userAiKey = k; S._gm = null; if(k) geminiModels(k).catch(function(){});
   try{ localStorage.setItem("misbar_gkey_"+(S.uid||"anon"), k); }catch(e){}
   saveAllUserStorage();
 }
@@ -825,6 +825,7 @@ async function callUserGemini(prompt,sysInst,imgDataUrl,jsonMode){
   if(jsonMode)body.generationConfig.responseMimeType="application/json";
 
   var models=["gemini-2.5-flash","gemini-2.0-flash"];
+  try{models=await geminiModels(key)}catch(e){}
   for(var m=0;m<models.length;m++){
     try{
       var res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+models[m]+":generateContent?key="+encodeURIComponent(key),{
@@ -3915,11 +3916,11 @@ function delScnPage(docId, pageIdx){
 
 /* ==================== الكلاسات ==================== */
 function clsV(){
-  return '<h2>كلاساتي ('+S.classes.length+')</h2>'+
+  return instKeyCardV()+'<h2>كلاساتي ('+S.classes.length+')</h2>'+
   S.classes.map(function(c,ci){
     var mats=c.mats||[];
     return '<div class="card"><div class="row"><b class="grow">'+esc(c.n)+'</b><span class="badge" dir="ltr">رمز: '+esc(c.c)+'</span></div>'+
-      '<div class="mu" style="margin:4px 0">'+mats.length+' ملازم منشورة للطلاب</div>'+
+      '<div class="mu" style="margin:4px 0">'+mats.length+' ملازم منشورة للطلاب</div>'+clsAutoH(ci,c)+
       mats.map(function(m,mi){
         return '<div class="row" style="padding:5px 0;border-top:1px solid var(--ln)"><span class="grow">📄 '+esc(m.title)+'</span><button class="b d" onclick="S.classes['+ci+'].mats.splice('+mi+',1);saveAllUserStorage();draw()">حذف</button></div>';
       }).join("")+
@@ -3944,7 +3945,7 @@ function addMatDirect(ci){
     ask("اكتب أو ألصق نص الدرس/الملزمة",function(txt){
       S.classes[ci].mats=S.classes[ci].mats||[];
       S.classes[ci].mats.push({title:title,text:txt,at:Date.now()});
-      saveAllUserStorage();toast("تم نشر الملزمة");draw();
+      saveAllUserStorage();if((S.classes[ci].roster||[]).length)pubClass(ci,1);toast("تم نشر الملزمة");draw();
     });
   });
 }
@@ -5117,32 +5118,109 @@ function aiErr(status, msg){
 }
 
 /* استدعاء موحّد: messages = [{role:'user'|'assistant', content:'...'}] */
-async function callAIText(prov, messages, sys){
-  var key = provKey(prov); if(!key) throw new Error("NOKEY");
-  var models = AI_PROVS[prov].models, lastErr = "", lastStatus = 0;
-  for(var i = 0; i < models.length; i++){
-    var res, data;
-    try{
-      if(prov === "Gemini"){
-        var body = { contents: messages.map(function(m){ return { role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }; }), generationConfig: { temperature: 0.65 } };
-        if(sys) body.systemInstruction = { parts: [{ text: sys }] };
-        res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + models[i] + ":generateContent?key=" + encodeURIComponent(key), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-        data = await res.json();
-        if(res.ok && data.candidates && data.candidates[0] && data.candidates[0].content) return data.candidates[0].content.parts.map(function(x){ return x.text || ""; }).join("");
-      } else if(prov === "ChatGPT"){
-        res = await fetch("https://api.openai.com/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key }, body: JSON.stringify({ model: models[i], messages: [{ role: "system", content: sys || AI_SYS }].concat(messages) }) });
-        data = await res.json();
-        if(res.ok && data.choices && data.choices[0]) return data.choices[0].message.content || "";
-      } else {
-        res = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" }, body: JSON.stringify({ model: models[i], max_tokens: 2000, system: sys || AI_SYS, messages: messages }) });
-        data = await res.json();
-        if(res.ok && data.content) return data.content.map(function(x){ return x.text || ""; }).join("");
-      }
-      lastStatus = res.status; lastErr = (data && data.error && (data.error.message || data.error)) || "";
-      if(res.status === 401 || res.status === 403 || res.status === 429) break; /* لا فائدة من تجربة موديل آخر */
-    }catch(e){ lastStatus = 0; lastErr = e && e.message; if(!navigator.onLine) break; }
+/* اكتشاف موديلات Gemini المتاحة فعلياً لمفتاح المستخدم (بدل الاعتماد على أسماء ثابتة قد تتوقف) */
+async function geminiModels(key){
+  if(S._gm) return S._gm;
+  var pref=["gemini-2.5-flash","gemini-flash-latest","gemini-2.5-flash-lite","gemini-2.0-flash"];
+  var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=100&key="+encodeURIComponent(key));
+  var d=await r.json();
+  if(!r.ok) throw new Error((d&&d.error&&d.error.message)||("HTTP "+r.status));
+  var ok=(d.models||[]).filter(function(m){return (m.supportedGenerationMethods||[]).indexOf("generateContent")>-1}).map(function(m){return m.name.replace("models/","")});
+  var list=pref.filter(function(n){return ok.indexOf(n)>-1});
+  ok.filter(function(n){return /^gemini-[\d.]+-flash(-lite)?$/.test(n)&&list.indexOf(n)<0}).sort().reverse().forEach(function(n){list.push(n)});
+  if(!list.length) list=pref.slice(0,2);
+  S._gm=list.slice(0,3);
+  return S._gm;
+}
+
+/* ===== v2.55: محرك ذكاء بثلاث طبقات: بحث المنصة المباشر ← بحث مسبار (ويب+ويكيبيديا) ← بدون بحث، مع إظهار الطبقة التي اشتغلت فعلاً ===== */
+function lastUserText(m){for(var i=m.length-1;i>=0;i--){if(m[i].role==="user")return String(m[i].content||"").slice(0,200)}return ""}
+async function appWebSearch(q){
+  var out=[],T=function(p,ms){return Promise.race([p,new Promise(function(r){setTimeout(function(){r(false)},ms||7000)})])};
+  var ar=/[\u0600-\u06FF]/.test(q);
+  var wk=function(lg){return T(fetch("https://"+lg+".wikipedia.org/w/api.php?action=query&generator=search&gsrsearch="+encodeURIComponent(q)+"&gsrlimit=3&prop=extracts%7Cinfo&inprop=url&exintro=1&explaintext=1&exchars=900&format=json&origin=*").then(function(r){return r.json()}).then(function(d){var p=(d.query&&d.query.pages)||{};Object.keys(p).forEach(function(k){out.push({t:p[k].title,s:p[k].extract||"",u:p[k].fullurl||""})})}).catch(function(){}))};
+  var ddg=function(){
+    var u="https://html.duckduckgo.com/html/?q="+encodeURIComponent(q),px=["https://api.allorigins.win/raw?url=","https://corsproxy.io/?"];
+    return px.reduce(function(pr,x){return pr.then(function(ok){if(ok)return ok;
+      return T(fetch(x+encodeURIComponent(u)).then(function(r){return r.text()}).then(function(h){
+        var doc=new DOMParser().parseFromString(h,"text/html"),n=0;
+        doc.querySelectorAll(".result").forEach(function(el){if(n>=5)return;var a=el.querySelector(".result__a"),s=el.querySelector(".result__snippet");
+          if(a&&s){var hr=a.getAttribute("href")||"",m=hr.match(/uddg=([^&]+)/);out.push({t:a.textContent.trim(),s:s.textContent.trim(),u:m?decodeURIComponent(m[1]):hr});n++}});
+        return n>0}).catch(function(){return false}),9000)})},Promise.resolve(false))};
+  await Promise.all([wk(ar?"ar":"en"),wk(ar?"en":"ar"),ddg()]);
+  var seen={};return out.filter(function(x){if(!x.u||seen[x.u])return false;seen[x.u]=1;return true}).slice(0,8);
+}
+function aiTag(){
+  var L=S.aiLast||{},t=L.mode==="native"?"🌐 بحث حقيقي مباشر من "+S.prov:L.mode==="app"?"🌐 بحث عبر مسبار (محرك ويب + ويكيبيديا) لأن بحث "+S.prov+" المباشر غير متاح لمفتاحك":(S.aiWeb===false?"":"⚠️ أُجيب بدون بحث: "+(L.why||"البحث غير متاح"));
+  var seen={},s=(L.src||[]).filter(function(x){if(!x.u||seen[x.u])return false;seen[x.u]=1;return true}).slice(0,4).map(function(x){return "• "+(x.t||"")+" — "+x.u}).join("\n");
+  return t?"\n\n— "+t+(s?"\n"+s:""):"";
+}
+async function aiOnce(prov,key,model,messages,sys,web){
+  var res,data,txt="",src=[],bad=function(st,m){var e=new Error(m||("HTTP "+st));e.status=st;return e};
+  if(prov==="Gemini"){
+    var body={contents:messages.map(function(m){return {role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]}}),generationConfig:{temperature:0.65}};
+    if(sys)body.systemInstruction={parts:[{text:sys}]};
+    if(web)body.tools=[{google_search:{}}];
+    res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent?key="+encodeURIComponent(key),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    data=await res.json();var c=data.candidates&&data.candidates[0];
+    if(res.ok&&c&&c.content){txt=(c.content.parts||[]).map(function(x){return x.text||""}).join("");
+      ((c.groundingMetadata&&c.groundingMetadata.groundingChunks)||[]).forEach(function(g){if(g.web)src.push({t:g.web.title||g.web.uri,u:g.web.uri})})}
+  }else if(prov==="ChatGPT"){
+    var H={"Content-Type":"application/json","Authorization":"Bearer "+key};
+    if(web){
+      res=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:H,body:JSON.stringify({model:model,instructions:sys||AI_SYS,input:messages.map(function(m){return {role:m.role,content:m.content}}),tools:[{type:"web_search"}]})});
+      data=await res.json();
+      if(res.ok)(data.output||[]).forEach(function(o){if(o.type==="message"){(o.content||[]).forEach(function(x){if(x.type==="output_text"){txt+=x.text||"";(x.annotations||[]).forEach(function(a){if(a.type==="url_citation")src.push({t:a.title,u:a.url})})}})}});
+    }else{
+      res=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:H,body:JSON.stringify({model:model,messages:[{role:"system",content:sys||AI_SYS}].concat(messages)})});
+      data=await res.json();if(res.ok&&data.choices&&data.choices[0])txt=data.choices[0].message.content||"";
+    }
+  }else{
+    var msgs=messages.slice();
+    for(var k=0;k<3;k++){
+      var cb={model:model,max_tokens:2000,system:sys||AI_SYS,messages:msgs};
+      if(web)cb.tools=[{type:"web_search_20250305",name:"web_search",max_uses:3}];
+      res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify(cb)});
+      data=await res.json();if(!res.ok)break;
+      (data.content||[]).forEach(function(x){
+        if(x.type==="text")txt+=x.text||"";
+        if(x.type==="web_search_tool_result"&&Array.isArray(x.content))x.content.forEach(function(r){src.push({t:r.title,u:r.url})});
+      });
+      if(data.stop_reason!=="pause_turn")break;
+      msgs=msgs.concat([{role:"assistant",content:data.content}]);
+    }
   }
-  throw new Error(aiErr(lastStatus, lastErr));
+  if(!txt)throw bad(res.status,(data&&data.error&&(data.error.message||data.error))||"رد فارغ");
+  return {txt:txt,src:src};
+}
+async function callAIText(prov, messages, sys){
+  var key=provKey(prov);if(!key)throw new Error("NOKEY");
+  var want=S.aiWeb!==false,errs=[],last=0,models=AI_PROVS[prov].models;
+  if(prov==="Gemini"){try{models=await geminiModels(key)}catch(e){errs.push(e.message)}}
+  S.aiLast={mode:"none",src:[]};
+  var run=async function(web,sx){
+    for(var i=0;i<models.length;i++){
+      try{var r=await aiOnce(prov,key,models[i],messages,sx,web);if(r.txt)return r}
+      catch(e){last=e.status||0;errs.push(e.message);if(e.status===401||e.status===403||!navigator.onLine)throw e}
+    }
+    return null;
+  };
+  try{
+    if(want){
+      var r=await run(true,sys);if(r){S.aiLast={mode:"native",src:r.src};return r.txt}
+      var why=errs[errs.length-1]||"";
+      var hits=[];try{hits=await appWebSearch(lastUserText(messages))}catch(e){}
+      if(hits.length){
+        var ctx="\n\nنتائج بحث حديثة من الإنترنت (اعتمد عليها واذكر المصدر عند الاقتباس، وإن لم تكفِ فقل ذلك):\n"+hits.map(function(h,i){return (i+1)+". "+h.t+" — "+h.u+"\n"+String(h.s).slice(0,500)}).join("\n");
+        r=await run(false,(sys||AI_SYS)+ctx);
+        if(r){S.aiLast={mode:"app",src:hits.map(function(h){return {t:h.t,u:h.u}}),why:why};return r.txt}
+      }
+      S.aiLast={mode:"none",src:[],why:why};
+    }
+    var r2=await run(false,sys);if(r2){S.aiLast.src=[];return r2.txt}
+  }catch(e){last=e.status||last;errs.push(e.message)}
+  var m=errs[errs.length-1]||"",f=aiErr(last,m),raw=String(m).slice(0,180);
+  throw new Error(f===m||!raw?f:f+" ("+raw+")");
 }
 
 /* نافذة ربط مفتاح أي منصة */
@@ -5209,6 +5287,7 @@ function aiV(){
   } else {
     body = '<div class="card">' +
       '<div class="row" style="margin-bottom:6px"><b class="grow">💬 ' + esc(S.prov) + '</b>' +
+        '<button class="b s" onclick="S.aiWeb=(S.aiWeb===false);draw()" aria-label="بحث الإنترنت">' + (S.aiWeb === false ? '🌐 ✖' : '🌐 بحث') + '</button>' +
         '<button class="b s" onclick="openProvKeyDialog(\'' + S.prov + '\')" aria-label="المفتاح">🔑</button>' +
         '<button class="b s" onclick="chatOf(S.prov).length=0;draw()" aria-label="مسح">🗑</button></div>' +
       '<div id="aiBox" style="max-height:46vh;overflow-y:auto">' +
@@ -5237,7 +5316,7 @@ async function sendAI(){
     var msgs = hist.slice(-12).map(function(m){ return { role: m[1] ? "user" : "assistant", content: m[0] }; });
     while(msgs.length && msgs[0].role !== "user") msgs.shift();
     var ans = await callAIText(p, msgs, AI_SYS);
-    hist.push([ans || "(لا يوجد رد)", 0]);
+    hist.push([(ans || "(لا يوجد رد)") + aiTag(), 0]);
   }catch(e){
     hist.push(["⚠️ " + (e.message === "NOKEY" ? "اربط المفتاح أولاً" : e.message), 0]);
   }
@@ -5333,7 +5412,7 @@ function openOmrCamera(){
               var prompt = "أنت أستاذ جامعي تصحح دفتر امتحاني بصيغة PDF. الإجابة النموذجية هي: [" + OMR.ansModel + "]. اقرأ الدفتر الامتحاني بدقة. 1. استخرج اسم الطالب بوضوح. 2. قيّم الإجابة وأعطه درجة نهائية (رقم فقط). 3. اكتب تعليقاً يبرر الدرجة. أعد النتيجة بصيغة JSON فقط: {\"name\":\"اسم الطالب\",\"score\":الدرجة,\"feedback\":\"التعليق\"}";
               
               var body = { contents: [{ role: "user", parts: [ { text: prompt }, { inlineData: { mimeType: "application/pdf", data: base64Data } } ] }], generationConfig: { temperature: 0.65, responseMimeType: "application/json" } };
-              var res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + encodeURIComponent(getUserKey()), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+              var res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+(S._gm&&S._gm[0]||"gemini-2.5-flash")+":generateContent?key=" + encodeURIComponent(getUserKey()), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
               var data = await res.json();
               
               if(res.ok && data.candidates && data.candidates[0].content){
@@ -5407,7 +5486,7 @@ async function submitOmrStudent(){
     });
     
     var body = { contents: [{ role: "user", parts: parts }], generationConfig: { temperature: 0.65, responseMimeType: "application/json" } };
-    var res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + encodeURIComponent(getUserKey()), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    var res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+(S._gm&&S._gm[0]||"gemini-2.5-flash")+":generateContent?key=" + encodeURIComponent(getUserKey()), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     var data = await res.json();
     
     if(res.ok && data.candidates && data.candidates[0].content){
@@ -5701,7 +5780,7 @@ function launchLiveQuiz(){
   S.liveQuizAnswers = {};
   window.fbStartLiveQuiz(pin, quizData).then(function(){
      S.liveQuiz = quizData;
-     toast("🚀 انطلق الامتحان المشدد! رمز الدخول للطلاب: " + pin);
+     toast("🚀 انطلق الامتحان المشدد! رمز الدخول للطلاب: " + pin);autoPubExam(pin);
      draw();
   });
 }
@@ -5872,7 +5951,7 @@ function adminPortalV(){
       '<div style="max-height:130px;overflow-y:auto;background:var(--bg);padding:6px 8px;border-radius:8px;margin-bottom:8px;font-size:12px">'+(r.grades||[]).map(function(g){return '<div class="row" style="padding:2px 0;border-bottom:1px dashed var(--ln)"><span class="grow">'+esc(g[0])+'</span><span class="badge" dir="ltr">'+esc(stuCode(g[0]))+'</span><b>'+esc(g[1])+'</b></div>'}).join("")+'</div>'+
       '<a href="data:text/csv;charset=utf-8,'+csv+'" download="كشف_درجات_'+esc(r.teacher)+'.csv" class="b s" style="display:block;text-align:center;text-decoration:none;width:100%;color:#9333ea;background:#f3e8ff;padding:8px">⬇️ تنزيل كشف الدرجات والأكواد (Excel)</a></div>';
   }).join(""):'<div class="card mu" style="text-align:center;padding:20px 0">لا توجد سجلات بعد. تظهر هنا فور إرسال الأساتذة.</div>';
-  return head+keyCard+'<input placeholder="🔍 ابحث باسم الطالب أو الأستاذ..." value="'+esc(S.adminSearchQ||"")+'" oninput="S.adminSearchQ=this.value;draw()"><h2>السجلات ('+list.length+')</h2>'+reps+out;
+  return head+keyCard+rosterAdminH(cur)+'<input placeholder="🔍 ابحث باسم الطالب أو الأستاذ..." value="'+esc(S.adminSearchQ||"")+'" oninput="S.adminSearchQ=this.value;draw()"><h2>السجلات ('+list.length+')</h2>'+reps+out;
 }
 
 function parentsPortalV(){
@@ -6055,6 +6134,120 @@ function sendGradesToAdmin(){
    .catch(function(e){S.busy=false;draw();toast("خطأ: "+(e&&e.message||e))});
 }
 
+/* ===== v2.55: سجل الطلاب الرسمي (OCR) + أكواد + أتمتة الأساتذة والأهالي والكلاسات والامتحانات ===== */
+function stdCode(name){var kp=keyParts();if(!kp)return "";var s=kp.sec+"|std|"+normNm(name),a=cyr(s,11),b=cyr(s,19),n=[a[0],a[1],b[0],b[1]],o="";for(var i=0;i<12;i++)o+=B32[((n[i%4]>>>(Math.floor(i/4)*8))&255)%31];return "STD-"+o.slice(0,4)+"-"+o.slice(4,8)+"-"+o.slice(8,12)}
+function rosterDocId(){var kp=keyParts();if(!kp)return "x";var a=cyr(kp.sec+"|roster",5),b=cyr(kp.sec+"|roster",9);return kp.id+"_"+a[0].toString(36)+a[1].toString(36)+b[0].toString(36)+b[1].toString(36)}
+function waNum(v){var d=String(v||"").replace(/\D/g,"");if(d.length<7)return "";d=d.replace(/^00/,"");if(d.indexOf("964")===0)return d;return "964"+d.replace(/^0+/,"")}
+function sendCodeWA(c){var x=(S.rsPub||[]).filter(function(y){return y.c===c})[0],ph=(S.rsPh||{})[c],ins=(S.myInsts||[]).filter(function(i){return i.id===S.curInstId})[0];if(!x||!ph)return;
+  var m="السلام عليكم ورحمة الله،\nتم تسجيل الطالب/ة *"+x.n+"* رسمياً في «"+(ins?ins.name:"المؤسسة")+"».\n🔑 كود متابعة ولي الأمر: *"+x.p+"*\nأدخله في بوابة أولياء الأمور بتطبيق مسبار AI لمتابعة الدرجات والغيابات:\n"+location.origin+location.pathname;
+  window.open("https://wa.me/"+ph+"?text="+encodeURIComponent(m),"_blank")}
+function rsParse(t){var seen={},out=[];String(t||"").split("\n").forEach(function(l){l=l.trim();if(!l)return;var p=l.split("|"),n=p[0].replace(/^\s*\d+\s*[-.)]\s*/,"").trim(),g=(p[1]||"").trim(),k=normNm(n);if(n.length<3||seen[k])return;seen[k]=1;out.push({n:n,g:g,ph:waNum(p[2])})});return out}
+function shrinkImg(f,cb){var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){var s=Math.min(1,1600/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=im.width*s;c.height=im.height*s;c.getContext("2d").drawImage(im,0,0,c.width,c.height);cb(c.toDataURL("image/jpeg",0.85))};im.onerror=function(){cb(null)};im.src=r.result};r.readAsDataURL(f)}
+async function rsOcr(inp){
+  var fs=Array.prototype.slice.call(inp.files||[]);if(!fs.length)return;
+  if(!getUserKey()){toast("اربط Gemini أولاً (زر 🔑) لقراءة الصور");inp.value="";return}
+  S.busy=true;draw();var add=[];
+  var P='استخرج أسماء الطلاب من هذه الصورة (قائمة رسمية). أعد JSON فقط: [{"n":"الاسم الكامل كما هو مكتوب","g":"الصف أو الشعبة إن ظهرت وإلا فارغ"}]. تجاهل الأرقام التسلسلية والعناوين والتواقيع. لا تصحّح الأسماء ولا تخترع اسماً غير موجود.';
+  for(var i=0;i<fs.length;i++){
+    toast("⏳ قراءة صورة "+(i+1)+" من "+fs.length);
+    var du=await new Promise(function(res){shrinkImg(fs[i],res)});if(!du)continue;
+    try{
+      var raw=await callUserGemini(P,"أنت نظام OCR دقيق لقوائم أسماء الطلاب العربية.",du,true);
+      JSON.parse(String(raw||"[]").replace(/```json|```/g,"").trim()).forEach(function(x){
+        if(x&&x.n){add.push(x.n+(x.g?" | "+x.g:""))}else if(typeof x==="string"){add.push(x)}});
+    }catch(e){toast("تعذرت قراءة صورة: "+(e.message||e))}
+  }
+  S.rsDraft=((S.rsDraft||"").trim()+"\n"+add.join("\n")).trim();S.busy=false;draw();
+  toast("✅ استُخرج "+add.length+" اسم — راجعها وصحّح أي خطأ قبل الاعتماد");
+}
+function publishRoster(){
+  var ins=(S.myInsts||[]).filter(function(x){return x.id===S.curInstId})[0];if(!ins||!keyParts()){toast("أنشئ المؤسسة أولاً");return}
+  var l=rsParse(S.rsDraft);if(!l.length){toast("لا توجد أسماء للاعتماد");return}
+  var au=S.rsAuto||{t:1,p:1},have={};(S.rsPub||[]).forEach(function(x){have[x.c]=1});
+  var map={},ph={};(S.rsPub||[]).forEach(function(x){map[x.c]=x});
+  l.forEach(function(x){x.c=stdCode(x.n);x.p=stuCode(x.n);map[x.c]={n:x.n,g:x.g||"",c:x.c,p:x.p};if(x.ph)ph[x.c]=x.ph});
+  var all=Object.keys(map).map(function(k){return map[k]});S.busy=true;draw();
+  window.fbPubRoster(ins.id,all,au,ph).then(function(){
+    return au.p?Promise.all(l.filter(function(x){return !have[x.c]}).map(function(x,i){return window.fbPutCardItem(x.p,{student:x.n,teacher:"الإدارة",type:"note",note:"تم تسجيل الطالب رسمياً في «"+ins.name+"»"+(x.g?" — "+x.g:"")+". ستصلكم هنا الدرجات والغيابات تلقائياً.",at:Date.now()+i},i)})):0;
+  }).then(function(){S.rsDraft="";S.busy=false;draw();toast("✅ اعتُمد "+l.length+" طالب وتولّدت أكوادهم")})
+    .catch(function(e){S.busy=false;draw();toast("تعذر الاعتماد: "+((e&&e.code)||(e&&e.message)||e))});
+}
+function rsCsv(){var p=S.rsPub||[];return "data:text/csv;charset=utf-8,"+encodeURIComponent("\ufeffالاسم,الصف,كود الطالب,كود ولي الأمر\n"+p.map(function(x){return '"'+x.n+'","'+(x.g||"")+'","'+x.c+'","'+x.p+'"'}).join("\n"))}
+function printRosterCards(){
+  var p=S.rsPub||[];if(!p.length)return;var w=window.open("","_blank");if(!w){toast("اسمح بالنوافذ المنبثقة");return}
+  w.document.write('<html dir="rtl"><head><meta charset="utf-8"><style>body{font-family:Tahoma,Arial;margin:10mm}.c{display:inline-block;width:62mm;border:1px dashed #555;padding:6px;margin:3px;font-size:11px;vertical-align:top}.k{direction:ltr;font-family:monospace;font-weight:700}</style></head><body>'+
+    p.map(function(x){return '<div class="c"><b>'+esc(x.n)+'</b> '+esc(x.g||"")+'<br>🎓 كود الطالب:<div class="k">'+esc(x.c)+'</div>👨‍👩‍👦 كود ولي الأمر:<div class="k">'+esc(x.p)+'</div></div>'}).join("")+'</body></html>');
+  w.document.close();setTimeout(function(){w.print()},400);
+}
+function rosterAdminH(cur){
+  if(window.fbWatchRoster&&S._rsW!==cur.id){S._rsW=cur.id;S.rsPub=[];S.rsPh={};if(window.fbWatchPhones)window.fbWatchPhones(cur.id,function(m){S.rsPh=m;draw()});window.fbWatchRoster(cur.id,function(a){S.rsPub=(a||[]).sort(function(x,y){return String(x.n).localeCompare(String(y.n),"ar")});draw()})}
+  var pub=S.rsPub||[],au=S.rsAuto=S.rsAuto||{t:1,p:1},n=rsParse(S.rsDraft).length;
+  var chk=function(k,t){return '<label class="row" style="color:var(--tx);margin:4px 0"><input type="checkbox" style="width:auto;margin:0" '+(au[k]?'checked':'')+' onchange="S.rsAuto.'+k+'=this.checked?1:0"><span>'+t+'</span></label>'};
+  return '<div class="card" style="border-inline-start:4px solid #0891b2"><h2>👥 سجل الطلاب الرسمي ('+pub.length+')</h2>'+
+    '<div class="mu" style="line-height:1.7">صوّر قائمة الأسماء الرسمية أو الصقها؛ يستخرجها الذكاء، وتراجعها أنت، ثم يولّد مسبار لكل طالب كود دخول وكود ولي أمر.</div>'+
+    '<div class="grid" style="margin:8px 0"><label class="b" style="text-align:center;cursor:pointer;margin:0">📸 تصوير / رفع قائمة<input type="file" accept="image/*" multiple style="display:none" onchange="rsOcr(this)"></label>'+
+    (getUserKey()?'':'<button class="b s" onclick="openProvKeyDialog(\'Gemini\')">🔑 ربط الذكاء للقراءة</button>')+'</div>'+
+    '<textarea rows="7" placeholder="الاسم | الصف | رقم ولي الأمر (اختياري) — سطر لكل طالب" oninput="S.rsDraft=this.value">'+esc(S.rsDraft||"")+'</textarea>'+
+    chk("t","👨‍🏫 أتمتة مع الأساتذة: يستوردون القائمة الرسمية بمفتاح المؤسسة")+chk("p","👨‍👩‍👦 أتمتة مع الأهالي: تفعيل كود كل ولي أمر فوراً برسالة تسجيل")+
+    '<button class="b" style="width:100%;background:#0891b2;margin-top:6px" '+(S.busy?'disabled':'')+' onclick="publishRoster()">'+(S.busy?'⏳ ...':'✅ اعتماد وتوليد الأكواد'+(n?' ('+n+')':''))+'</button>'+
+    (pub.length?'<div style="max-height:200px;overflow-y:auto;background:var(--bg);border-radius:8px;padding:6px 8px;margin-top:8px;font-size:12px">'+pub.map(function(x){return '<div class="row" style="padding:3px 0;border-bottom:1px dashed var(--ln)"><span class="grow">'+esc(x.n)+(x.g?' <span class="mu">'+esc(x.g)+'</span>':'')+'</span><span class="badge" dir="ltr">'+esc(x.c)+'</span></div>'}).join("")+'</div>'+
+      '<div class="grid" style="margin-top:8px"><a href="'+rsCsv()+'" download="سجل_الطلاب_والأكواد.csv" class="b s" style="text-align:center;text-decoration:none">⬇️ Excel</a><button class="b s" onclick="printRosterCards()">🖨️ طباعة البطاقات</button></div>':'')+
+    (function(){var w=pub.filter(function(x){return (S.rsPh||{})[x.c]});return w.length?'<div style="margin-top:8px"><b>📲 إرسال أكواد الأهالي عبر واتساب ('+w.length+')</b><div class="mu" style="font-size:11px">يفتح واتساب برسالة جاهزة لكل ولي أمر، وتضغط إرسال بنفسك.</div><div style="max-height:160px;overflow-y:auto">'+w.map(function(x){return '<div class="row" style="padding:3px 0"><span class="grow">'+esc(x.n)+'</span><button class="b s" onclick="sendCodeWA(\''+x.c+'\')">📲 إرسال</button></div>'}).join("")+'</div></div>':''})()+'</div>';
+}
+/* ---- جهة الأستاذ ---- */
+function clsAutoH(ci,c){var n=(c.roster||[]).length;return '<div class="mu" style="font-size:12px;margin:4px 0">👥 '+n+' طالب مرتبط'+(n?' · يظهر لهم الكلاس تلقائياً':'')+'</div>'+
+  '<label class="row" style="color:var(--tx);margin:4px 0"><input type="checkbox" style="width:auto;margin:0" '+(c.autoExam?'checked':'')+' onchange="S.classes['+ci+'].autoExam=this.checked;saveAllUserStorage()"><span>📝 أتمتة الامتحانات: أي امتحان مباشر أطلقه يصل لطلاب هذا الكلاس</span></label>'+
+  '<div class="grid"><button class="b s" onclick="importRoster('+ci+')">👥 استيراد طلاب الإدارة</button><button class="b s" onclick="pubClass('+ci+')">☁️ تحديث للطلاب</button></div>'}
+function importRoster(ci){
+  var kp=keyParts();if(!requireKey())return;
+  ask("الصف/الشعبة المطلوبة (اكتب - لكل الطلاب)",function(g){
+    g=(g||"").trim();if(g==="-")g="";
+    var un=window.fbWatchRoster(kp.id,function(a,e){
+      if(un)un();
+      if(!a){toast("تعذر جلب القائمة: "+((e&&e.code)||"")+" — تأكد من المفتاح ومن قواعد Firestore");return}
+      var l=a.filter(function(x){return !g||String(x.g||"").indexOf(g)>-1}).map(function(x){return {n:x.n,c:x.c}});
+      if(!l.length){toast("لا يوجد طلاب مطابقون");return}
+      S.classes[ci].roster=l;saveRoster(l.map(function(x){return x.n}).join("\n"));saveAllUserStorage();pubClass(ci,1);
+      toast("✅ أُضيف "+l.length+" طالب، وسيجدون الكلاس تلقائياً");draw();
+    });
+  });
+}
+function pubClass(ci,q){
+  var c=S.classes[ci],kp=keyParts();if(!S.uid||!window.fbPubClass){toast("سجّل الدخول أولاً");return}
+  var d={n:c.n,tEmail:S.email,tName:S.dispName||S.email,inst:kp?kp.id:"",rc:(c.roster||[]).map(function(x){return x.c}),mats:(c.mats||[]).map(function(m){return {title:m.title,text:String(m.text||"").slice(0,12000)}}),at:Date.now()};
+  if(JSON.stringify(d).length>900000){toast("حجم الكلاس كبير جداً");return}
+  window.fbPubClass(c.c,d).then(function(){if(!q)toast("☁️ تم تحديث الكلاس للطلاب")}).catch(function(e){toast("تعذر النشر: "+((e&&e.code)||e))});
+}
+function autoPubExam(pin){
+  var codes=S.classes.filter(function(c){return c.autoExam&&(c.roster||[]).length}).map(function(c){return c.c});
+  if(!codes.length||!window.fbClassPin)return;
+  S.examClasses=S.examClasses||{};S.examClasses[pin]=codes;
+  window.fbClassPin(codes,pin).then(function(){toast("📡 وصل الامتحان تلقائياً لـ "+codes.length+" كلاس")});
+}
+function clearExamPin(pin){var c=(S.examClasses||{})[pin];if(c&&window.fbClassPin)window.fbClassPin(c,"")}
+/* ---- جهة الطالب ---- */
+function getStuLink(){if(S.stuLink===undefined){try{S.stuLink=JSON.parse(localStorage.getItem("misbar_stulink_"+(S.uid||"anon"))||"null")}catch(e){S.stuLink=null}}return S.stuLink}
+function redeemStd(){
+  var v=($("stdIn")?$("stdIn").value:"").trim().toUpperCase().replace(/\s+/g,"");
+  if(!/^STD-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(v)){toast("الكود بصيغة STD-XXXX-XXXX-XXXX");return}
+  if(!S.uid||!window.fbClaimStd){toast("سجّل الدخول أولاً");return}
+  window.fbClaimStd(v,S.uid).then(function(d){
+    var l={c:v,n:d.n,g:d.g||"",inst:d.inst};try{localStorage.setItem("misbar_stulink_"+S.uid,JSON.stringify(l))}catch(e){}
+    S.stuLink=l;S.dispName=d.n;saveDeviceOnly();toast("✅ أهلاً "+d.n);draw();
+  }).catch(function(e){var c=e&&e.code;toast(c==="taken"?"هذا الكود مرتبط بحساب آخر":c==="nf"?"الكود غير موجود":"تعذر الربط: "+(c||e))});
+}
+function stuEnterClassExam(pin){var a=$("stuPinIn"),b=$("stuNameIn");if(a)a.value=pin;if(b&&S.stuLink)b.value=S.stuLink.n;stuJoinQuiz()}
+function stuIdentH(){
+  var l=getStuLink();
+  if(!l)return '<div class="card" style="border-inline-start:4px solid #0891b2"><b>🎓 هويتي الرسمية</b><div class="mu" style="margin:4px 0;line-height:1.7">أدخل كود الطالب (STD-...) المسلَّم لك من الإدارة ليظهر اسمك الرسمي وكلاساتك وامتحاناتك تلقائياً.</div><div class="row"><input id="stdIn" dir="ltr" placeholder="STD-XXXX-XXXX-XXXX" class="grow" style="margin:0"><button class="b" onclick="redeemStd()">ربط</button></div></div>';
+  if(window.fbWatchMyClasses&&S._swc!==l.c){S._swc=l.c;S.stuClasses=[];window.fbWatchMyClasses(l.c,function(a){S.stuClasses=a||[];draw()})}
+  var cl=S.stuClasses||[];
+  return '<div class="card" style="border-inline-start:4px solid #0891b2"><b>🎓 '+esc(l.n)+'</b> <span class="mu">'+esc(l.g)+'</span></div>'+
+    (cl.length?cl.map(function(c,ci){return '<div class="card"><div class="row"><b class="grow">🏫 '+esc(c.n)+'</b><span class="mu">👨‍🏫 '+esc(c.tName||"")+'</span></div>'+
+      (c.livePin?'<button class="b" style="width:100%;background:#dc2626;margin:8px 0" onclick="stuEnterClassExam(\''+esc(c.livePin)+'\')">📝 امتحان متاح الآن — اضغط للدخول</button>':'')+
+      (c.mats||[]).map(function(m,i){return '<div class="row" style="padding:5px 0;border-top:1px solid var(--ln);cursor:pointer" onclick="S.openMat=S.stuClasses['+ci+'].mats['+i+'];S.out=\'\';S.quiz=null;draw()"><span class="grow">📄 '+esc(m.title)+'</span><span>‹</span></div>'}).join("")+'</div>'}).join(""):'<div class="card mu">لم يضف الأستاذ كلاساً لك بعد، يظهر هنا تلقائياً.</div>');
+}
+
 function avatarHtml(name, photo){
   if(photo) return '<span class="avatar-ci"><img src="'+esc(photo)+'" alt=""></span>';
   var ch = (name || "م").trim().charAt(0).toUpperCase();
@@ -6083,7 +6276,7 @@ function stuV(){
       '</div>';
   }
   var myJoined=S.classes.filter(function(c){return S.joined.indexOf(c.c)>-1});
-  return driveBannerH()+
+  return driveBannerH()+stuIdentH()+
   '<div class="card" style="border-inline-start:4px solid var(--ac); background:var(--acs)">' +
     '<div class="row">' +
       '<div class="portal-ico" style="background:var(--ac);color:#fff">📡</div>' +
@@ -6471,7 +6664,7 @@ window.fbStartLiveQuiz = function(pin, data){
 
 window.fbStopLiveQuiz = function(pin){
   if(S.liveQuizUnsub) { S.liveQuizUnsub(); S.liveQuizUnsub = null; }
-  return updateDoc(doc(db, "live_quizzes", pin), {active: false}).catch(err);
+  if(window.clearExamPin)clearExamPin(pin);return updateDoc(doc(db, "live_quizzes", pin), {active: false}).catch(err);
 };
 
 window.fbJoinLiveQuiz = function(pin){
@@ -6521,6 +6714,14 @@ window.fbCreateInst=function(id,d){return setDoc(doc(db,"inst",id),d)};
 window.fbWatchMyInsts=function(){if(_wi)_wi();_wi=onSnapshot(query(collection(db,"inst"),where("adminUid","==",S.uid)),function(s){var a=[];s.forEach(function(d){var x=d.data();x.id=d.id;a.push(x)});S.myInsts=a;if(S.sysRole==="admin")draw()},function(e){toast("تعذر قراءة المؤسسات: "+e.message)})};
 window.fbWatchInstReports=function(id){if(_wr)_wr();_wr=onSnapshot(collection(db,"inst",id,"reports"),function(s){var r=[];s.forEach(function(d){r.push(d.data())});S.adminReports=r.sort(function(a,b){return (b.at||0)-(a.at||0)});if(S.sysRole==="admin")draw()},function(e){toast("تعذر قراءة التقارير: "+e.message)})};
 window.fbWatchCard=function(code){if(_wc)_wc();_wc=onSnapshot(collection(db,"parent_cards",code,"items"),function(s){var r=[];s.forEach(function(d){r.push(d.data())});S.cardItems=r.sort(function(a,b){return (b.at||0)-(a.at||0)});if(S.sysRole==="parent")draw()},function(e){S.cardItems=[];toast("تعذر القراءة: "+e.message)})};
+
+window.fbPubRoster=function(inst,list,auto,phones){var t=Date.now(),rid=window.rosterDocId();return Promise.all(list.map(function(x){return setDoc(doc(db,"student_codes",x.c),{inst:inst,n:x.n,g:x.g||"",at:t},{merge:true})})).then(function(){return setDoc(doc(db,"rosters",rid),{inst:inst,list:list,at:t})}).then(function(){return updateDoc(doc(db,"inst",inst),{auto:auto,rosterN:list.length,rosterAt:t})}).then(function(){return Object.keys(phones||{}).length?setDoc(doc(db,"inst",inst,"private","phones"),{m:phones},{merge:true}):0})};
+window.fbWatchRoster=function(inst,cb){var u=onSnapshot(doc(db,"rosters",window.rosterDocId()),function(s){cb(s.exists()?(s.data().list||[]):[])},function(e){cb(null,e)});unsubs.push(u);return u};
+window.fbWatchPhones=function(inst,cb){var u=onSnapshot(doc(db,"inst",inst,"private","phones"),function(s){cb(s.exists()?(s.data().m||{}):{})},function(){});unsubs.push(u);return u};
+window.fbClaimStd=function(code,uid){var ref=doc(db,"student_codes",code);return runTransaction(db,async function(tx){var s=await tx.get(ref);if(!s.exists())throw {code:"nf"};var d=s.data();if(d.uid&&d.uid!==uid)throw {code:"taken"};tx.update(ref,{uid:uid,claimedAt:Date.now()});return d})};
+window.fbPubClass=function(code,d){return setDoc(doc(db,"classes_pub",code),d,{merge:true})};
+window.fbClassPin=function(codes,pin){return Promise.all(codes.map(function(c){return updateDoc(doc(db,"classes_pub",c),{livePin:pin,liveAt:Date.now()}).catch(err)}))};
+window.fbWatchMyClasses=function(code,cb){var u=onSnapshot(query(collection(db,"classes_pub"),where("rc","array-contains",code)),function(s){var a=[];s.forEach(function(d){a.push(d.data())});cb(a)},function(e){console.warn(e&&e.code)});unsubs.push(u);return u};
 
 window.fbSyncUserProfile=function(){
   if(!S.uid||!S.profLoaded)return;
