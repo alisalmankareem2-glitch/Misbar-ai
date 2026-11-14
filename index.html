@@ -144,6 +144,21 @@ button.b { transition: all 0.2s ease; font-weight: 700; letter-spacing: 0.2px; }
 button.b:not(:disabled):active { transform: scale(0.96); }
 main { animation: fadeIn 0.4s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ===== v2.51 واجهة أنيقة ===== */
+body{background-image:radial-gradient(900px 420px at 90% -8%,#dbe7ff 0,transparent 60%),radial-gradient(800px 420px at -10% 8%,#d6f5e4 0,transparent 55%);background-attachment:fixed}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) body{background-image:none}}
+.card{border-radius:18px;box-shadow:0 6px 22px rgba(20,33,61,.07)}
+button.b{background:linear-gradient(135deg,var(--ac),color-mix(in srgb,var(--ac) 68%,#000));border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.12);transition:transform .15s}
+button.b:active{transform:scale(.96)}
+button.b.s{background:var(--acs);box-shadow:none}button.b.d{background:#fee2e2;box-shadow:none}
+header{background:color-mix(in srgb,var(--sf) 80%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.hero h1{margin:6px 0 2px;font-size:30px;font-weight:800;background:linear-gradient(135deg,#15803d,#1d4ed8);-webkit-background-clip:text;background-clip:text;color:transparent}
+.portal{display:flex;align-items:center;gap:14px;padding:16px;border-radius:20px;color:#fff;cursor:pointer;margin-bottom:12px;box-shadow:0 10px 24px rgba(0,0,0,.14);transition:transform .15s;border:1px solid rgba(255,255,255,.25)}
+.portal:active{transform:scale(.97)}
+.portal .ic{width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.22);display:grid;place-items:center;flex:none}
+.portal b{display:block;font-size:17px}.portal span{font-size:12px;opacity:.92}
+.portal.p1{background:linear-gradient(135deg,#15803d,#0ea5a4)}.portal.p2{background:linear-gradient(135deg,#1d4ed8,#6366f1)}.portal.p3{background:linear-gradient(135deg,#7e22ce,#c026d3)}
 </style>
 </head>
 <body>
@@ -156,7 +171,7 @@ main { animation: fadeIn 0.4s ease-out; }
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.50.0";
+var APP_VERSION = "2.51.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -768,6 +783,7 @@ function fd(t){return new Date(t).toLocaleDateString("ar-IQ")}
 function pid(p){if(!p.id)p.id=Math.random().toString(36).slice(2,8);return p.id}
 function isSub(){var n=Date.now();return S.isOwner||S.subs.some(function(s){return s.e==S.email&&s.end>n&&(!s.s||s.s<=n)})}
 function stat(){return S.email?(isSub()?"💳 مشترك":"💳 اشترك"):""}
+function refundTry(){if(!isSub())S.used=Math.max(0,S.used-1)}
 function gate(customMsg){if(isSub())return true;if(S.used>=S.free){confirmModal(customMsg||"انتهت محاولاتك المجانية (التجريبية). يرجى الاشتراك للمتابعة وفتح جميع ميزات التطبيق.", function(){S.subv=1;draw();});return false}S.used=S.used+1;return true}
 
 /* ============================================================================
@@ -796,7 +812,7 @@ async function callUserGemini(prompt,sysInst,imgDataUrl,jsonMode){
     if(alt && !imgDataUrl){
       return await callAIText(alt,[{role:"user",content:prompt+(jsonMode?"\n\nأعد الناتج بصيغة JSON صالحة فقط بدون أي شرح أو علامات ```":"")}],sysInst||AI_SYS);
     }
-    openAutoKeyConnect();return null;
+    refundTry();openAutoKeyConnect();return null;
   }
   var parts=[{text:prompt}];
   if(imgDataUrl&&imgDataUrl.indexOf("base64,")>-1){
@@ -5282,7 +5298,7 @@ var OMR = {
 
 function startBatchAIOmr(){
   if(!gate("للتصحيح الآلي اللامحدود، يرجى الاشتراك بالباقة المدفوعة.")) return;
-  if(!getUserKey()){ toast("يرجى ربط حساب Gemini من تبويب الذكاء الاصطناعي للقيام بالتصحيح."); return; }
+  if(!getUserKey()){ refundTry(); toast("يرجى ربط حساب Gemini من تبويب الذكاء الاصطناعي للقيام بالتصحيح."); return; }
   
   if(!OMR.ansModel){
     ask("اكتب الإجابة النموذجية والدرجة القصوى (مثال: الحل النموذجي هو كذا.. من 10):", function(ans){
@@ -6223,28 +6239,16 @@ function ownV(){
 
 function loginV(){
   $("app").className="";
-  $("app").innerHTML = '<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">المنظومة التعليمية المتكاملة</p></div>'+
-  '<main>' +
-    '<h2 style="text-align:center;margin-top:0">اختر بوابتك للدخول</h2>' +
-    '<div class="grid" style="margin-bottom:12px">' +
-      '<div class="card" onclick="S.loginRole=\'pro_stu\';fbLogin()" style="cursor:pointer;text-align:center;border:2px solid var(--ac);background:var(--acs);transition:transform 0.2s" onmousedown="this.style.transform=\'scale(0.95)\'" onmouseup="this.style.transform=\'none\'">' +
-         '<div style="font-size:40px;margin-bottom:8px">👨‍🏫🎓</div>' +
-         '<b style="display:block;color:var(--ac);font-size:15px">الأستاذ والطالب</b>' +
-         '<div class="mu" style="font-size:11px;margin-top:4px">الدروس، الامتحانات، والذكاء الاصطناعي</div>' +
-      '</div>' +
-      '<div class="card" onclick="S.loginRole=\'parent\';fbLogin()" style="cursor:pointer;text-align:center;border:2px solid #2563eb;background:#eff6ff;transition:transform 0.2s" onmousedown="this.style.transform=\'scale(0.95)\'" onmouseup="this.style.transform=\'none\'">' +
-         '<div style="font-size:40px;margin-bottom:8px">👨‍👩‍👦</div>' +
-         '<b style="display:block;color:#1d4ed8;font-size:15px">أولياء الأمور</b>' +
-         '<div class="mu" style="font-size:11px;margin-top:4px">متابعة الدرجات والغيابات والواجبات</div>' +
-      '</div>' +
-    '</div>' +
-    '<div class="card" onclick="S.loginRole=\'admin\';fbLogin()" style="cursor:pointer;text-align:center;border:2px solid #9333ea;background:#f3e8ff;transition:transform 0.2s" onmousedown="this.style.transform=\'scale(0.98)\'" onmouseup="this.style.transform=\'none\'">' +
-       '<div style="font-size:32px;margin-bottom:8px">🏢</div>' +
-       '<b style="display:block;color:#7e22ce;font-size:15px">لوحة تحكم الإدارة / القسم</b>' +
-       '<div class="mu" style="font-size:11px;margin-top:4px">استلام الدرجات من الأساتذة وإصدار التقارير النهائية</div>' +
-    '</div>' +
-    '<div class="mu" style="text-align:center;margin-top:14px;font-size:11px">المنظومة السحابية v'+APP_VERSION+' · تحديث تلقائي</div>'+
-  '</main>';
+  var svg=function(p){return '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>'};
+  var cards=[
+    ["pro_stu","p1","الأستاذ والطالب","الدروس والامتحانات والذكاء الاصطناعي",svg('<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>')],
+    ["parent","p2","أولياء الأمور","الدرجات والغيابات والتبليغات بكود الطالب",svg('<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.3"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><path d="M15 15c3-.6 6 1 6 4.5"/>')],
+    ["admin","p3","الإدارة / القسم","استلام الدرجات وكشوفات Excel",svg('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>')]
+  ];
+  $("app").innerHTML='<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">المنظومة التعليمية المتكاملة</p></div><main>'+
+  '<h2 style="text-align:center;margin-top:0">اختر بوابتك</h2>'+
+  cards.map(function(c){return '<div class="portal '+c[1]+'" role="button" tabindex="0" onclick="S.loginRole=\''+c[0]+'\';fbLogin()"><div class="ic">'+c[4]+'</div><div><b>'+c[2]+'</b><span>'+c[3]+'</span></div></div>'}).join("")+
+  '<div class="mu" style="text-align:center;margin-top:14px;font-size:11px">v'+APP_VERSION+' · تحديث تلقائي</div></main>';
 }
 
 
