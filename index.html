@@ -126,7 +126,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.33.2";
+var APP_VERSION = "2.34.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -245,7 +245,7 @@ var S={
   posts:[{author:"إدارة مسبار",text:"مرحباً بكم في منصة مسبار AI التعليمية للأساتذة والطلاب."}],
   feedbacks:[],
   tx:"",pend:"",gr:[["زينب أحمد",18],["مصطفى كريم",15]],
-  bank:[],bi:"",bt:"",ai:[],free:5,prov:"ChatGPT",aiSubTab:"ai",
+  bank:[],bi:"",bt:"",ai:[],free:5,prov:"Gemini",aiSubTab:"ai",
   proPortal:null,
   plans:[{n:"أسبوعي",p:2000,v:1,u:"أسبوع"},{n:"شهري",p:5000,v:1,u:"شهر"},{n:"6 أشهر",p:25000,v:6,u:"شهر"},{n:"سنوي",p:45000,v:12,u:"شهر"}],
   subs:[],req:[],allUsers:[],rt:0,rs:"new",rq:"",pick:null,subv:0,
@@ -734,28 +734,6 @@ function gate(){if(isSub())return true;if(S.used>=S.free){toast("انتهت دخ
 /* ============================================================================
    [الأساس ٥] محرك الذكاء الاصطناعي بحساب Gmail الخاص بالزبون نفسه
    ============================================================================ */
-function openAutoKeyConnect(onConnectedCb){
-  var d=document.createElement("div");d.id="md";
-  d.innerHTML='<div class="mc">'+
-    '<div style="font-size:28px;text-align:center">🤖✨</div>'+
-    '<b style="display:block;text-align:center;margin:4px 0">تفعيل ذكاء حسابك الشخصي</b>'+
-    '<div class="mu" style="text-align:center;margin-bottom:8px" dir="ltr">'+esc(S.email)+'</div>'+
-    '<div style="font-size:13px;line-height:1.7;margin-bottom:10px">ليعمل الذكاء الاصطناعي مجاناً من <b>حساب Gmail الخاص بك</b>:<br>١. اضغط الزر الأخضر لفتح صفحة التفعيل بحسابك.<br>٢. انسخ الرمز (Create API key → Copy) وارجع للتطبيق، وسيتم ربطه وحفظه على Google Drive مالتك تلقائياً!</div>'+
-    '<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="b" style="width:100%;text-decoration:none;margin-bottom:8px;background:#15803d" onclick="S.awaitingAutoKey=true">🚀 فتح تفعيل Google AI بحسابي</a>'+
-    '<input id="ukIn" dir="ltr" placeholder="أو الصق الرمز هنا (AIzaSy...)" value="'+esc(getUserKey())+'">'+
-    '<div class="row"><button class="b grow" id="ukSave">حفظ وتفعيل</button><button class="b s grow" id="ukClose">إلغاء</button></div>'+
-  '</div>';
-  document.body.appendChild(d);
-  function closeM(){d.remove()}
-  $("ukClose").onclick=closeM;
-  $("ukSave").onclick=function(){
-    var v=$("ukIn").value.trim();
-    if(!v){toast("الصق الرمز أولاً");return}
-    setUserKey(v);closeM();toast("✅ تم ربط ذكاء حسابك وحفظه على Drive!");draw();
-    if(onConnectedCb)onConnectedCb();
-  };
-}
-
 window.addEventListener("focus",async function(){
   if(!S.awaitingAutoKey)return;
   try{
@@ -774,7 +752,13 @@ window.addEventListener("focus",async function(){
 
 async function callUserGemini(prompt,sysInst,imgDataUrl,jsonMode){
   var key=getUserKey();
-  if(!key){openAutoKeyConnect();return null}
+  if(!key){
+    var alt=(provKey("ChatGPT")?"ChatGPT":(provKey("Claude")?"Claude":""));
+    if(alt && !imgDataUrl){
+      return await callAIText(alt,[{role:"user",content:prompt+(jsonMode?"\n\nأعد الناتج بصيغة JSON صالحة فقط بدون أي شرح أو علامات ```":"")}],sysInst||AI_SYS);
+    }
+    openAutoKeyConnect();return null;
+  }
   var parts=[{text:prompt}];
   if(imgDataUrl&&imgDataUrl.indexOf("base64,")>-1){
     var sp=imgDataUrl.split("base64,");
@@ -3287,7 +3271,7 @@ var RTC = null;
 function resetRTC(){
   RTC = {
     pc: null, local: null, remote: null, callId: null, isCaller: false, polite: false,
-    peerEmail: null, type: 'audio', unsubs: [], muted: false, camOn: false, speakerOn: true,
+    peerEmail: null, type: 'audio', unsubs: [], muted: false, camOn: false, speakerOn: false,
     facing: 'user', connected: false, startTime: 0, answered: false, offerStarted: false,
     negReady: false, makingOffer: false, pending: [], chain: Promise.resolve(), seqN: 0,
     finishing: false, remoteCam: null, remoteMic: true, camBusy: false, hidePip: false,
@@ -3428,7 +3412,7 @@ function renderCallUI(){
       '<div id="remoteStateBadge" class="cl-badge" style="display:none"></div>' +
     '</div>' +
     '<div id="callControlPanel" class="cl-panel" style="' + (incoming ? 'display:none' : '') + '">' +
-      callBtn('btnSpeaker', '', 'toggleSpeaker()', 'السماعة') +
+      callBtn('btnSpeaker', '', 'toggleSpeaker()', 'مكبر الصوت') +
       callBtn('btnVideo', '', 'toggleVideo()', 'الكاميرا') +
       callBtn('btnMute', '', 'toggleMute()', 'كتم') +
       callBtn('btnMore', '', 'openCallMore()', 'المزيد') +
@@ -3446,6 +3430,7 @@ function renderCallUI(){
     var rv = document.getElementById('remoteVideo'); if(rv && rv.srcObject && rv.paused) rv.play().catch(function(){});
   });
   makePipDraggable();
+  scanOutputs().then(applyAudioRoute);
   updateCallButtons();
   renderCallStatus();
   updateRemoteUI();
@@ -3474,7 +3459,7 @@ function updateCallButtons(){
   };
   set('btnMute', RTC.muted, RTC.muted ? 'micOff' : 'mic', RTC.muted ? 'تشغيل المايك' : 'كتم', !RTC.local);
   set('btnVideo', RTC.camOn, RTC.camOn ? 'cam' : 'camOff', RTC.camOn ? 'إيقاف' : 'الكاميرا', !RTC.local);
-  set('btnSpeaker', RTC.speakerOn, RTC.speakerOn ? 'vol' : 'volOff', RTC.speakerOn ? 'السماعة' : 'مكتومة');
+  set('btnSpeaker', RTC.speakerOn, RTC.speakerOn ? 'vol' : 'phone', RTC.speakerOn ? 'مكبر الصوت' : 'سماعة الأذن');
   set('btnMore', false, 'more', 'المزيد');
 }
 
@@ -3498,7 +3483,8 @@ function attachRemote(){
   if(!RTC.remote) return;
   if(ra){
     if(ra.srcObject !== RTC.remote) ra.srcObject = RTC.remote;
-    ra.muted = !RTC.speakerOn;
+    ra.muted = false;
+    applyAudioRoute();
     ra.play().catch(function(){});
   }
   if(rv){
@@ -3621,8 +3607,8 @@ function loadTurnConfig(force){
   if(TURN_LOAD.p && !force) return TURN_LOAD.p;
   if(!window.fbLoadTurnConfig) return Promise.resolve();
   TURN_LOAD.p = window.fbLoadTurnConfig().then(function(c){
-    if(c){
-      CALL_CFG.turnApiUrl = c.api || '';
+    if(c && (c.api || c.servers)){
+      CALL_CFG.turnApiUrl = c.api || CALL_CFG.turnApiUrl;
       var arr = [];
       if(c.servers){ try{ var j = JSON.parse(c.servers); if(Array.isArray(j)) arr = j; }catch(e){} }
       CALL_CFG.turn = arr;
@@ -3792,6 +3778,7 @@ function onCallConnected(){
   RTC.timer = setInterval(renderCallStatus, 1000);
   renderCallStatus();
   attachRemote(); attachLocal(); updateCallButtons();
+  scanOutputs().then(applyAudioRoute);
   sendCallState();
   if(RTC.isCaller) setCallDoc({ status: 'connected', connectedAt: Date.now() });
   try{
@@ -3846,6 +3833,7 @@ function startCall(peerEmail, wantVideo){
   var myId = 'call_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
   RTC.callId = myId; RTC.isCaller = true; RTC.polite = false; RTC.peerEmail = peerEmail;
   RTC.type = wantVideo ? 'video' : 'audio';
+  RTC.speakerOn = !!wantVideo;
   renderCallUI();
   setCallStatus('جاري الاتصال...');
 
@@ -3883,6 +3871,7 @@ function handleIncomingCall(callId, d){
   resetRTC();
   RTC.callId = callId; RTC.isCaller = false; RTC.polite = true; RTC.peerEmail = d.caller;
   RTC.type = d.type === 'video' ? 'video' : 'audio';
+  RTC.speakerOn = RTC.type === 'video';
   renderCallUI();
   setCallStatus(RTC.type === 'video' ? 'مكالمة فيديو واردة...' : 'مكالمة صوتية واردة...');
   CallTones.ring();
@@ -4003,11 +3992,43 @@ function toggleMute(){
   updateCallButtons(); sendCallState();
 }
 
+/* مخارج الصوت: مكبر الصوت (speaker) وسماعة الأذن (earpiece) */
+var SINK = { speaker: null, earpiece: null, scanned: false };
+function scanOutputs(){
+  var ra = document.getElementById('remoteAudio');
+  if(!ra || typeof ra.setSinkId !== 'function' || !navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return Promise.resolve();
+  return navigator.mediaDevices.enumerateDevices().then(function(devs){
+    var outs = devs.filter(function(d){ return d.kind === 'audiooutput'; });
+    var pick = function(re){ for(var i = 0; i < outs.length; i++){ if(re.test(outs[i].label || '')) return outs[i].deviceId; } return null; };
+    SINK.speaker = pick(/speaker(?!.*(ear|phone call))|loud|مكبر/i) || pick(/speakerphone/i);
+    SINK.earpiece = pick(/earpiece|receiver|handset|telephone|سماعة الأذن/i);
+    /* على الحاسوب: جهاز "communications" هو سماعة الاتصال */
+    if(!SINK.earpiece && !SINK.speaker){
+      var comm = outs.filter(function(d){ return d.deviceId === 'communications'; })[0], def = outs.filter(function(d){ return d.deviceId === 'default'; })[0];
+      if(comm && def && comm.groupId !== def.groupId){ SINK.earpiece = comm.deviceId; SINK.speaker = def.deviceId; }
+    }
+    SINK.scanned = true;
+  }).catch(function(){});
+}
+function applyAudioRoute(){
+  var ra = document.getElementById('remoteAudio'); if(!ra) return;
+  ra.muted = false;
+  if(SINK.speaker && SINK.earpiece){
+    ra.volume = 1;
+    ra.setSinkId(RTC.speakerOn ? SINK.speaker : SINK.earpiece).catch(function(e){ console.log('setSinkId error', e); });
+    RTC.routeSoft = false;
+  } else {
+    /* الجهاز/المتصفح لا يسمح بالتبديل الحقيقي: نخفض الصوت ليصير خاصاً */
+    ra.volume = RTC.speakerOn ? 1 : 0.22;
+    RTC.routeSoft = true;
+  }
+}
 function toggleSpeaker(){
   RTC.speakerOn = !RTC.speakerOn;
-  var ra = document.getElementById('remoteAudio'); if(ra) ra.muted = !RTC.speakerOn;
+  applyAudioRoute();
   updateCallButtons();
-  toast(RTC.speakerOn ? 'تم تشغيل صوت المكالمة' : 'تم كتم صوت الطرف الآخر');
+  if(RTC.speakerOn) toast('🔊 مكبر الصوت');
+  else toast(RTC.routeSoft ? '📞 وضع سماعة الأذن (تم خفض الصوت، هذا الجهاز لا يسمح بتحويل المخرج)' : '📞 سماعة الأذن');
 }
 
 function toggleVideo(){ setCamera(!RTC.camOn); }
@@ -4027,6 +4048,7 @@ function setCamera(on){
     var t = s.getVideoTracks()[0];
     RTC.local.addTrack(t);
     RTC.camOn = true;
+    if(!RTC.speakerOn){ RTC.speakerOn = true; applyAudioRoute(); }
     var tr = videoTransceiver();
     if(tr && tr.sender){
       return tr.sender.replaceTrack(t).then(function(){
@@ -4160,74 +4182,165 @@ async function tl(k){
   S.busy=false;draw();
 }
 
-/* ==================== الذكاء الاصطناعي التلقائي (ChatGPT · Gemini · Claude) ==================== */
-function openExternalAIWithPrompt(provName, promptText){
-  var q = (promptText || "").trim();
-  if(q && navigator.clipboard){
-    navigator.clipboard.writeText(q).catch(function(){});
-  }
-  var urls = {
-    ChatGPT: q ? ("https://chatgpt.com/?q=" + encodeURIComponent(q)) : "https://chatgpt.com",
-    Gemini:  "https://gemini.google.com/app",
-    Claude:  q ? ("https://claude.ai/new?q=" + encodeURIComponent(q)) : "https://claude.ai/new"
-  };
-  if(q && provName === "Gemini") toast("📋 نُسخ سؤالك تلقائياً — الصقه مباشرة في Gemini");
-  window.open(urls[provName] || urls.ChatGPT, "_blank", "noopener");
+/* ==================== الذكاء الاصطناعي داخل التطبيق (ChatGPT · Gemini · Claude) ====================
+   كل مستخدم يربط مفتاحه الخاص (يُحفظ على جهازه فقط). المحادثة تتم داخل التطبيق بدون فتح برامج خارجية. */
+var AI_PROVS = {
+  Gemini:  { ico: "🔵", sub: "Google · مجاني", k: "g", hint: "AIza...", link: "https://aistudio.google.com/apikey", models: ["gemini-2.5-flash", "gemini-2.0-flash"] },
+  ChatGPT: { ico: "🟢", sub: "OpenAI", k: "o", hint: "sk-...", link: "https://platform.openai.com/api-keys", models: ["gpt-5-mini", "gpt-4o-mini"] },
+  Claude:  { ico: "🟠", sub: "Anthropic", k: "a", hint: "sk-ant-...", link: "https://console.anthropic.com/settings/keys", models: ["claude-haiku-5-5", "claude-sonnet-5-5"] }
+};
+var AI_SYS = "أنت مسبار AI، مساعد تعليمي وأكاديمي ذكي للأساتذة والطلاب. أجب بوضوح ودقة وباللغة التي يُسأل بها.";
+
+function provKey(p){
+  if(p === "Gemini") return getUserKey();
+  try{ return (localStorage.getItem("misbar_" + AI_PROVS[p].k + "key_" + (S.uid || "anon")) || "").trim(); }catch(e){ return ""; }
+}
+function setProvKey(p, k){
+  k = (k || "").trim();
+  if(p === "Gemini"){ setUserKey(k); return; }
+  try{ if(k) localStorage.setItem("misbar_" + AI_PROVS[p].k + "key_" + (S.uid || "anon"), k); else localStorage.removeItem("misbar_" + AI_PROVS[p].k + "key_" + (S.uid || "anon")); }catch(e){}
+}
+function firstReadyProv(){
+  var order = ["Gemini", "ChatGPT", "Claude"];
+  for(var i = 0; i < order.length; i++){ if(provKey(order[i])) return order[i]; }
+  return "";
+}
+function chatOf(p){ S.aiChats = S.aiChats || {}; if(!S.aiChats[p]) S.aiChats[p] = []; return S.aiChats[p]; }
+
+function aiErr(status, msg){
+  msg = String(msg || "");
+  if(status === 401 || status === 403 || /api key|invalid.*key|authentication|permission/i.test(msg)) return "المفتاح غير صحيح أو غير مفعّل، أعد ربطه من زر 🔑";
+  if(status === 429 || /quota|rate|limit|billing|credit/i.test(msg)) return "انتهى رصيد أو حد هذا المفتاح، جرّب لاحقاً أو غيّر المنصة";
+  if(status === 0) return "لا يوجد اتصال بالإنترنت";
+  return msg || "حدث خطأ غير معروف";
 }
 
-function aiV(){
-  var left=Math.max(S.free-S.used,0);
-  var progs=[
-    {id:"ChatGPT", ico:"🟢", sub:"OpenAI · حسابك"},
-    {id:"Gemini",  ico:"🔵", sub:"Google · حسابك"},
-    {id:"Claude",  ico:"🟠", sub:"Anthropic · حسابك"}
-  ];
-  return '<h2>🤖 منصات الذكاء الاصطناعي</h2>'+
-  '<div class="card">'+
-    '<div class="row"><span class="grow mu" dir="ltr" style="text-align:start">'+esc(S.email)+'</span><span class="badge">🟢 مربوط تلقائياً بحسابك</span></div>'+
-    '<div class="mu" style="margin-top:4px">'+(isSub()?'✅ اشتراك فعال: استخدام كامل':'مجاني: المتبقي اليوم '+left+' دخولات')+' · اختر المنصة التي تريدها:</div>'+
-    '<div class="grid3" style="margin-top:10px">'+
-      progs.map(function(p){
-        return '<div class="ai-prov-card '+(S.prov===p.id?'on':'')+'" onclick="S.prov=\''+p.id+'\';openExternalAIWithPrompt(\''+p.id+'\',document.getElementById(\'aiIn\')?document.getElementById(\'aiIn\').value:\'\');draw()">' +
-          '<div style="font-size:24px">'+p.ico+'</div>' +
-          '<b>'+p.id+'</b>' +
-          '<div class="mu" style="font-size:11px">'+p.sub+'</div>' +
-          '<div style="font-size:11px;color:var(--ac);font-weight:700;margin-top:3px">فتح مباشر ↗</div>' +
-        '</div>';
-      }).join("")+
-    '</div>'+
-  '</div>'+
-  '<div class="card">'+
-    '<label>اكتب سؤالك هنا وسيُرسل مباشرة إلى <b>'+esc(S.prov)+'</b> بحسابك:</label>'+
-    (S.ai.length?S.ai.map(function(m){return '<div class="msg'+(m[1]?' me':'')+'">'+esc(m[0])+'</div>'}).join(""):'')+
-    (S.busy?'<div class="msg mu">⏳ يكتب الإجابة...</div>':'')+
-    '<div class="row" style="margin-top:6px"><input id="aiIn" placeholder="اكتب سؤالك لـ '+esc(S.prov)+'..." class="grow" onkeydown="if(event.key==\'Enter\')sendAI()"><button class="b" '+(S.busy?'disabled':'')+' onclick="sendAI()">إرسال</button></div>'+
-    '<div class="mu" style="font-size:12px;margin-top:6px;text-align:center">✅ مربوط تلقائياً بحسابك — اختر أي منصة بالأعلى أو أرسل سؤالك مباشرة</div>'+
+/* استدعاء موحّد: messages = [{role:'user'|'assistant', content:'...'}] */
+async function callAIText(prov, messages, sys){
+  var key = provKey(prov); if(!key) throw new Error("NOKEY");
+  var models = AI_PROVS[prov].models, lastErr = "", lastStatus = 0;
+  for(var i = 0; i < models.length; i++){
+    var res, data;
+    try{
+      if(prov === "Gemini"){
+        var body = { contents: messages.map(function(m){ return { role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }; }), generationConfig: { temperature: 0.65 } };
+        if(sys) body.systemInstruction = { parts: [{ text: sys }] };
+        res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + models[i] + ":generateContent?key=" + encodeURIComponent(key), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        data = await res.json();
+        if(res.ok && data.candidates && data.candidates[0] && data.candidates[0].content) return data.candidates[0].content.parts.map(function(x){ return x.text || ""; }).join("");
+      } else if(prov === "ChatGPT"){
+        res = await fetch("https://api.openai.com/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key }, body: JSON.stringify({ model: models[i], messages: [{ role: "system", content: sys || AI_SYS }].concat(messages) }) });
+        data = await res.json();
+        if(res.ok && data.choices && data.choices[0]) return data.choices[0].message.content || "";
+      } else {
+        res = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" }, body: JSON.stringify({ model: models[i], max_tokens: 2000, system: sys || AI_SYS, messages: messages }) });
+        data = await res.json();
+        if(res.ok && data.content) return data.content.map(function(x){ return x.text || ""; }).join("");
+      }
+      lastStatus = res.status; lastErr = (data && data.error && (data.error.message || data.error)) || "";
+      if(res.status === 401 || res.status === 403 || res.status === 429) break; /* لا فائدة من تجربة موديل آخر */
+    }catch(e){ lastStatus = 0; lastErr = e && e.message; if(!navigator.onLine) break; }
+  }
+  throw new Error(aiErr(lastStatus, lastErr));
+}
+
+/* نافذة ربط مفتاح أي منصة */
+function openProvKeyDialog(prov, cb){
+  if(!AI_PROVS[prov]) prov = "Gemini";
+  var old = document.getElementById("md"); if(old) old.remove();
+  var P = AI_PROVS[prov];
+  var d = document.createElement("div"); d.id = "md";
+  var steps = prov === "Gemini"
+    ? "١. اضغط الزر وسجّل بحساب Google (مجاني).<br>٢. اختر <b>Create API key</b> ثم انسخ الرمز.<br>٣. ارجع هنا والصقه."
+    : "١. افتح الصفحة وأنشئ مفتاحاً (API key) بحسابك. <b>هذا يختلف عن اشتراك الدردشة</b>، ويحتاج رصيداً مدفوعاً لدى المنصة.<br>٢. انسخ المفتاح والصقه هنا.";
+  d.innerHTML = '<div class="mc">' +
+    '<div style="font-size:26px;text-align:center">' + P.ico + '</div>' +
+    '<b style="display:block;text-align:center;margin:4px 0">ربط ' + prov + ' بحسابك</b>' +
+    '<div style="font-size:13px;line-height:1.8;margin-bottom:10px">' + steps + '</div>' +
+    '<a href="' + P.link + '" target="_blank" rel="noopener" class="b" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px;background:#15803d" ' + (prov === "Gemini" ? 'onclick="S.awaitingAutoKey=true"' : '') + '>🚀 فتح صفحة المفتاح</a>' +
+    '<input id="ukIn" dir="ltr" placeholder="الصق المفتاح هنا (' + P.hint + ')" value="' + esc(provKey(prov)) + '">' +
+    '<div class="mu" style="font-size:11px;margin:4px 0 8px">🔒 يُحفظ على جهازك فقط ولا يُرسل لأي سيرفر غير ' + (prov === "Gemini" ? "Google" : prov === "ChatGPT" ? "OpenAI" : "Anthropic") + '.</div>' +
+    '<div class="row"><button class="b grow" id="ukSave">حفظ واختبار</button><button class="b s grow" id="ukClose">إلغاء</button></div>' +
   '</div>';
+  document.body.appendChild(d);
+  document.getElementById("ukClose").onclick = function(){ d.remove(); };
+  document.getElementById("ukSave").onclick = async function(){
+    var v = document.getElementById("ukIn").value.trim();
+    if(!v){ toast("الصق المفتاح أولاً"); return; }
+    var btn = document.getElementById("ukSave"); btn.disabled = true; btn.textContent = "جاري الاختبار...";
+    var oldKey = provKey(prov);
+    setProvKey(prov, v);
+    try{
+      await callAIText(prov, [{ role: "user", content: "قل: جاهز" }], "أجب بكلمة واحدة.");
+      d.remove(); S.prov = prov; S._provChosen = true;
+      toast("✅ تم ربط " + prov + " وهو جاهز للاستخدام");
+      draw(); if(cb) cb();
+    }catch(e){
+      setProvKey(prov, oldKey);
+      btn.disabled = false; btn.textContent = "حفظ واختبار";
+      toast("⚠️ " + (e.message || "فشل الاختبار"));
+    }
+  };
+}
+function openAutoKeyConnect(cb){ openProvKeyDialog("Gemini", cb); }
+
+function aiV(){
+  var left = Math.max(S.free - S.used, 0);
+  if(!AI_PROVS[S.prov]) S.prov = "Gemini";
+  if(!S._provChosen){ var rp = firstReadyProv(); if(rp) S.prov = rp; else S.prov = "Gemini"; }
+  var P = AI_PROVS[S.prov], ready = !!provKey(S.prov), hist = chatOf(S.prov);
+  S.ai = hist;
+  var tabs = Object.keys(AI_PROVS).map(function(id){
+    var q = AI_PROVS[id], ok = !!provKey(id);
+    return '<div class="ai-prov-card ' + (S.prov === id ? 'on' : '') + '" onclick="S.prov=\'' + id + '\';S._provChosen=true;draw()">' +
+      '<div style="font-size:24px">' + q.ico + '</div><b>' + id + '</b>' +
+      '<div class="mu" style="font-size:11px">' + q.sub + '</div>' +
+      '<div style="font-size:11px;font-weight:700;margin-top:3px;color:' + (ok ? '#15803d' : 'var(--mu)') + '">' + (ok ? 'جاهز ✓' : 'يحتاج مفتاحاً') + '</div></div>';
+  }).join("");
+  var body;
+  if(!ready){
+    body = '<div class="card" style="border-inline-start:4px solid #f59e0b">' +
+      '<b>اربط ' + esc(S.prov) + ' لتستعمله داخل التطبيق</b>' +
+      '<div class="mu" style="margin:6px 0;line-height:1.8">' + (S.prov === "Gemini"
+        ? 'Gemini <b>مجاني</b>: سجّل بحساب Google واحصل على مفتاح خلال دقيقة.'
+        : 'يحتاج مفتاح API من حسابك لدى ' + esc(S.prov) + ' (غير اشتراك الدردشة، وله رصيد مدفوع).') + '</div>' +
+      '<button class="b" style="width:100%" onclick="openProvKeyDialog(\'' + S.prov + '\')">🔑 ربط ' + esc(S.prov) + '</button></div>';
+  } else {
+    body = '<div class="card">' +
+      '<div class="row" style="margin-bottom:6px"><b class="grow">💬 ' + esc(S.prov) + '</b>' +
+        '<button class="b s" onclick="openProvKeyDialog(\'' + S.prov + '\')" aria-label="المفتاح">🔑</button>' +
+        '<button class="b s" onclick="chatOf(S.prov).length=0;draw()" aria-label="مسح">🗑</button></div>' +
+      '<div id="aiBox" style="max-height:46vh;overflow-y:auto">' +
+        (hist.length ? hist.map(function(m){ return '<div class="msg' + (m[1] ? ' me' : '') + '" style="white-space:pre-wrap">' + esc(m[0]) + '</div>'; }).join("") : '<div class="mu" style="text-align:center;padding:14px 0">اسأل ' + esc(S.prov) + ' أي سؤال تعليمي أو أكاديمي</div>') +
+        (S.busy ? '<div class="msg mu">⏳ يكتب الإجابة...</div>' : '') +
+      '</div>' +
+      '<div class="row" style="margin-top:8px"><input id="aiIn" placeholder="اكتب سؤالك..." class="grow" onkeydown="if(event.key===\'Enter\')sendAI()"><button class="b" ' + (S.busy ? 'disabled' : '') + ' onclick="sendAI()">إرسال</button></div>' +
+    '</div>';
+  }
+  return '<h2>🤖 الذكاء الاصطناعي</h2>' +
+    '<div class="card"><div class="row"><span class="grow mu" dir="ltr" style="text-align:start">' + esc(S.email) + '</span></div>' +
+    '<div class="mu" style="margin:4px 0">' + (isSub() ? '✅ اشتراك فعال: استخدام كامل' : 'مجاني: المتبقي اليوم ' + left + ' دخولات') + ' · اختر المنصة:</div>' +
+    '<div class="grid3" style="margin-top:8px">' + tabs + '</div></div>' + body;
 }
 
 async function sendAI(){
-  var el=$("aiIn"),v=el?el.value.trim():"";if(!v||S.busy)return;
-  if(!gate())return;
-  S.ai.push([v,1]);
-  if(S.prov === "Gemini" && getUserKey()){
-    await runChatTurn();
-    return;
-  }
-  S.ai.push(["تم فتح "+S.prov+" بحسابك الشخصي وإرسال سؤالك إليه ↗",0]);
-  draw();
-  openExternalAIWithPrompt(S.prov, v);
-}
-async function runChatTurn(){
-  S.busy=true;draw();
+  var el = $("aiIn"), v = el ? el.value.trim() : "";
+  if(!v || S.busy) return;
+  var p = S.prov;
+  if(!provKey(p)){ openProvKeyDialog(p); return; }
+  if(!gate()) return;
+  var hist = chatOf(p); hist.push([v, 1]); S.ai = hist; S.busy = true; draw();
+  var scroll = function(){ var b = $("aiBox"); if(b) b.scrollTop = b.scrollHeight; };
+  scroll();
   try{
-    var hist=S.ai.slice(-6).map(function(m){return (m[1]?"المستخدم: ":"المساعد: ")+m[0]}).join("\n");
-    var ans=await callUserGemini(hist,"أنت مسبار AI، مساعد تعليمي وأكاديمي ذكي للأساتذة والطلاب. أجب بوضوح ودقة وباللغة التي يُسأل بها.");
-    if(ans)S.ai.push([ans,0]);
+    var msgs = hist.slice(-12).map(function(m){ return { role: m[1] ? "user" : "assistant", content: m[0] }; });
+    while(msgs.length && msgs[0].role !== "user") msgs.shift();
+    var ans = await callAIText(p, msgs, AI_SYS);
+    hist.push([ans || "(لا يوجد رد)", 0]);
   }catch(e){
-    S.ai.push(["تعذر الاتصال: "+e.message,0]);
+    hist.push(["⚠️ " + (e.message === "NOKEY" ? "اربط المفتاح أولاً" : e.message), 0]);
   }
-  S.busy=false;draw();
+  S.busy = false; draw(); scroll();
 }
 
 /* ==================== المجتمع، المقترحات للمالك، ومراسلة وكروبات مثل واتساب وتليجرام ==================== */
