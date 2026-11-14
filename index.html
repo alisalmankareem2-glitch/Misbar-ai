@@ -65,6 +65,23 @@ nav button.on{color:var(--ac)}nav i{display:block;font-style:normal;font-size:19
 /* CamScanner Pro Studio Styles */
 .scn-stage{position:relative;background:#0b101b;border-radius:14px;overflow:hidden;touch-action:none;user-select:none;display:flex;align-items:center;justify-content:center;min-height:300px;max-height:62vh;border:1px solid var(--ln)}
 .scn-stage canvas,.scn-stage img{max-width:100%;max-height:62vh;display:block}
+.scn-cam-overlay{position:fixed;inset:0;z-index:9500;background:#000;display:flex;flex-direction:column;color:#fff;user-select:none;-webkit-user-select:none}
+.scn-cam-top{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 10px;background:linear-gradient(180deg,rgba(0,0,0,.82),rgba(0,0,0,.2));z-index:4}
+.scn-cam-pill{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:99px;padding:6px 12px;font:600 12px Cairo,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.scn-cam-pill.on{background:#16a34a;border-color:#22c55e;color:#fff}
+.scn-cam-view{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#05070b}
+.scn-cam-view video{width:100%;height:100%;object-fit:cover;display:block}
+.scn-cam-view canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.scn-cam-hint{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.68);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.16);padding:6px 14px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;z-index:5;transition:.2s}
+.scn-cam-hint.locked{background:rgba(21,128,61,.88);border-color:#4ade80}
+.scn-cam-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:8;transition:opacity .18s}
+.scn-cam-bot{background:linear-gradient(0deg,rgba(0,0,0,.92),rgba(0,0,0,.55));padding:14px 18px calc(env(safe-area-inset-bottom,0px) + 18px);display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:4}
+.scn-shutter{width:72px;height:72px;border-radius:50%;background:#fff;border:4px solid rgba(255,255,255,.45);box-shadow:0 0 0 4px rgba(34,197,94,.35);cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;transition:transform .12s}
+.scn-shutter:active{transform:scale(.92)}
+.scn-shutter-inner{width:56px;height:56px;border-radius:50%;background:#fff;border:2px solid #15803d;transition:.15s}
+.scn-batch-thumb{position:relative;width:54px;height:66px;border-radius:10px;border:2px solid #22c55e;background:#111;overflow:visible;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.scn-batch-thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px}
+.scn-batch-badge{position:absolute;top:-7px;right:-7px;min-width:22px;height:22px;border-radius:99px;background:#22c55e;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 5px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
 .flt-bar{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 10px;scrollbar-width:none}
 .flt-bar::-webkit-scrollbar{display:none}
 .flt-btn{flex:0 0 auto;width:86px;padding:6px;border-radius:12px;border:2px solid var(--ln);background:var(--sf);color:var(--tx);font:600 11px Cairo,sans-serif;text-align:center;cursor:pointer;transition:.15s}
@@ -114,6 +131,19 @@ nav button{position:relative}
   @page{size:A4;margin:10mm}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.bar-wrap { background: var(--ln); border-radius: 8px; height: 24px; width: 100%; overflow: hidden; position: relative; margin-top: 4px; }
+.bar-fill { background: var(--ac); height: 100%; width: 0%; transition: width 0.4s ease; display:flex; align-items:center; padding: 0 8px; color:#fff; font-size:11px; font-weight:bold; white-space:nowrap; }
+.bar-text { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: bold; color: var(--tx); z-index: 2; }
+
+/* Premium UI Upgrades */
+body { background: #f0f2f5; }
+.card { background: rgba(255,255,255,0.9); backdrop-filter: blur(12px); box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid rgba(255,255,255,0.4); transition: transform 0.2s, box-shadow 0.2s; }
+.card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
+button.b { transition: all 0.2s ease; font-weight: 700; letter-spacing: 0.2px; }
+button.b:not(:disabled):active { transform: scale(0.96); }
+main { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 </head>
 <body>
@@ -126,7 +156,7 @@ nav button{position:relative}
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.35.0";
+var APP_VERSION = "2.48.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -169,7 +199,7 @@ async function checkForLiveUpdate() {
 var _fromPopState = false;
 var _lastHistKey = "";
 function getNavStateKey(){
-  return [S.role||"", S.tab||0, S.curChatId||"", S.proPortal||"", S.scnDocId||"", S.profileOpen?1:0, S.subv?1:0, S.gw?S.gw.view:"", S.openMat?1:0, S.scnEd?1:0, S.scnPrintDoc?1:0].join("|");
+  return [S.role||"", S.tab||0, S.curChatId||"", S.proPortal||"", S.scnDocId||"", S.profileOpen?1:0, S.subv?1:0, S.gw?S.gw.view:"", S.openMat?1:0, S.scnCam?1:0, S.scnEd?1:0, S.scnPrintDoc?1:0].join("|");
 }
 function syncHistoryState(){
   var k = getNavStateKey();
@@ -188,6 +218,7 @@ window.addEventListener("popstate", function(e){
   _fromPopState = true;
   var md = document.getElementById("md");
   if(md){ md.remove(); S.chatModal = null; _fromPopState = false; syncHistoryState(); return; }
+  if(S.scnCam){ closeLiveScannerCam(false); _fromPopState = false; return; }
   if(S.scnEd){ S.scnEd = null; draw(); _fromPopState = false; return; }
   if(S.scnPrintDoc){ S.scnPrintDoc = null; draw(); _fromPopState = false; return; }
   if(S.profileOpen){ S.profileOpen = false; draw(); _fromPopState = false; return; }
@@ -245,7 +276,7 @@ var S={
   posts:[{author:"إدارة مسبار",text:"مرحباً بكم في منصة مسبار AI التعليمية للأساتذة والطلاب."}],
   feedbacks:[],
   tx:"",pend:"",gr:[["زينب أحمد",18],["مصطفى كريم",15]],
-  bank:[],bi:"",bt:"",ai:[],free:5,prov:"Gemini",aiSubTab:"ai",
+  bank:[],bi:"",bt:"",ai:[],free:3,prov:"Gemini",aiSubTab:"ai",
   proPortal:null,
   plans:[{n:"أسبوعي",p:2000,v:1,u:"أسبوع"},{n:"شهري",p:5000,v:1,u:"شهر"},{n:"6 أشهر",p:25000,v:6,u:"شهر"},{n:"سنوي",p:45000,v:12,u:"شهر"}],
   subs:[],req:[],allUsers:[],rt:0,rs:"new",rq:"",pick:null,subv:0,
@@ -254,7 +285,8 @@ var S={
   gw:null,pp:null,bk:null,docs:[],
   planRows:null,pi:"",per:"أسبوعية",pv:0,
   hiddenMsgs:{},
-  blocked:[]
+  blocked:[],
+  liveQuiz: null, liveQuizPin: "", liveQuizAnswers: {}, liveQuizTab: "quiz", stuActiveQuiz: null, liveQuizStrict: false, liveQuizDuration: 0, liveQuizShuffle: false, adminReports: [], watchingAdmin: false
 };
 
 function storagePrefix(){ return "misbar_u_" + (S.uid || "guest") + "_"; }
@@ -508,7 +540,20 @@ async function saveFileToUserDrive(filename, htmlContent, rtl){
     var folderId = await ensureMisbarDriveFolder();
     var docHtml = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
       '<head><meta charset="utf-8"><title>' + esc(filename) + '</title>' +
-      '<style>@page{size:A4;margin:15mm}body{font-family:Arial,Tahoma,sans-serif;direction:' + (rtl?'rtl':'ltr') + ';line-height:1.8}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:6px}</style>' +
+      '<style>@page{size:A4;margin:15mm}body{font-family:Arial,Tahoma,sans-serif;direction:' + (rtl?'rtl':'ltr') + ';line-height:1.8}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:6px}
+.bar-wrap { background: var(--ln); border-radius: 8px; height: 24px; width: 100%; overflow: hidden; position: relative; margin-top: 4px; }
+.bar-fill { background: var(--ac); height: 100%; width: 0%; transition: width 0.4s ease; display:flex; align-items:center; padding: 0 8px; color:#fff; font-size:11px; font-weight:bold; white-space:nowrap; }
+.bar-text { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: bold; color: var(--tx); z-index: 2; }
+
+/* Premium UI Upgrades */
+body { background: #f0f2f5; }
+.card { background: rgba(255,255,255,0.9); backdrop-filter: blur(12px); box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid rgba(255,255,255,0.4); transition: transform 0.2s, box-shadow 0.2s; }
+.card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
+button.b { transition: all 0.2s ease; font-weight: 700; letter-spacing: 0.2px; }
+button.b:not(:disabled):active { transform: scale(0.96); }
+main { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>' +
       '</head><body>' + htmlContent + '</body></html>';
     var cleanName = filename.replace(/[^\w\u0600-\u06FF\- ]/g, "") + ".doc";
     var boundary = "-------misbarDoc987654";
@@ -557,7 +602,20 @@ function showDriveGuideModal(onProceed, fallbackShareFn){
 function shareWordViaSystem(filename, htmlContent, rtl){
   var docHtml='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'+
     '<head><meta charset="utf-8"><title>'+esc(filename)+'</title>'+
-    '<style>@page{size:A4;margin:15mm}body{font-family:Arial,Tahoma,sans-serif;direction:'+(rtl?'rtl':'ltr')+';line-height:1.8}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:6px}</style>'+
+    '<style>@page{size:A4;margin:15mm}body{font-family:Arial,Tahoma,sans-serif;direction:'+(rtl?'rtl':'ltr')+';line-height:1.8}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:6px}
+.bar-wrap { background: var(--ln); border-radius: 8px; height: 24px; width: 100%; overflow: hidden; position: relative; margin-top: 4px; }
+.bar-fill { background: var(--ac); height: 100%; width: 0%; transition: width 0.4s ease; display:flex; align-items:center; padding: 0 8px; color:#fff; font-size:11px; font-weight:bold; white-space:nowrap; }
+.bar-text { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: bold; color: var(--tx); z-index: 2; }
+
+/* Premium UI Upgrades */
+body { background: #f0f2f5; }
+.card { background: rgba(255,255,255,0.9); backdrop-filter: blur(12px); box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid rgba(255,255,255,0.4); transition: transform 0.2s, box-shadow 0.2s; }
+.card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
+button.b { transition: all 0.2s ease; font-weight: 700; letter-spacing: 0.2px; }
+button.b:not(:disabled):active { transform: scale(0.96); }
+main { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>'+
     '</head><body>'+htmlContent+'</body></html>';
   var cleanName=filename.replace(/[^\w\u0600-\u06FF\- ]/g,"")+".doc";
   var blob=new Blob(["\ufeff",docHtml],{type:"application/msword;charset=utf-8"});
@@ -593,6 +651,13 @@ function ask(l,cb,pw,defVal){
   function c(){d.remove()}$("mx").onclick=c;
   $("mk").onclick=function(){var v=i.value.trim();c();if(v)cb(v)};
   i.onkeydown=function(e){if(e.key=="Enter")$("mk").click()};
+}
+function confirmModal(msg, cb){
+  var d=document.createElement("div");d.id="md";
+  d.innerHTML='<div class="mc" style="text-align:center;width:min(320px,90%)"><div style="font-size:32px;margin-bottom:8px">⚠️</div><b style="line-height:1.6">'+esc(msg)+'</b><div class="grid" style="margin-top:16px"><button class="b d" id="mk">نعم، متأكد</button><button class="b s" id="mx">إلغاء</button></div></div>';
+  document.body.appendChild(d);
+  function c(){d.remove()}$("mx").onclick=c;
+  $("mk").onclick=function(){c();cb()};
 }
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 
@@ -680,7 +745,7 @@ function profileScr(){
       '<button class="b s" style="width:100%" onclick="fbLogout()">🔁 تبديل الحساب</button>' +
     '</div>' +
     '<div class="card"><div class="grid">' +
-      '<button class="b s" onclick="handleDriveSyncClick()">' + (S.driveToken ? '☁️ مزامنة Drive' : '☁️ ربط Google Drive') + '</button>' +
+      '<button class="'+(S.driveToken?'b s':'b cl-pulse')+'" onclick="handleDriveSyncClick()">' + (S.driveToken ? '☁️ مزامنة Drive' : '☁️ ربط Google Drive لحفظ ملفاتك') + '</button>' +
       (stat() && S.role != 'own' ? '<button class="b s" onclick="S.profileOpen=false;S.subv=1;draw()">' + stat() + '</button>' : '') +
     '</div></div>' +
     '<div class="mu" style="text-align:center;margin-top:8px;font-size:11px">إصدار v' + APP_VERSION + '</div>' +
@@ -721,15 +786,15 @@ function saveProfile(){
 
 
 Object.defineProperty(S,"used",{
-  get:function(){return S.use[S.email+"|"+new Date().toDateString()]||0},
-  set:function(v){S.use[S.email+"|"+new Date().toDateString()]=v;try{localStorage.setItem("misbar_use_v1",JSON.stringify(S.use))}catch(e){}}
+  get:function(){return S.use[S.email||"guest"]||0},
+  set:function(v){S.use[S.email||"guest"]=v;try{localStorage.setItem("misbar_use_v1",JSON.stringify(S.use))}catch(e){}}
 });
 function dd(p){return p.v*(p.u=="أسبوع"?7:p.u=="شهر"?30:1)}
 function fd(t){return new Date(t).toLocaleDateString("ar-IQ")}
 function pid(p){if(!p.id)p.id=Math.random().toString(36).slice(2,8);return p.id}
 function isSub(){var n=Date.now();return S.isOwner||S.subs.some(function(s){return s.e==S.email&&s.end>n&&(!s.s||s.s<=n)})}
 function stat(){return S.email?(isSub()?"💳 مشترك":"💳 اشترك"):""}
-function gate(){if(isSub())return true;if(S.used>=S.free){toast("انتهت دخولاتك المجانية اليوم، اشترك للمتابعة");return false}S.used=S.used+1;return true}
+function gate(customMsg){if(isSub())return true;if(S.used>=S.free){confirmModal(customMsg||"انتهت محاولاتك المجانية (التجريبية). يرجى الاشتراك للمتابعة وفتح جميع ميزات التطبيق.", function(){S.subv=1;draw();});return false}S.used=S.used+1;return true}
 
 /* ============================================================================
    [الأساس ٥] محرك الذكاء الاصطناعي بحساب Gmail الخاص بالزبون نفسه
@@ -789,7 +854,20 @@ async function callUserGemini(prompt,sysInst,imgDataUrl,jsonMode){
 function downloadWordFile(filename,innerHtml,rtl){
   var docHtml='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'+
     '<head><meta charset="utf-8"><title>'+esc(filename)+'</title>'+
-    '<style>@page{size:A4;margin:15mm}body{font-family:Arial,Tahoma,sans-serif;direction:'+(rtl?'rtl':'ltr')+';line-height:1.8}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:6px}</style>'+
+    '<style>@page{size:A4;margin:15mm}body{font-family:Arial,Tahoma,sans-serif;direction:'+(rtl?'rtl':'ltr')+';line-height:1.8}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:6px}
+.bar-wrap { background: var(--ln); border-radius: 8px; height: 24px; width: 100%; overflow: hidden; position: relative; margin-top: 4px; }
+.bar-fill { background: var(--ac); height: 100%; width: 0%; transition: width 0.4s ease; display:flex; align-items:center; padding: 0 8px; color:#fff; font-size:11px; font-weight:bold; white-space:nowrap; }
+.bar-text { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: bold; color: var(--tx); z-index: 2; }
+
+/* Premium UI Upgrades */
+body { background: #f0f2f5; }
+.card { background: rgba(255,255,255,0.9); backdrop-filter: blur(12px); box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid rgba(255,255,255,0.4); transition: transform 0.2s, box-shadow 0.2s; }
+.card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
+button.b { transition: all 0.2s ease; font-weight: 700; letter-spacing: 0.2px; }
+button.b:not(:disabled):active { transform: scale(0.96); }
+main { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>'+
     '</head><body>'+innerHtml+'</body></html>';
   var blob=new Blob(["\ufeff",docHtml],{type:"application/msword;charset=utf-8"});
   var a=document.createElement("a");
@@ -800,11 +878,11 @@ function downloadWordFile(filename,innerHtml,rtl){
 }
 
 /* ==================== التنقل والرأس ==================== */
-function setRole(r){S.role=r;S.tab=0;S.proPortal=null;S.out="";S.openMat=null;S.gw=null;S.pp=null;S.bk=null;S.quiz=null;S.curChatId=null;draw()}
+function setRole(r){S.role=r;S.tab=0;S.proPortal=null;S.out="";S.openMat=null;S.gw=null;S.pp=null;S.bk=null;S.quiz=null;S.curChatId=null;if(S.scnCam)closeLiveScannerCam(true);S.scnEd=null;S.scnPrintDoc=null;S.scnDocId=null;draw()}
 function tab(i){
   var t=S.role=="pro"?4:3;
   if(i==t&&S.tab!=t&&!gate())return;
-  S.tab=i;S.proPortal=null;S.out="";S.openMat=null;S.gw=null;S.pp=null;S.bk=null;S.quiz=null;S.curChatId=null;draw();
+  S.tab=i;S.proPortal=null;S.out="";S.openMat=null;S.gw=null;S.pp=null;S.bk=null;S.quiz=null;S.curChatId=null;if(S.scnCam)closeLiveScannerCam(true);S.scnEd=null;S.scnPrintDoc=null;S.scnDocId=null;draw();
 }
 function hat(){
   S.taps++;clearTimeout(S._t);S._t=setTimeout(function(){S.taps=0},2000);
@@ -1022,7 +1100,7 @@ function ppNew(subj,sample){
     tt:ltr?"Subject Teacher":"مدرس المادة",ttCustom:""
   };
   var o={
-    name:true,logo:"",bism:!ltr,border:true,borderStyle:"double",sep:true,
+    headerAlign:"split",footerAlign:"split",name:true,logo:"",bism:!ltr,border:true,borderStyle:"double",sep:true,
     cont:false,pnum:true,bw:false,adv:false,
     font:ltr?"Times New Roman":"Cairo",size:16,color:"#000000",
     qn:ltr?"Q":"س",sub:ltr?"a":"أ",
@@ -1084,7 +1162,7 @@ function ps(path,v){
 function updSheet(){var e=$("sheet");if(e)e.innerHTML=paperH()}
 function pq(i,k,v){S.pp.q[i][k]=v;updSheet()}
 function addQ(){S.pp.q.push({t:"",m:"",s:"",horiz:false,img:""});draw()}
-function delQ(i){if(S.pp.q.length<=1){toast("يجب بقاء سؤال واحد على الأقل");return}S.pp.q.splice(i,1);draw()}
+function delQ(i){if(S.pp.q.length<=1){toast("يجب بقاء سؤال واحد على الأقل");return}confirmModal("هل أنت متأكد من حذف هذا السؤال؟",function(){S.pp.q.splice(i,1);draw()})}
 function mvQ(i,d){var a=S.pp.q,j=i+d;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t;draw()}
 function qImg(i,inp){
   var x=inp.files[0];if(!x)return;
@@ -1144,11 +1222,22 @@ function paperH(){
   var ttLabel=f.tt=="مسمى مخصص"?(f.ttCustom||""):f.tt;
   var h='<div class="sheet" dir="'+(rtl?'rtl':'ltr')+'" style="font-family:'+esc(o.font)+',Tahoma,serif;font-size:'+o.size+'px;'+bdr+(o.bw?'filter:grayscale(1);':'')+'">';
   if(o.bism)h+='<div style="text-align:center;font-weight:700;margin-bottom:4px">بسم الله الرحمن الرحيم</div>';
-  h+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0">'+
-    '<div style="flex:1;font-size:.9em">'+tdg(f.ministry)+(f.school?'<br><b>'+tdg(f.school)+'</b>':'')+'</div>'+
-    '<div style="text-align:center">'+(o.logo?'<img src="'+o.logo+'" alt="" style="max-height:66px">':'')+'</div>'+
-    '<div style="flex:1;text-align:end"><b style="color:'+c+';font-size:1.05em">'+tdg(f.title)+'</b><div style="font-size:.9em">'+tdg(f.subj)+(f.stage?' — '+tdg(f.stage):'')+'<br>'+tdg(f.round)+(f.year?' · '+dg(esc(f.year)):'')+'</div></div>'+
-  '</div>';
+  var hAl = o.headerAlign || "split";
+  if (hAl === "split") {
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0">'+
+      '<div style="flex:1;font-size:.9em">'+tdg(f.ministry)+(f.school?'<br><b>'+tdg(f.school)+'</b>':'')+'</div>'+
+      '<div style="text-align:center">'+(o.logo?'<img src="'+o.logo+'" alt="" style="max-height:66px">':'')+'</div>'+
+      '<div style="flex:1;text-align:end"><b style="color:'+c+';font-size:1.05em">'+tdg(f.title)+'</b><div style="font-size:.9em">'+tdg(f.subj)+(f.stage?' — '+tdg(f.stage):'')+'<br>'+tdg(f.round)+(f.year?' · '+dg(esc(f.year)):'')+'</div></div>'+
+    '</div>';
+  } else {
+    var taCss = hAl === "right" ? "right" : (hAl === "left" ? "left" : "center");
+    h+='<div style="text-align:'+taCss+';margin:6px 0">';
+    if(o.logo) h+='<div style="margin-bottom:6px"><img src="'+o.logo+'" alt="" style="max-height:66px"></div>';
+    h+='<div style="font-size:.9em;margin-bottom:4px">'+tdg(f.ministry)+(f.school?'<br><b>'+tdg(f.school)+'</b>':'')+'</div>';
+    h+='<div style="margin-bottom:4px"><b style="color:'+c+';font-size:1.05em">'+tdg(f.title)+'</b></div>';
+    h+='<div style="font-size:.9em">'+tdg(f.subj)+(f.stage?' — '+tdg(f.stage):'')+'<br>'+tdg(f.round)+(f.year?' · '+dg(esc(f.year)):'')+'</div>';
+    h+='</div>';
+  }
   h+='<div style="display:flex;justify-content:space-between;border-top:1.5px solid '+c+';border-bottom:1.5px solid '+c+';padding:3px 8px;margin:6px 0;font-weight:600">'+
     '<span>'+(rtl?'الزمن: ':'Time: ')+tdg(f.dur)+'</span>'+
     '<span>'+(rtl?'الدرجة: ':'Total Marks: ')+dg(esc(f.grade))+'</span>'+
@@ -1175,7 +1264,18 @@ function paperH(){
 
   h+='<div style="margin-top:'+o.closeSpace+'px">';
   if(o.close)h+='<div style="text-align:center;font-weight:700;color:'+c+'">'+tdg(o.close)+'</div>';
-  if(o.sig)h+='<div style="display:flex;justify-content:space-between;margin-top:12px;font-weight:600"><span>'+(ttLabel?tdg(ttLabel)+': ':'')+tdg(f.teacher)+'</span><span>'+(f.principal?(rtl?'مدير المدرسة: ':'Principal: ')+tdg(f.principal):'')+'</span></div>';
+  if(o.sig){
+    var fAl = o.footerAlign || "split";
+    if (fAl === "split") {
+      h+='<div style="display:flex;justify-content:space-between;margin-top:12px;font-weight:600"><span>'+(ttLabel?tdg(ttLabel)+': ':'')+tdg(f.teacher)+'</span><span>'+(f.principal?(rtl?'مدير المدرسة: ':'Principal: ')+tdg(f.principal):'')+'</span></div>';
+    } else {
+      var taCss = fAl === "right" ? "right" : (fAl === "left" ? "left" : "center");
+      h+='<div style="text-align:'+taCss+';margin-top:12px;font-weight:600">';
+      h+='<div>'+(ttLabel?tdg(ttLabel)+': ':'')+tdg(f.teacher)+'</div>';
+      if(f.principal) h+='<div style="margin-top:4px">'+(rtl?'مدير المدرسة: ':'Principal: ')+tdg(f.principal)+'</div>';
+      h+='</div>';
+    }
+  }
   h+='</div>';
   if(o.cont||o.pnum){
     h+='<div style="display:flex;justify-content:space-between;margin-top:14px;padding-top:4px;border-top:1px dotted #aaa;font-size:.8em;color:#555">'+
@@ -1305,6 +1405,7 @@ function ppEdScr(){
       ppInp("f.ministry","المديرية / الوزارة",fo.ministry)+
       ppInp("f.title","عنوان الامتحان (شهري / نصف السنة / نهائي / مخصص)",fo.title)+
       ppInp("f.stage","المرحلة والصف",fo.stage)+
+      ppSel("o.headerAlign","محاذاة العناوين العلوية",[["split","موزعة (افتراضي)"],["center","توسيط (بالوسط)"],["right","يمين"],["left","يسار"]],o.headerAlign)+
       '<div class="grid">'+
         ppSel("f.round","الكورس أو الدور",["الكورس الأول","الكورس الثاني","الدور الأول","الدور الثاني","First Course","Second Course"],fo.round)+
         ppInp("f.year","السنة الدراسية",fo.year)+
@@ -1321,6 +1422,7 @@ function ppEdScr(){
       '</div>'+
       (fo.tt=="مسمى مخصص"?ppInp("f.ttCustom","اكتب الصفة المخصصة",fo.ttCustom):"")+
       ppInp("f.principal","اسم المدير",fo.principal)+
+      ppSel("o.footerAlign","محاذاة توقيع الأستاذ والمدير",[["split","موزعة (افتراضي)"],["center","توسيط (بالوسط)"],["right","يمين"],["left","يسار"]],o.footerAlign)+
       ppChk("o.name","سطر اسم الطالب والشعبة",o.name)+
       '<label>شعار المدرسة (اختياري)</label><div class="row"><input type="file" accept="image/*" onchange="ppLogo(this)" class="grow">'+(o.logo?'<button class="b d" onclick="S.pp.o.logo=\'\';draw()">حذف</button>':'')+'</div>'+
     '</div>'+
@@ -1686,7 +1788,7 @@ function bkEdScr(){
       '<button class="b s" onclick="addBkCh()">+ فصل جديد</button>'+
     '</div></div>'+
     (ch?'<div class="card">'+
-      '<div class="row"><b class="grow">تعديل الفصل الحالي</b>'+(b.chs.length>1?'<button class="b d" onclick="S.bk.chs.splice(S.bk.curCh,1);S.bk.curCh=0;draw()">حذف الفصل</button>':'')+'</div>'+
+      '<div class="row"><b class="grow">تعديل الفصل الحالي</b>'+(b.chs.length>1?'<button class="b d" onclick="confirmModal('هل أنت متأكد من حذف هذا الفصل؟',function(){S.bk.chs.splice(S.bk.curCh,1);S.bk.curCh=0;draw()})">حذف الفصل</button>':'')+'</div>'+
       '<label>عنوان الفصل أو الوحدة</label><input value="'+esc(ch.title)+'" oninput="S.bk.chs[S.bk.curCh].title=this.value">'+
       '<div class="row" style="margin:6px 0"><span class="mu grow">إضافة محتوى للفصل:</span><button class="b s" onclick="genBkBlockAI()">🤖 توليد بالذكاء</button></div>'+
       '<div class="grid3" style="margin-bottom:10px">'+
@@ -1700,7 +1802,7 @@ function bkEdScr(){
       ch.blocks.map(function(bl,bi){
         return '<div class="card" style="background:var(--bg)">'+
           '<div class="row"><span class="badge">'+(bi+1)+'</span><input class="grow" placeholder="عنوان فرعي" value="'+esc(bl.sub)+'" oninput="S.bk.chs[S.bk.curCh].blocks['+bi+'].sub=this.value" style="margin:0">'+
-          '<button class="b d" onclick="S.bk.chs[S.bk.curCh].blocks.splice('+bi+',1);draw()">×</button></div>'+
+          '<button class="b d" onclick="confirmModal('هل تريد حذف هذه الفقرة؟',function(){S.bk.chs[S.bk.curCh].blocks.splice('+bi+',1);draw()})">×</button></div>'+
           symBarH("bk_b_"+bi,fo.subj)+
           '<textarea id="bk_b_'+bi+'" rows="3" placeholder="اكتب النص أو المثال أو التمرين هنا..." oninput="S.bk.chs[S.bk.curCh].blocks['+bi+'].body=this.value">'+esc(bl.body)+'</textarea>'+
         '</div>';
@@ -1792,83 +1894,300 @@ function toggleScnAutoCrop(){
   try{ localStorage.setItem(storagePrefix()+"scnAutoCrop", S.scnAutoCrop ? "1" : "0"); }catch(e){}
   if(S.scnEd && S.scnEd.rawImg){
     if(S.scnAutoCrop){
-      S.scnEd.corners = detectDocumentCorners(S.scnEd.rawImg);
-      toast("🎯 التجذيب التلقائي: مفعّل (تم تحديد الورقة)");
+      var det = detectDocumentCorners(S.scnEd.rawImg);
+      animateCropCornersTo(det);
+      toast("🎯 التجذيب التلقائي: مفعّل (تم تحديد حواف الورقة)");
     }else{
-      S.scnEd.corners = [[0,0],[1,0],[1,1],[0,1]];
+      animateCropCornersTo([[0,0],[1,0],[1,1],[0,1]]);
       toast("⬜ التجذيب التلقائي: متوقف (كامل الصورة)");
     }
-    if(S.scnEd.step === "crop") drawCropOverlay();
-    else { generateFilterThumbnails(); renderFilteredPreview(); draw(); }
+    if(S.scnEd.step !== "crop"){ generateFilterThumbnails(); renderFilteredPreview(); draw(); }
   }else{
     toast(S.scnAutoCrop ? "🎯 التجذيب التلقائي: مفعّل" : "⬜ التجذيب التلقائي: متوقف");
     draw();
   }
 }
 
-/* كشف حدود الورقة تلقائياً */
+/* ============================================================================
+   محرك الرؤية الحاسوبية لكشف حواف الورقة تلقائياً بدقة عالية (CamScanner CV Engine)
+   - يجمع بين عزل بياض/سطوع الورقة (Otsu + Chroma Suppression) + تتبع المكونات المتصلة
+   - استخراج الغلاف المحدب (Andrew's Monotone Chain Convex Hull)
+   - تقليص الرؤوس بأقل فقدان للمساحة (Minimum-Area-Loss Quad Fitting) لإيجاد الزوايا الأربع بدقة
+   - مدعوم بكاشف تدرجات Sobel احتياطي في حالات الإضاءة المتقاربة
+   ============================================================================ */
+function _cvCross(o, a, b){
+  return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+}
+
+function _cvConvexHull(pts){
+  if(pts.length <= 3) return pts.slice();
+  var sorted = pts.slice().sort(function(a, b){
+    return a[0] === b[0] ? a[1] - b[1] : a[0] - b[0];
+  });
+  var lower = [];
+  for(var i = 0; i < sorted.length; i++){
+    var p = sorted[i];
+    while(lower.length >= 2 && _cvCross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0){
+      lower.pop();
+    }
+    lower.push(p);
+  }
+  var upper = [];
+  for(var j = sorted.length - 1; j >= 0; j--){
+    var p2 = sorted[j];
+    while(upper.length >= 2 && _cvCross(upper[upper.length - 2], upper[upper.length - 1], p2) <= 0){
+      upper.pop();
+    }
+    upper.push(p2);
+  }
+  lower.pop();
+  upper.pop();
+  return lower.concat(upper);
+}
+
+function _cvFitQuadFromHull(hull){
+  var pts = hull.slice();
+  while(pts.length > 4){
+    var minLoss = 1e18, bestIdx = 0, n = pts.length;
+    for(var i = 0; i < n; i++){
+      var prev = pts[(i - 1 + n) % n];
+      var cur = pts[i];
+      var next = pts[(i + 1) % n];
+      var loss = Math.abs(_cvCross(prev, cur, next)) * 0.5;
+      if(loss < minLoss){ minLoss = loss; bestIdx = i; }
+    }
+    pts.splice(bestIdx, 1);
+  }
+  return pts;
+}
+
+function _cvOrderQuad(pts, w, h){
+  if(!pts || pts.length !== 4) return null;
+  var norm = pts.map(function(p){
+    return [
+      Math.min(0.99, Math.max(0.01, p[0] / w)),
+      Math.min(0.99, Math.max(0.01, p[1] / h))
+    ];
+  });
+  // ترتيب الزوايا: أعلى-يسار، أعلى-يمين، أسفل-يمين، أسفل-يسار
+  var byY = norm.slice().sort(function(a, b){ return a[1] - b[1]; });
+  var top2 = byY.slice(0, 2).sort(function(a, b){ return a[0] - b[0]; });
+  var bot2 = byY.slice(2, 4).sort(function(a, b){ return a[0] - b[0]; });
+  var quad = [top2[0], top2[1], bot2[1], bot2[0]];
+
+  // التحقق من مساحة الرباعي وأن الزوايا غير متداخلة
+  var area = 0.5 * Math.abs(
+    quad[0][0]*quad[1][1] - quad[1][0]*quad[0][1] +
+    quad[1][0]*quad[2][1] - quad[2][0]*quad[1][1] +
+    quad[2][0]*quad[3][1] - quad[3][0]*quad[2][1] +
+    quad[3][0]*quad[0][1] - quad[0][0]*quad[3][1]
+  );
+  if(area < 0.11 || area > 0.96) return null;
+  // التحقق من تحدب الشكل الرباعي
+  var s0 = _cvCross(quad[0], quad[1], quad[2]);
+  var s1 = _cvCross(quad[1], quad[2], quad[3]);
+  var s2 = _cvCross(quad[2], quad[3], quad[0]);
+  var s3 = _cvCross(quad[3], quad[0], quad[1]);
+  if(!((s0 > 0 && s1 > 0 && s2 > 0 && s3 > 0) || (s0 < 0 && s1 < 0 && s2 < 0 && s3 < 0))) return null;
+  return quad;
+}
+
+function detectDocumentQuadFromCanvas(canvas, strictLiveMode){
+  try{
+    var w = canvas.width, h = canvas.height;
+    if(w < 30 || h < 30) return null;
+    var ctx = canvas.getContext("2d", { willReadFrequently: true });
+    var d = ctx.getImageData(0, 0, w, h).data;
+    var N = w * h;
+
+    // 1) حساب درجة بياض وسطوع الورقة (Luminance - Chroma penalty)
+    var score = new Float32Array(N);
+    var lum = new Float32Array(N);
+    for(var i = 0, p = 0; i < N; i++, p += 4){
+      var r = d[p], g = d[p+1], b = d[p+2];
+      var l = 0.299 * r + 0.587 * g + 0.114 * b;
+      var mx = r > g ? (r > b ? r : b) : (g > b ? g : b);
+      var mn = r < g ? (r < b ? r : b) : (g < b ? g : b);
+      var sat = mx - mn;
+      lum[i] = l;
+      score[i] = Math.max(0, Math.min(255, l - 0.45 * sat));
+    }
+
+    // 2) تنعيم 3x3 لإزالة الكتابة والخطوط من داخل الورقة
+    var smooth = new Float32Array(N);
+    for(var y = 1; y < h - 1; y++){
+      var rowOff = y * w;
+      for(var x = 1; x < w - 1; x++){
+        var idx = rowOff + x;
+        smooth[idx] = (
+          score[idx - w - 1] + 2*score[idx - w] + score[idx - w + 1] +
+          2*score[idx - 1]   + 4*score[idx]     + 2*score[idx + 1] +
+          score[idx + w - 1] + 2*score[idx + w] + score[idx + w + 1]
+        ) * 0.0625;
+      }
+    }
+
+    // 3) عتبة أوتسو التكيفية (Otsu Thresholding) لفصل الورقة عن الخلفية
+    var hist = new Int32Array(256);
+    var validCount = 0;
+    for(var y2 = 2; y2 < h - 2; y2++){
+      for(var x2 = 2; x2 < w - 2; x2++){
+        var bin = smooth[y2 * w + x2] | 0;
+        hist[bin < 0 ? 0 : (bin > 255 ? 255 : bin)]++;
+        validCount++;
+      }
+    }
+    var sumAll = 0;
+    for(var t = 0; t < 256; t++) sumAll += t * hist[t];
+    var sumB = 0, wB = 0, maxVar = -1, otsuT = 135;
+    for(var t2 = 0; t2 < 256; t2++){
+      wB += hist[t2];
+      if(wB === 0) continue;
+      var wF = validCount - wB;
+      if(wF === 0) break;
+      sumB += t2 * hist[t2];
+      var mB = sumB / wB;
+      var mF = (sumAll - sumB) / wF;
+      var diff = mB - mF;
+      var between = wB * wF * diff * diff;
+      if(between > maxVar){ maxVar = between; otsuT = t2; }
+    }
+
+    var meanBg = wB > 0 ? (sumB / validCount) : 80;
+    var fgCount = 0, fgSum = 0;
+    for(var t3 = otsuT; t3 < 256; t3++){ fgCount += hist[t3]; fgSum += t3 * hist[t3]; }
+    var bgCount = validCount - fgCount;
+    var bgSum = sumAll - fgSum;
+    var contrastGap = (fgCount > 0 && bgCount > 0) ? ((fgSum / fgCount) - (bgSum / bgCount)) : 0;
+
+    // 4) تتبع أكبر منطقة متصلة للورقة (Connected Component BFS)
+    if(contrastGap >= 18){
+      var mask = new Uint8Array(N);
+      for(var y3 = 2; y3 < h - 2; y3++){
+        for(var x3 = 2; x3 < w - 2; x3++){
+          var id3 = y3 * w + x3;
+          if(smooth[id3] >= otsuT) mask[id3] = 1;
+        }
+      }
+
+      var visited = new Uint8Array(N);
+      var queue = new Int32Array(N);
+      var bestComp = null, bestRank = -1;
+
+      for(var y4 = 4; y4 < h - 4; y4 += 2){
+        for(var x4 = 4; x4 < w - 4; x4 += 2){
+          var seed = y4 * w + x4;
+          if(mask[seed] === 1 && !visited[seed]){
+            var head = 0, tail = 0;
+            queue[tail++] = seed;
+            visited[seed] = 1;
+            var minX = x4, maxX = x4, minY = y4, maxY = y4;
+            var sumX = 0, sumY = 0, borderHits = 0;
+
+            while(head < tail){
+              var cur = queue[head++];
+              var cx = cur % w, cy = (cur / w) | 0;
+              if(cx < minX) minX = cx;
+              if(cx > maxX) maxX = cx;
+              if(cy < minY) minY = cy;
+              if(cy > maxY) maxY = cy;
+              sumX += cx; sumY += cy;
+              if(cx <= 3 || cx >= w - 4 || cy <= 3 || cy >= h - 4) borderHits++;
+
+              var nb0 = cur - 1, nb1 = cur + 1, nb2 = cur - w, nb3 = cur + w;
+              if(cx > 1 && mask[nb0] && !visited[nb0]){ visited[nb0] = 1; queue[tail++] = nb0; }
+              if(cx < w - 2 && mask[nb1] && !visited[nb1]){ visited[nb1] = 1; queue[tail++] = nb1; }
+              if(cy > 1 && mask[nb2] && !visited[nb2]){ visited[nb2] = 1; queue[tail++] = nb2; }
+              if(cy < h - 2 && mask[nb3] && !visited[nb3]){ visited[nb3] = 1; queue[tail++] = nb3; }
+            }
+
+            var areaRatio = tail / N;
+            if(areaRatio >= 0.11 && areaRatio <= 0.92){
+              var bwBox = Math.max(1, maxX - minX + 1);
+              var bhBox = Math.max(1, maxY - minY + 1);
+              var rectFill = tail / (bwBox * bhBox);
+              var centX = (sumX / tail) / w, centY = (sumY / tail) / h;
+              var centerScore = 1 - Math.min(0.8, Math.hypot(centX - 0.5, centY - 0.5));
+              var borderPenalty = borderHits > (w + h) * 0.45 ? 0.55 : 1.0;
+              var rank = areaRatio * rectFill * centerScore * borderPenalty;
+              if(rectFill >= 0.42 && rank > bestRank){
+                bestRank = rank;
+                bestComp = new Int32Array(queue.subarray(0, tail));
+              }
+            }
+          }
+        }
+      }
+
+      if(bestComp && bestComp.length > 40){
+        // إعادة وسم المكون الفائز لاستخراج نقاط الحافة الخارجية فقط
+        var compMap = new Uint8Array(N);
+        for(var cIdx = 0; cIdx < bestComp.length; cIdx++) compMap[bestComp[cIdx]] = 1;
+        var boundary = [];
+        for(var bIdx = 0; bIdx < bestComp.length; bIdx++){
+          var pix = bestComp[bIdx];
+          var px = pix % w, py = (pix / w) | 0;
+          if(px <= 2 || px >= w - 3 || py <= 2 || py >= h - 3 ||
+             !compMap[pix - 1] || !compMap[pix + 1] || !compMap[pix - w] || !compMap[pix + w]){
+            boundary.push([px, py]);
+          }
+        }
+        if(boundary.length >= 16){
+          var hull = _cvConvexHull(boundary);
+          var quadPts = _cvFitQuadFromHull(hull);
+          var ordered = _cvOrderQuad(quadPts, w, h);
+          if(ordered) return ordered;
+        }
+      }
+    }
+
+    // 5) كاشف الحواف الاحتياطي (Sobel Gradient Contour) للأوراق ذات التباين اللوني المنخفض
+    var edges = new Float32Array(N);
+    var maxE = 1;
+    for(var ey = 2; ey < h - 2; ey++){
+      for(var ex = 2; ex < w - 2; ex++){
+        var eIdx = ey * w + ex;
+        var gx = -lum[eIdx - w - 1] + lum[eIdx - w + 1] - 2*lum[eIdx - 1] + 2*lum[eIdx + 1] - lum[eIdx + w - 1] + lum[eIdx + w + 1];
+        var gy = -lum[eIdx - w - 1] - 2*lum[eIdx - w] - lum[eIdx - w + 1] + lum[eIdx + w - 1] + 2*lum[eIdx + w] + lum[eIdx + w + 1];
+        var mag = Math.sqrt(gx*gx + gy*gy);
+        edges[eIdx] = mag;
+        if(mag > maxE) maxE = mag;
+      }
+    }
+    var eThresh = Math.max(38, maxE * 0.28);
+    var edgePts = [];
+    var step = Math.max(1, Math.floor(Math.min(w, h) / 90));
+    for(var ey2 = 4; ey2 < h - 4; ey2 += step){
+      for(var ex2 = 4; ex2 < w - 4; ex2 += step){
+        if(edges[ey2 * w + ex2] >= eThresh) edgePts.push([ex2, ey2]);
+      }
+    }
+    if(edgePts.length >= 24 && edgePts.length <= N * 0.35){
+      var eHull = _cvConvexHull(edgePts);
+      var eQuad = _cvFitQuadFromHull(eHull);
+      var eOrdered = _cvOrderQuad(eQuad, w, h);
+      if(eOrdered) return eOrdered;
+    }
+
+    return null;
+  }catch(e){
+    return null;
+  }
+}
+
 function detectDocumentCorners(img){
   try{
-    var maxD = 260;
+    var maxD = 220;
     var scale = Math.min(1, maxD / Math.max(img.width, img.height));
     var w = Math.max(40, Math.round(img.width * scale));
     var h = Math.max(40, Math.round(img.height * scale));
     var c = document.createElement("canvas");
     c.width = w; c.height = h;
-    var ctx = c.getContext("2d");
-    ctx.drawImage(img, 0, 0, w, h);
-    var d = ctx.getImageData(0, 0, w, h).data;
-
-    var gray = new Float32Array(w * h);
-    for(var i = 0, p = 0; i < gray.length; i++, p += 4){
-      gray[i] = 0.299 * d[p] + 0.587 * d[p+1] + 0.114 * d[p+2];
-    }
-
-    var edges = new Float32Array(w * h);
-    var maxE = 1;
-    for(var y = 1; y < h - 1; y++){
-      for(var x = 1; x < w - 1; x++){
-        var idx = y * w + x;
-        var gx = -gray[idx - w - 1] + gray[idx - w + 1] - 2*gray[idx - 1] + 2*gray[idx + 1] - gray[idx + w - 1] + gray[idx + w + 1];
-        var gy = -gray[idx - w - 1] - 2*gray[idx - w] - gray[idx - w + 1] + gray[idx + w - 1] + 2*gray[idx + w] + gray[idx + w + 1];
-        var mag = Math.sqrt(gx*gx + gy*gy);
-        edges[idx] = mag;
-        if(mag > maxE) maxE = mag;
-      }
-    }
-
-    var thresh = maxE * 0.24;
-    var tl = [0.06, 0.06], tr = [0.94, 0.06], br = [0.94, 0.94], bl = [0.06, 0.94];
-    var bestTL = 1e9, bestTR = -1e9, bestBR = -1e9, bestBL = -1e9;
-    var found = 0;
-    var marginX = Math.round(w * 0.03), marginY = Math.round(h * 0.03);
-
-    for(var y2 = marginY; y2 < h - marginY; y2++){
-      for(var x2 = marginX; x2 < w - marginX; x2++){
-        var id2 = y2 * w + x2;
-        if(edges[id2] > thresh){
-          found++;
-          var nx = x2 / w, ny = y2 / h;
-          var s1 = nx + ny, s2 = nx - ny;
-          if(s1 < bestTL){ bestTL = s1; tl = [nx, ny]; }
-          if(s1 > bestBR){ bestBR = s1; br = [nx, ny]; }
-          if(s2 > bestTR){ bestTR = s2; tr = [nx, ny]; }
-          if(-s2 > bestBL){ bestBL = -s2; bl = [nx, ny]; }
-        }
-      }
-    }
-
-    var area = 0.5 * Math.abs(
-      tl[0]*tr[1] - tr[0]*tl[1] + tr[0]*br[1] - br[0]*tr[1] +
-      br[0]*bl[1] - bl[0]*br[1] + bl[0]*tl[1] - tl[0]*bl[1]
-    );
-    if(found < 25 || area < 0.22){
-      return [[0.05, 0.05], [0.95, 0.05], [0.95, 0.95], [0.05, 0.95]];
-    }
-    return [tl, tr, br, bl];
-  }catch(e){
-    return [[0.05, 0.05], [0.95, 0.05], [0.95, 0.95], [0.05, 0.95]];
-  }
+    c.getContext("2d").drawImage(img, 0, 0, w, h);
+    var quad = detectDocumentQuadFromCanvas(c, false);
+    if(quad) return quad;
+  }catch(e){}
+  return [[0.06, 0.06], [0.94, 0.06], [0.94, 0.94], [0.06, 0.94]];
 }
 
 /* مصفوفة تعديل المنظور وتصحيح ميلان الورقة */
@@ -1939,7 +2258,7 @@ function processScannedPage(img, corners, filterId, rotDeg, brightAdj, contrastA
   var isFullFrame = (
     Math.abs(corners[0][0]) < 0.005 && Math.abs(corners[0][1]) < 0.005 &&
     Math.abs(corners[1][0]-1) < 0.005 && Math.abs(corners[1][1]) < 0.005 &&
-    Math.abs(corners[2][0]-1) < 0.005 && Math.abs(corners[2][1]-1) < 0.005 &&
+    Math.abs(corners[2][0]-1) < 0.005 && Math.abs(corners[2][1]) < 0.005 &&
     Math.abs(corners[3][0]) < 0.005 && Math.abs(corners[3][1]-1) < 0.005
   );
 
@@ -1980,8 +2299,8 @@ function processScannedPage(img, corners, filterId, rotDeg, brightAdj, contrastA
 
   var bgMap = null;
   if(filterId === "magic" || filterId === "bw" || filterId === "light"){
-    var bw = Math.max(12, Math.round(outW / 16));
-    var bh = Math.max(12, Math.round(outH / 16));
+    var bw = Math.max(14, Math.round(outW / 14));
+    var bh = Math.max(14, Math.round(outH / 14));
     var smallC = document.createElement("canvas");
     smallC.width = bw; smallC.height = bh;
     var tmpC = document.createElement("canvas");
@@ -2005,9 +2324,9 @@ function processScannedPage(img, corners, filterId, rotDeg, brightAdj, contrastA
           }
         }
         var oi = (sy2*bw + sx2)*4;
-        dilD[oi] = Math.max(90, mr);
-        dilD[oi+1] = Math.max(90, mg);
-        dilD[oi+2] = Math.max(90, mb);
+        dilD[oi] = Math.max(95, mr);
+        dilD[oi+1] = Math.max(95, mg);
+        dilD[oi+2] = Math.max(95, mb);
         dilD[oi+3] = 255;
       }
     }
@@ -2022,31 +2341,31 @@ function processScannedPage(img, corners, filterId, rotDeg, brightAdj, contrastA
     var r = dData[idx2], g = dData[idx2+1], b = dData[idx2+2];
     if(filterId === "magic"){
       var br = bgMap[idx2], bg = bgMap[idx2+1], bb = bgMap[idx2+2];
-      r = Math.min(255, (r / br) * 252);
-      g = Math.min(255, (g / bg) * 252);
-      b = Math.min(255, (b / bb) * 252);
-      r = ((r / 255 - 0.5) * 1.38 + 0.5) * 255;
-      g = ((g / 255 - 0.5) * 1.38 + 0.5) * 255;
-      b = ((b / 255 - 0.5) * 1.38 + 0.5) * 255;
+      r = Math.min(255, (r / br) * 254);
+      g = Math.min(255, (g / bg) * 254);
+      b = Math.min(255, (b / bb) * 254);
+      r = ((r / 255 - 0.5) * 1.44 + 0.5) * 255;
+      g = ((g / 255 - 0.5) * 1.44 + 0.5) * 255;
+      b = ((b / 255 - 0.5) * 1.44 + 0.5) * 255;
       var avg = (r + g + b) / 3;
-      r = avg + (r - avg) * 1.25;
-      g = avg + (g - avg) * 1.25;
-      b = avg + (b - avg) * 1.25;
-      if(r > 232 && g > 232 && b > 232){ r = g = b = 255; }
+      r = avg + (r - avg) * 1.28;
+      g = avg + (g - avg) * 1.28;
+      b = avg + (b - avg) * 1.28;
+      if(r > 228 && g > 228 && b > 228){ r = g = b = 255; }
     }else if(filterId === "bw"){
       var lum = 0.299*r + 0.587*g + 0.114*b;
       var bgLum = 0.299*bgMap[idx2] + 0.587*bgMap[idx2+1] + 0.114*bgMap[idx2+2];
       var ratio = lum / Math.max(80, bgLum);
-      var val = ratio < 0.78 ? 0 : (ratio > 0.90 ? 255 : ((ratio - 0.78) / 0.12) * 255);
+      var val = ratio < 0.80 ? 0 : (ratio > 0.91 ? 255 : ((ratio - 0.80) / 0.11) * 255);
       r = g = b = val;
     }else if(filterId === "gray"){
       var gr = 0.299*r + 0.587*g + 0.114*b;
-      gr = ((gr / 255 - 0.5) * 1.35 + 0.53) * 255;
+      gr = ((gr / 255 - 0.5) * 1.38 + 0.54) * 255;
       r = g = b = gr;
     }else if(filterId === "light"){
-      r = (r / bgMap[idx2]) * 250;
-      g = (g / bgMap[idx2+1]) * 250;
-      b = (b / bgMap[idx2+2]) * 250;
+      r = (r / bgMap[idx2]) * 252;
+      g = (g / bgMap[idx2+1]) * 252;
+      b = (b / bgMap[idx2+2]) * 252;
     }else if(filterId === "high"){
       r = ((r / 255 - 0.5) * 1.55 + 0.52) * 255;
       g = ((g / 255 - 0.5) * 1.55 + 0.52) * 255;
@@ -2066,7 +2385,7 @@ function processScannedPage(img, corners, filterId, rotDeg, brightAdj, contrastA
 
   var rot = ((Number(rotDeg) || 0) % 360 + 360) % 360;
   if(rot === 0){
-    return warpCanvas.toDataURL("image/jpeg", maxLimit ? 0.70 : 0.82);
+    return warpCanvas.toDataURL("image/jpeg", maxLimit ? 0.72 : 0.84);
   }
   var rCanvas = document.createElement("canvas");
   if(rot === 90 || rot === 270){ rCanvas.width = outH; rCanvas.height = outW; }
@@ -2075,7 +2394,7 @@ function processScannedPage(img, corners, filterId, rotDeg, brightAdj, contrastA
   rCtx.translate(rCanvas.width/2, rCanvas.height/2);
   rCtx.rotate(rot * Math.PI / 180);
   rCtx.drawImage(warpCanvas, -outW/2, -outH/2);
-  return rCanvas.toDataURL("image/jpeg", maxLimit ? 0.70 : 0.82);
+  return rCanvas.toDataURL("image/jpeg", maxLimit ? 0.72 : 0.84);
 }
 
 /* توليد مصغرات حقيقية لنفس صورة المستخدم بكل الفلاتر (مثل CamScanner تماماً) */
@@ -2088,15 +2407,25 @@ function generateFilterThumbnails(){
   S.scnEd.thumbs = thumbs;
 }
 
-/* مسح صورة بالكاميرا أو استيراد صورة/عدة صور دفعة واحدة من المعرض */
+/* ============================================================================
+   كاميرا السكنر الحية المباشرة (CamScanner Live Viewfinder + Real-Time Edge Tracking)
+   ============================================================================ */
 function startNewScan(useCamera, targetDocId, editPageIdx){
+  if(useCamera && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && (editPageIdx == null || editPageIdx < 0)){
+    openLiveScannerCam(targetDocId);
+    return;
+  }
+  openNativeFileScan(useCamera, targetDocId, editPageIdx);
+}
+
+function openNativeFileScan(useCamera, targetDocId, editPageIdx){
   var inp = document.createElement("input");
   inp.type = "file";
   inp.accept = "image/*";
   if(useCamera){
     inp.setAttribute("capture", "environment");
   }else if(editPageIdx == null || editPageIdx < 0){
-    inp.multiple = true; // يسمح باختيار مجموعة صور دفعة واحدة من المعرض!
+    inp.multiple = true;
   }
   inp.onchange = function(){
     var files = Array.from(inp.files || []);
@@ -2108,6 +2437,425 @@ function startNewScan(useCamera, targetDocId, editPageIdx){
     }
   };
   inp.click();
+}
+
+function openLiveScannerCam(targetDocId){
+  S.scnCam = {
+    targetDocId: targetDocId || null,
+    stream: null,
+    rafId: null,
+    autoCapture: true,
+    batchMode: false,
+    torchOn: false,
+    torchSupported: false,
+    smoothQuad: null,
+    steadyFrames: 0,
+    lastDetectAt: 0,
+    capturing: false,
+    batchPages: []
+  };
+  draw();
+  setTimeout(initLiveScannerCameraStream, 30);
+}
+
+function initLiveScannerCameraStream(){
+  if(!S.scnCam) return;
+  var vid = $("scnLiveVid");
+  if(!vid) return;
+  navigator.mediaDevices.getUserMedia({
+    video: {
+      facingMode: { ideal: "environment" },
+      width: { ideal: 1920 },
+      height: { ideal: 1080 }
+    },
+    audio: false
+  }).then(function(stream){
+    if(!S.scnCam){
+      stream.getTracks().forEach(function(t){ t.stop(); });
+      return;
+    }
+    S.scnCam.stream = stream;
+    vid.srcObject = stream;
+    vid.play().catch(function(){});
+    var track = stream.getVideoTracks()[0];
+    if(track && track.getCapabilities){
+      try{
+        var caps = track.getCapabilities();
+        if(caps && caps.torch){
+          S.scnCam.torchSupported = true;
+          var tb = $("scnTorchBtn");
+          if(tb) tb.style.display = "inline-flex";
+        }
+      }catch(e){}
+    }
+    startLiveDetectionLoop();
+  }).catch(function(err){
+    var tid = S.scnCam ? S.scnCam.targetDocId : null;
+    closeLiveScannerCam(true);
+    toast("📷 جاري فتح كاميرا الجهاز...");
+    openNativeFileScan(true, tid, -1);
+  });
+}
+
+function toggleLiveCamTorch(){
+  if(!S.scnCam || !S.scnCam.stream) return;
+  var track = S.scnCam.stream.getVideoTracks()[0];
+  if(!track) return;
+  S.scnCam.torchOn = !S.scnCam.torchOn;
+  track.applyConstraints({ advanced: [{ torch: S.scnCam.torchOn }] }).catch(function(){});
+  var tb = $("scnTorchBtn");
+  if(tb) tb.className = "scn-cam-pill" + (S.scnCam.torchOn ? " on" : "");
+}
+
+function toggleLiveCamAutoCap(){
+  if(!S.scnCam) return;
+  S.scnCam.autoCapture = !S.scnCam.autoCapture;
+  S.scnCam.steadyFrames = 0;
+  var b = $("scnAutoCapBtn");
+  if(b) b.className = "scn-cam-pill" + (S.scnCam.autoCapture ? " on" : "");
+  toast(S.scnCam.autoCapture ? "⚡ الالتقاط التلقائي عند ثبات الورقة: مفعّل" : "👆 الالتقاط اليدوي: مفعّل");
+}
+
+function toggleLiveCamBatch(){
+  if(!S.scnCam) return;
+  S.scnCam.batchMode = !S.scnCam.batchMode;
+  var b = $("scnBatchBtn");
+  if(b){
+    b.className = "scn-cam-pill" + (S.scnCam.batchMode ? " on" : "");
+    b.textContent = S.scnCam.batchMode ? "📚 تصوير متتالي" : "📄 صفحة مفردة";
+  }
+  toast(S.scnCam.batchMode ? "📚 وضع التصوير المتتالي: التقط عدة صفحات بسرعة" : "📄 وضع الصفحة المفردة مع القص الدقيق");
+}
+
+function closeLiveScannerCam(silent){
+  if(!S.scnCam) return;
+  if(S.scnCam.rafId) cancelAnimationFrame(S.scnCam.rafId);
+  if(S.scnCam.stream){
+    S.scnCam.stream.getTracks().forEach(function(t){ try{ t.stop(); }catch(e){} });
+  }
+  S.scnCam = null;
+  if(!silent) draw();
+}
+
+function startLiveDetectionLoop(){
+  var offCv = document.createElement("canvas");
+  var offCtx = offCv.getContext("2d", { willReadFrequently: true });
+
+  function tick(now){
+    if(!S.scnCam) return;
+    var vid = $("scnLiveVid");
+    var ov = $("scnLiveOverlay");
+    if(vid && ov && vid.readyState >= 2 && vid.videoWidth > 0){
+      var vw = vid.videoWidth, vh = vid.videoHeight;
+      var rect = ov.getBoundingClientRect();
+      var cw = Math.max(100, Math.round(rect.width));
+      var ch = Math.max(100, Math.round(rect.height));
+      if(ov.width !== cw || ov.height !== ch){ ov.width = cw; ov.height = ch; }
+
+      // تشغيل كشف الحواف كل ~65ms للحفاظ على سلاسة 60fps
+      if(S.scnAutoCrop && now - S.scnCam.lastDetectAt > 65 && !S.scnCam.capturing){
+        S.scnCam.lastDetectAt = now;
+        var dScale = Math.min(1, 200 / Math.max(vw, vh));
+        offCv.width = Math.max(40, Math.round(vw * dScale));
+        offCv.height = Math.max(40, Math.round(vh * dScale));
+        offCtx.drawImage(vid, 0, 0, offCv.width, offCv.height);
+        var detected = detectDocumentQuadFromCanvas(offCv, true);
+
+        if(detected){
+          if(!S.scnCam.smoothQuad){
+            S.scnCam.smoothQuad = detected;
+            S.scnCam.steadyFrames = 1;
+          }else{
+            var maxDelta = 0;
+            for(var k = 0; k < 4; k++){
+              var dx = detected[k][0] - S.scnCam.smoothQuad[k][0];
+              var dy = detected[k][1] - S.scnCam.smoothQuad[k][1];
+              var dist = Math.hypot(dx, dy);
+              if(dist > maxDelta) maxDelta = dist;
+              S.scnCam.smoothQuad[k][0] += dx * 0.38;
+              S.scnCam.smoothQuad[k][1] += dy * 0.38;
+            }
+            if(maxDelta < 0.022){
+              S.scnCam.steadyFrames++;
+            }else{
+              S.scnCam.steadyFrames = Math.max(0, S.scnCam.steadyFrames - 2);
+            }
+          }
+        }else{
+          S.scnCam.steadyFrames = Math.max(0, S.scnCam.steadyFrames - 1);
+          if(S.scnCam.steadyFrames === 0) S.scnCam.smoothQuad = null;
+        }
+      }
+
+      // رسم الإطار الحي فوق الكاميرا (مع مراعاة object-fit: cover)
+      var ctx = ov.getContext("2d");
+      ctx.clearRect(0, 0, cw, ch);
+      var scaleCover = Math.max(cw / vw, ch / vh);
+      var drawW = vw * scaleCover, drawH = vh * scaleCover;
+      var offX = (cw - drawW) * 0.5, offY = (ch - drawH) * 0.5;
+
+      var hintEl = $("scnCamHint");
+      var q = S.scnAutoCrop ? S.scnCam.smoothQuad : null;
+
+      if(q){
+        var pts = q.map(function(pt){
+          return [offX + pt[0] * drawW, offY + pt[1] * drawH];
+        });
+
+        // تظليل خفيف خارج الورقة
+        ctx.save();
+        ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+        ctx.beginPath();
+        ctx.rect(0, 0, cw, ch);
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        ctx.lineTo(pts[3][0], pts[3][1]);
+        ctx.lineTo(pts[2][0], pts[2][1]);
+        ctx.lineTo(pts[1][0], pts[1][1]);
+        ctx.closePath();
+        ctx.fill("evenodd");
+        ctx.restore();
+
+        // تعبئة شفافة خضراء + حدود ساطعة
+        ctx.fillStyle = "rgba(34, 197, 94, 0.14)";
+        ctx.beginPath();
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        for(var i = 1; i < 4; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = "#22c55e";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // شبكة توجيه داخلية
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.32)";
+        ctx.lineWidth = 1;
+        for(var g = 1; g <= 2; g++){
+          var t = g / 3;
+          ctx.beginPath();
+          ctx.moveTo(pts[0][0]*(1-t)+pts[1][0]*t, pts[0][1]*(1-t)+pts[1][1]*t);
+          ctx.lineTo(pts[3][0]*(1-t)+pts[2][0]*t, pts[3][1]*(1-t)+pts[2][1]*t);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(pts[0][0]*(1-t)+pts[3][0]*t, pts[0][1]*(1-t)+pts[3][1]*t);
+          ctx.lineTo(pts[1][0]*(1-t)+pts[2][0]*t, pts[1][1]*(1-t)+pts[2][1]*t);
+          ctx.stroke();
+        }
+
+        // دوائر الزوايا الأربع
+        for(var c = 0; c < 4; c++){
+          ctx.beginPath();
+          ctx.arc(pts[c][0], pts[c][1], 8, 0, Math.PI * 2);
+          ctx.fillStyle = "#22c55e";
+          ctx.fill();
+          ctx.lineWidth = 2.5;
+          ctx.strokeStyle = "#fff";
+          ctx.stroke();
+        }
+
+        // حلقة التقدم للالتقاط التلقائي عند ثبات اليد
+        var targetSteady = 16; // ~1.05 ثانية من الثبات
+        var prog = Math.min(1, S.scnCam.steadyFrames / targetSteady);
+        if(S.scnCam.autoCapture && prog > 0.15){
+          var cxMid = (pts[0][0] + pts[1][0] + pts[2][0] + pts[3][0]) * 0.25;
+          var cyMid = (pts[0][1] + pts[1][1] + pts[2][1] + pts[3][1]) * 0.25;
+          ctx.beginPath();
+          ctx.arc(cxMid, cyMid, 28, -Math.PI/2, -Math.PI/2 + prog * Math.PI * 2);
+          ctx.strokeStyle = "#4ade80";
+          ctx.lineWidth = 5;
+          ctx.stroke();
+        }
+
+        if(hintEl){
+          hintEl.className = "scn-cam-hint locked";
+          hintEl.textContent = S.scnCam.autoCapture
+            ? ("🎯 تم تحديد الورقة — ثبّت اليد (" + Math.round(prog * 100) + "%)")
+            : "🎯 تم تحديد حواف الورقة — اضغط زر الالتقاط";
+        }
+
+        if(S.scnCam.autoCapture && S.scnCam.steadyFrames >= targetSteady && !S.scnCam.capturing){
+          captureLiveScannerFrame();
+        }
+      }else{
+        // إطار إرشادي خفيف في المنتصف
+        var gw = cw * 0.76, gh = ch * 0.68;
+        var gx = (cw - gw) * 0.5, gy = (ch - gh) * 0.5;
+        ctx.strokeStyle = "rgba(255,255,255,0.28)";
+        ctx.setLineDash([10, 8]);
+        ctx.lineWidth = 1.8;
+        ctx.strokeRect(gx, gy, gw, gh);
+        ctx.setLineDash([]);
+        if(hintEl){
+          hintEl.className = "scn-cam-hint";
+          hintEl.textContent = S.scnAutoCrop ? "🔍 وجّه الكاميرا نحو الورقة..." : "📷 وضع التصوير الكامل — اضغط الالتقاط";
+        }
+      }
+    }
+    S.scnCam.rafId = requestAnimationFrame(tick);
+  }
+  S.scnCam.rafId = requestAnimationFrame(tick);
+}
+
+function captureLiveScannerFrame(){
+  if(!S.scnCam || S.scnCam.capturing) return;
+  var vid = $("scnLiveVid");
+  if(!vid || !vid.videoWidth) return;
+  S.scnCam.capturing = true;
+
+  // وميض الفلاش عند الالتقاط
+  var fl = $("scnCamFlash");
+  if(fl){ fl.style.opacity = "0.85"; setTimeout(function(){ if(fl) fl.style.opacity = "0"; }, 160); }
+  try{ if(navigator.vibrate) navigator.vibrate(35); }catch(e){}
+
+  var vw = vid.videoWidth, vh = vid.videoHeight;
+  var k = Math.min(1, 1500 / Math.max(vw, vh));
+  var c = document.createElement("canvas");
+  c.width = Math.round(vw * k); c.height = Math.round(vh * k);
+  c.getContext("2d").drawImage(vid, 0, 0, c.width, c.height);
+  var rawUrl = c.toDataURL("image/jpeg", 0.88);
+
+  var capturedQuad = (S.scnAutoCrop && S.scnCam.smoothQuad)
+    ? JSON.parse(JSON.stringify(S.scnCam.smoothQuad))
+    : null;
+  var isBatch = S.scnCam.batchMode;
+  var tid = S.scnCam.targetDocId;
+
+  var cleanImg = new Image();
+  cleanImg.onload = function(){
+    var corners = S.scnAutoCrop
+      ? (capturedQuad || detectDocumentCorners(cleanImg))
+      : [[0,0],[1,0],[1,1],[0,1]];
+
+    if(isBatch && S.scnCam){
+      var processed = processScannedPage(cleanImg, corners, "magic", 0, 0, 10);
+      S.scnCam.batchPages.push({
+        d: processed, raw: rawUrl, filter: "magic", corners: corners, rot: 0, bright: 0, contrast: 10
+      });
+      S.scnCam.steadyFrames = 0;
+      S.scnCam.smoothQuad = null;
+      setTimeout(function(){ if(S.scnCam) S.scnCam.capturing = false; }, 650);
+      toast("✅ التُقطت الصفحة (" + S.scnCam.batchPages.length + ")");
+      updateLiveBatchBadge();
+      return;
+    }
+
+    // وضع الصفحة المفردة: الانتقال الفوري لشاشة التشذيب مع تحريك الزوايا بسلاسة
+    closeLiveScannerCam(true);
+    openImageInAnimatedCropper(cleanImg, rawUrl, corners, tid, -1);
+  };
+  cleanImg.src = rawUrl;
+}
+
+function updateLiveBatchBadge(){
+  if(!S.scnCam) return;
+  var box = $("scnBatchSlot");
+  if(!box) return;
+  var n = S.scnCam.batchPages.length;
+  if(n === 0){
+    box.innerHTML = '<button type="button" class="scn-cam-pill" onclick="var tid=S.scnCam.targetDocId;closeLiveScannerCam(true);openNativeFileScan(false,tid,-1)">🖼️ المعرض</button>';
+  }else{
+    var lastThumb = S.scnCam.batchPages[n - 1].d;
+    box.innerHTML = '<div class="scn-batch-thumb" onclick="finishLiveBatchScan()" title="اضغط لحفظ الصفحات الملتقطة">' +
+      '<img src="'+lastThumb+'" alt=""><span class="scn-batch-badge">'+n+'</span></div>';
+  }
+}
+
+function finishLiveBatchScan(){
+  if(!S.scnCam || !S.scnCam.batchPages.length){ closeLiveScannerCam(false); return; }
+  var pages = S.scnCam.batchPages.slice();
+  var tid = S.scnCam.targetDocId;
+  closeLiveScannerCam(true);
+
+  var folder = S.fl[S.fo] || S.fl[0];
+  var doc = tid ? folder.it.find(function(x){ return x.id === tid; }) : null;
+  if(!doc){
+    tid = "scn_" + Date.now();
+    doc = { id: tid, title: "مستند ممسوح " + fd(Date.now()), at: Date.now(), pages: [] };
+    folder.it.unshift(doc);
+  }
+  pages.forEach(function(pg){ doc.pages.push(pg); });
+  doc.at = Date.now();
+  setOpenScnDoc(tid);
+  saveAllUserStorage();
+  toast("✅ تم حفظ " + pages.length + " صفحات في الملف بنجاح!");
+  draw();
+}
+
+function scnLiveCameraScr(){
+  var f = $("fab"); if(f) f.remove();
+  var cam = S.scnCam;
+  $("app").className = "pro";
+  $("app").innerHTML =
+    '<div class="scn-cam-overlay">' +
+      '<div class="scn-cam-top">' +
+        '<button type="button" class="scn-cam-pill" onclick="closeLiveScannerCam(false)">✕ إغلاق</button>' +
+        '<button type="button" id="scnAutoCapBtn" class="scn-cam-pill '+(cam.autoCapture?'on':'')+'" onclick="toggleLiveCamAutoCap()">⚡ تلقائي</button>' +
+        '<button type="button" id="scnBatchBtn" class="scn-cam-pill '+(cam.batchMode?'on':'')+'" onclick="toggleLiveCamBatch()">'+(cam.batchMode?'📚 متتالي':'📄 مفردة')+'</button>' +
+        '<button type="button" id="scnTorchBtn" class="scn-cam-pill" style="display:none" onclick="toggleLiveCamTorch()">🔦</button>' +
+      '</div>' +
+      '<div class="scn-cam-view">' +
+        '<video id="scnLiveVid" autoplay playsinline muted></video>' +
+        '<canvas id="scnLiveOverlay"></canvas>' +
+        '<div class="scn-cam-hint" id="scnCamHint">🔍 وجّه الكاميرا نحو الورقة...</div>' +
+        '<div class="scn-cam-flash" id="scnCamFlash"></div>' +
+      '</div>' +
+      '<div class="scn-cam-bot">' +
+        '<div id="scnBatchSlot"><button type="button" class="scn-cam-pill" onclick="var tid=S.scnCam.targetDocId;closeLiveScannerCam(true);openNativeFileScan(false,tid,-1)">🖼️ المعرض</button></div>' +
+        '<button type="button" class="scn-shutter" aria-label="التقاط" onclick="captureLiveScannerFrame()"><div class="scn-shutter-inner"></div></button>' +
+        '<button type="button" class="scn-cam-pill on" onclick="finishLiveBatchScan()">✓ تم</button>' +
+      '</div>' +
+    '</div>';
+  setTimeout(updateLiveBatchBadge, 10);
+}
+
+/* تحريك الزوايا بسلاسة نحو حواف الورقة المكتشفة (محاكاة CamScanner) */
+function animateCropCornersTo(targetCorners){
+  if(!S.scnEd) return;
+  var startCorners = JSON.parse(JSON.stringify(S.scnEd.corners));
+  var t0 = performance.now(), dur = 300;
+  function step(now){
+    if(!S.scnEd || S.scnEd.step !== "crop") return;
+    var p = Math.min(1, (now - t0) / dur);
+    var ease = 1 - Math.pow(1 - p, 3);
+    for(var i = 0; i < 4; i++){
+      S.scnEd.corners[i] = [
+        startCorners[i][0] + (targetCorners[i][0] - startCorners[i][0]) * ease,
+        startCorners[i][1] + (targetCorners[i][1] - startCorners[i][1]) * ease
+      ];
+    }
+    drawCropOverlay();
+    if(p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function openImageInAnimatedCropper(cleanImg, rawUrl, targetCorners, targetDocId, editPageIdx){
+  var initCorners = S.scnAutoCrop
+    ? [[0.02, 0.02], [0.98, 0.02], [0.98, 0.98], [0.02, 0.98]]
+    : [[0,0],[1,0],[1,1],[0,1]];
+  S.scnEd = {
+    step: "crop",
+    rawImg: cleanImg,
+    rawSrc: rawUrl,
+    corners: initCorners,
+    filter: "magic",
+    rot: 0,
+    bright: 0,
+    contrast: 10,
+    dragIdx: -1,
+    dragPt: null,
+    dragStartPt: null,
+    dragStartCorners: null,
+    laserY: -1,
+    targetDocId: targetDocId || null,
+    editPageIdx: (editPageIdx != null) ? editPageIdx : -1,
+    thumbs: {},
+    previewUrl: ""
+  };
+  draw();
+  if(S.scnAutoCrop){
+    setTimeout(function(){ animateCropCornersTo(targetCorners); }, 40);
+  }
 }
 
 function openSingleFileInCropper(file, targetDocId, editPageIdx){
@@ -2125,23 +2873,7 @@ function openSingleFileInCropper(file, targetDocId, editPageIdx){
         var autoCorners = S.scnAutoCrop
           ? detectDocumentCorners(cleanImg)
           : [[0,0],[1,0],[1,1],[0,1]];
-        S.scnEd = {
-          step: "crop",
-          rawImg: cleanImg,
-          rawSrc: rawUrl,
-          corners: autoCorners,
-          filter: "magic",
-          rot: 0,
-          bright: 0,
-          contrast: 10,
-          dragIdx: -1,
-          dragPt: null,
-          targetDocId: targetDocId || null,
-          editPageIdx: (editPageIdx != null) ? editPageIdx : -1,
-          thumbs: {},
-          previewUrl: ""
-        };
-        draw();
+        openImageInAnimatedCropper(cleanImg, rawUrl, autoCorners, targetDocId, editPageIdx);
       };
       cleanImg.src = rawUrl;
     };
@@ -2212,6 +2944,9 @@ function reEditExistingPage(docId, pageIdx){
       contrast: (pg.contrast != null) ? pg.contrast : 10,
       dragIdx: -1,
       dragPt: null,
+      dragStartPt: null,
+      dragStartCorners: null,
+      laserY: -1,
       targetDocId: docId,
       editPageIdx: pageIdx,
       thumbs: {},
@@ -2223,7 +2958,7 @@ function reEditExistingPage(docId, pageIdx){
   im.src = pg.raw || pg.d;
 }
 
-/* شاشة محرر السكنر (القص الذكي + عدسة التكبير + شريط الفلاتر بصورة المستخدم نفسها) */
+/* شاشة محرر السكنر (القص الذكي 8 نقاط + عدسة التكبير + مسح الليزر + شريط الفلاتر بصورة المستخدم نفسها) */
 function scnEditorScr(){
   var f = $("fab"); if(f) f.remove();
   $("app").className = "pro";
@@ -2238,12 +2973,12 @@ function scnEditorScr(){
             '<button class="tog'+(S.scnAutoCrop?' on':'')+'" aria-label="التجذيب التلقائي" onclick="toggleScnAutoCrop()"></button>' +
           '</div>' +
           '<div class="grid" style="margin-top:8px">' +
-            '<button class="b s" onclick="S.scnEd.corners=detectDocumentCorners(S.scnEd.rawImg);drawCropOverlay();toast(\'تم التحسس التلقائي للحواف\')">🎯 تحسس الورقة</button>' +
-            '<button class="b s" onclick="S.scnEd.corners=[[0,0],[1,0],[1,1],[0,1]];drawCropOverlay();toast(\'تم اختيار كامل الصورة\')">⬜ كامل الصورة</button>' +
+            '<button class="b s" onclick="var d=detectDocumentCorners(S.scnEd.rawImg);animateCropCornersTo(d);toast(\'🎯 تم التحسس التلقائي لحواف الورقة\')">🎯 تحسس تلقائي</button>' +
+            '<button class="b s" onclick="animateCropCornersTo([[0,0],[1,0],[1,1],[0,1]]);toast(\'⬜ تم اختيار كامل الصورة\')">⬜ كامل الصورة</button>' +
           '</div>' +
         '</div>' +
         '<div class="scn-stage" id="cropStage"><canvas id="cropCanvas"></canvas></div>' +
-        '<div class="mu" style="text-align:center;margin:6px 0">اسحب النقاط الأربع لتعديل الزوايا يدوياً (مع عدسة مكبرة تلقائية)</div>' +
+        '<div class="mu" style="text-align:center;margin:6px 0">اسحب الزوايا أو أضلاع الإطار لتعديل القص بدقة (مع عدسة مكبرة)</div>' +
         '<button class="b" style="width:100%;font-size:15px;min-height:48px" onclick="proceedToScannerFilters()">التالي: فلاتر السكنر الحقيقية ←</button>' +
       '</main>';
     setTimeout(initCropCanvasEvents, 20);
@@ -2280,6 +3015,17 @@ function scnEditorScr(){
   }
 }
 
+function _get8CropHandles(cs){
+  // 0..3: الزوايا الأربع | 4..7: منتصف الأضلاع الأربعة (أعلى، يمين، أسفل، يسار)
+  return [
+    cs[0], cs[1], cs[2], cs[3],
+    [(cs[0][0]+cs[1][0])*0.5, (cs[0][1]+cs[1][1])*0.5],
+    [(cs[1][0]+cs[2][0])*0.5, (cs[1][1]+cs[2][1])*0.5],
+    [(cs[2][0]+cs[3][0])*0.5, (cs[2][1]+cs[3][1])*0.5],
+    [(cs[3][0]+cs[0][0])*0.5, (cs[3][1]+cs[0][1])*0.5]
+  ];
+}
+
 function initCropCanvasEvents(){
   var cv = $("cropCanvas"); if(!cv || !S.scnEd) return;
   drawCropOverlay();
@@ -2293,24 +3039,44 @@ function initCropCanvasEvents(){
     return [nx, ny];
   }
   function onDown(e){
-    var p = getPos(e), cs = S.scnEd.corners, best = -1, minD = 0.15;
-    for(var i = 0; i < 4; i++){
-      var d = Math.hypot(cs[i][0]-p[0], cs[i][1]-p[1]);
+    var p = getPos(e);
+    var handles = _get8CropHandles(S.scnEd.corners);
+    var best = -1, minD = 0.14;
+    for(var i = 0; i < handles.length; i++){
+      var d = Math.hypot(handles[i][0] - p[0], handles[i][1] - p[1]);
       if(d < minD){ minD = d; best = i; }
     }
     if(best > -1){
       S.scnEd.dragIdx = best;
-      S.scnEd.dragPt = cs[best];
+      S.scnEd.dragPt = handles[best].slice();
+      S.scnEd.dragStartPt = p.slice();
+      S.scnEd.dragStartCorners = JSON.parse(JSON.stringify(S.scnEd.corners));
       e.preventDefault();
       drawCropOverlay();
     }
   }
   function onMove(e){
-    if(S.scnEd.dragIdx < 0) return;
+    var idx = S.scnEd.dragIdx;
+    if(idx < 0) return;
     e.preventDefault();
     var pt = getPos(e);
-    S.scnEd.corners[S.scnEd.dragIdx] = pt;
-    S.scnEd.dragPt = pt;
+    if(idx < 4){
+      S.scnEd.corners[idx] = pt;
+      S.scnEd.dragPt = pt;
+    }else{
+      // سحب ضلع كامل بالتوازي (مقابض 4..7)
+      var cA = idx - 4, cB = (idx - 3) % 4;
+      var sc = S.scnEd.dragStartCorners;
+      var dx = pt[0] - S.scnEd.dragStartPt[0];
+      var dy = pt[1] - S.scnEd.dragStartPt[1];
+      var clamp = function(v){ return Math.min(1, Math.max(0, v)); };
+      S.scnEd.corners[cA] = [clamp(sc[cA][0] + dx), clamp(sc[cA][1] + dy)];
+      S.scnEd.corners[cB] = [clamp(sc[cB][0] + dx), clamp(sc[cB][1] + dy)];
+      S.scnEd.dragPt = [
+        (S.scnEd.corners[cA][0] + S.scnEd.corners[cB][0]) * 0.5,
+        (S.scnEd.corners[cA][1] + S.scnEd.corners[cB][1]) * 0.5
+      ];
+    }
     drawCropOverlay();
   }
   function onUp(){
@@ -2337,7 +3103,7 @@ function drawCropOverlay(){
 
   // تظليل خارج الورقة
   ctx.save();
-  ctx.fillStyle = "rgba(0, 0, 0, 0.48)";
+  ctx.fillStyle = "rgba(0, 0, 0, 0.52)";
   ctx.beginPath();
   ctx.rect(0, 0, cw, ch);
   ctx.moveTo(cs[0][0], cs[0][1]);
@@ -2348,16 +3114,16 @@ function drawCropOverlay(){
   ctx.fill("evenodd");
   ctx.restore();
 
-  // إطار أخضر ساطع مع شبكة محاذاة
+  // إطار أخضر ساطع مع شبكة محاذاة ثلاثية
   ctx.strokeStyle = "#22c55e";
-  ctx.lineWidth = 2.5;
+  ctx.lineWidth = 2.6;
   ctx.beginPath();
   ctx.moveTo(cs[0][0], cs[0][1]);
   for(var i = 1; i < 4; i++) ctx.lineTo(cs[i][0], cs[i][1]);
   ctx.closePath();
   ctx.stroke();
 
-  ctx.strokeStyle = "rgba(255,255,255,0.38)";
+  ctx.strokeStyle = "rgba(255,255,255,0.36)";
   ctx.lineWidth = 1;
   for(var g = 1; g <= 2; g++){
     var t = g / 3;
@@ -2371,22 +3137,65 @@ function drawCropOverlay(){
     ctx.stroke();
   }
 
-  // مقابض الزوايا الأربع + مقابض منتصف الأضلاع
+  // شعاع الليزر الأخضر المتحرك أثناء المسح (Laser Scan Sweep)
+  if(S.scnEd.laserY >= 0 && S.scnEd.laserY <= 1){
+    var lyPos = S.scnEd.laserY;
+    var lx1 = cs[0][0]*(1-lyPos) + cs[3][0]*lyPos;
+    var ly1 = cs[0][1]*(1-lyPos) + cs[3][1]*lyPos;
+    var lx2 = cs[1][0]*(1-lyPos) + cs[2][0]*lyPos;
+    var ly2 = cs[1][1]*(1-lyPos) + cs[2][1]*lyPos;
+    ctx.save();
+    ctx.strokeStyle = "#4ade80";
+    ctx.lineWidth = 4;
+    ctx.shadowColor = "#22c55e";
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.moveTo(lx1, ly1);
+    ctx.lineTo(lx2, ly2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // مقابض منتصف الأضلاع الأربعة (4..7) على شكل كبسولات أنيقة مثل CamScanner
+  for(var eIdx = 0; eIdx < 4; eIdx++){
+    var pA = cs[eIdx], pB = cs[(eIdx + 1) % 4];
+    var mx = (pA[0] + pB[0]) * 0.5, my = (pA[1] + pB[1]) * 0.5;
+    var ang = Math.atan2(pB[1] - pA[1], pB[0] - pA[0]);
+    ctx.save();
+    ctx.translate(mx, my);
+    ctx.rotate(ang);
+    ctx.fillStyle = (S.scnEd.dragIdx === eIdx + 4) ? "#22c55e" : "#ffffff";
+    ctx.strokeStyle = "#15803d";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    if(ctx.roundRect){
+      ctx.roundRect(-18, -6, 36, 12, 6);
+    }else{
+      ctx.moveTo(-12, -6); ctx.lineTo(12, -6); ctx.arcTo(18, -6, 18, 0, 6);
+      ctx.arcTo(18, 6, 12, 6, 6); ctx.lineTo(-12, 6); ctx.arcTo(-18, 6, -18, 0, 6);
+      ctx.arcTo(-18, -6, -12, -6, 6);
+    }
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // مقابض الزوايا الأربع (0..3)
   for(var j = 0; j < 4; j++){
     ctx.beginPath();
-    ctx.arc(cs[j][0], cs[j][1], 13, 0, Math.PI * 2);
-    ctx.fillStyle = (S.scnEd.dragIdx === j) ? "#22c55e" : "rgba(37, 99, 235, 0.92)";
+    ctx.arc(cs[j][0], cs[j][1], 16, 0, Math.PI * 2);
+    ctx.fillStyle = (S.scnEd.dragIdx === j) ? "#22c55e" : "rgba(22, 163, 74, 0.94)";
     ctx.fill();
     ctx.lineWidth = 3;
     ctx.strokeStyle = "#ffffff";
     ctx.stroke();
   }
 
-  // عدسة مكبرة ذكية (Magnifier Loupe) عند سحب أي زاوية بالإصبع مثل CamScanner
+  // عدسة مكبرة ذكية (Magnifier Loupe) عند سحب أي زاوية أو ضلع بالإصبع
   if(S.scnEd.dragPt){
     var px = S.scnEd.dragPt[0] * im.width;
     var py = S.scnEd.dragPt[1] * im.height;
-    var rLoupe = 42;
+    var rLoupe = 50;
     var lx = (S.scnEd.dragPt[0] > 0.5) ? (rLoupe + 12) : (cw - rLoupe - 12);
     var ly = rLoupe + 12;
     ctx.save();
@@ -2397,12 +3206,11 @@ function drawCropOverlay(){
     ctx.fillRect(lx - rLoupe, ly - rLoupe, rLoupe*2, rLoupe*2);
     var zoomCrop = 46;
     ctx.drawImage(im, px - zoomCrop, py - zoomCrop, zoomCrop*2, zoomCrop*2, lx - rLoupe, ly - rLoupe, rLoupe*2, rLoupe*2);
-    // علامة الزائد الدقيقة بالوسط
     ctx.strokeStyle = "#22c55e";
     ctx.lineWidth = 1.8;
     ctx.beginPath();
-    ctx.moveTo(lx - 14, ly); ctx.lineTo(lx + 14, ly);
-    ctx.moveTo(lx, ly - 14); ctx.lineTo(lx, ly + 14);
+    ctx.moveTo(lx - 15, ly); ctx.lineTo(lx + 15, ly);
+    ctx.moveTo(lx, ly - 15); ctx.lineTo(lx, ly + 15);
     ctx.stroke();
     ctx.restore();
     ctx.beginPath();
@@ -2414,10 +3222,25 @@ function drawCropOverlay(){
 }
 
 function proceedToScannerFilters(){
-  S.scnEd.step = "filter";
-  generateFilterThumbnails();
-  renderFilteredPreview();
-  draw();
+  if(!S.scnEd) return;
+  // محاكاة مسح الليزر عبر الورقة قبل عرض النتيجة المحسنة
+  var t0 = performance.now(), sweepDur = 360;
+  function sweep(now){
+    if(!S.scnEd) return;
+    var p = Math.min(1, (now - t0) / sweepDur);
+    S.scnEd.laserY = p;
+    drawCropOverlay();
+    if(p < 1){
+      requestAnimationFrame(sweep);
+    }else{
+      S.scnEd.laserY = -1;
+      S.scnEd.step = "filter";
+      generateFilterThumbnails();
+      renderFilteredPreview();
+      draw();
+    }
+  }
+  requestAnimationFrame(sweep);
 }
 
 function setScannerFilter(fid){
@@ -2842,7 +3665,7 @@ function filesV(){
         '<button class="tog'+(S.scnAutoCrop?' on':'')+'" aria-label="التجذيب التلقائي" onclick="toggleScnAutoCrop()"></button>' +
       '</div>' +
       '<div class="grid">' +
-        '<button class="b" style="min-height:48px;font-size:14px" onclick="startNewScan(true,null,-1)">📷 مسح بالكاميرا</button>' +
+        '<button class="b"+(items.length?"":" cl-pulse")+" style="min-height:48px;font-size:14px" onclick="startNewScan(true,null,-1)">📷 مسح بالكاميرا</button>' +
         '<button class="b s" style="min-height:48px;font-size:14px" onclick="startNewScan(false,null,-1)">🖼️ استيراد صور</button>' +
       '</div>' +
       '<button class="b s" style="width:100%;margin-top:6px" onclick="startIdCardScan()">🪪 مسح بطاقة (وجهين في صفحة A4 واحدة)</button>' +
@@ -2854,7 +3677,7 @@ function filesV(){
         }).join("") +
         '<button class="b s" onclick="newFo()">+ فولدر جديد</button>' +
         '<button class="b s" onclick="renameFo()" title="تغيير اسم الفولدر">✏️</button>' +
-        (S.fl.length > 1 ? '<button class="b d" onclick="delFo()" title="حذف الفولدر">🗑️</button>' : '') +
+        (S.fl.length > 1 ? '<button class="b d" onclick="confirmModal('هل أنت متأكد من حذف الفولدر وكل محتوياته؟',delFo)" title="حذف الفولدر">🗑️</button>' : '') +
       '</div>' +
       '<div class="row" style="margin-top:8px">' +
         '<input placeholder="🔍 ابحث في ملفات الفولدر..." value="'+esc(S.scnQuery||"")+'" oninput="S.scnQuery=this.value;draw()" class="grow" style="margin:0">' +
@@ -3167,6 +3990,9 @@ function proPortalsV(){
   if(S.proPortal === "grades"){
     return '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">بوابة دفتر الدرجات</b></div>' + grV();
   }
+  if(S.proPortal === "live"){
+    return livePortalV();
+  }
 
   var docsCount = (S.docs || []).length;
   var grCount = (S.gr || []).length;
@@ -3303,7 +4129,7 @@ function grV(){
   return '<h2>دفتر الدرجات</h2><div class="card"><label>أدخل الأسماء والدرجات (مثال: زينب 18 مصطفى 15)</label><textarea id="gi" rows="3">'+esc(S.pend)+'</textarea><div class="grid"><button class="b" onclick="mic()">🎙️ إملاء صوتي</button><button class="b" '+(S.busy?'disabled':'')+' onclick="cam()">'+(S.busy?'⏳ جاري القراءة...':'📷 قراءة من صورة')+'</button></div><button class="b s" style="margin-top:8px;width:100%" onclick="addG()">+ إضافة للدفتر</button></div>'+
   '<div class="card">'+S.gr.map(function(g,idx){return '<div class="row" style="padding:5px 0;border-bottom:1px solid var(--ln)"><span class="grow">'+esc(g[0])+'</span><b>'+g[1]+'</b><button class="b d" style="min-height:30px;padding:3px 8px" onclick="S.gr.splice('+idx+',1);saveAllUserStorage();draw()">×</button></div>'}).join("")+
   '<div class="row" style="margin-top:8px"><span class="mu grow">العدد: '+S.gr.length+' · المعدل العام: <b>'+avg+'</b></span></div>'+
-  '<div class="grid" style="margin-top:8px"><button class="b s" onclick="window.print()">🖨️ PDF</button><button class="b s" onclick="exportGradesCSV()">📊 Excel / CSV</button></div></div>';
+  '<div class="grid3" style="margin-top:8px"><button class="b s" onclick="window.print()">🖨️ PDF</button><button class="b s" onclick="exportGradesCSV()">📊 Excel</button><button class="b s" onclick="downloadWordFile('دفتر_الدرجات','<h2 style=text-align:center>سجل الدرجات</h2><table border=1 style=width:100%;border-collapse:collapse><tr><th>اسم الطالب</th><th>الدرجة</th></tr>' + S.gr.map(function(g){return '<tr><td style=padding:8px>'+esc(g[0])+'</td><td style=padding:8px;text-align:center>'+g[1]+'</td></tr>'}).join('') + '</table>', true)">📄 Word</button></div></div>';
 }
 function exportGradesCSV(){
   var csv="\ufeffاسم الطالب,الدرجة\n"+S.gr.map(function(g){return '"'+g[0]+'",'+g[1]}).join("\n");
@@ -4233,7 +5059,7 @@ function aiAndTextV(){
 }
 
 function txtV(){
-  return '<h2>مختبر النص الأكاديمي</h2><div class="card"><label>اكتب النص أو ارفع ملفاً نصياً</label><textarea id="tt" rows="6">'+esc(S.tx)+'</textarea><button class="b s" onclick="upT()">📎 رفع ملف نصي (.txt)</button><div class="grid3" style="margin-top:8px">'+
+  return '<h2>مختبر النص الأكاديمي</h2><div class="card"><label>اكتب النص أو ارفع ملفاً نصياً</label><textarea id="tt" rows="6" placeholder="الصق أي نص هنا، مثلاً: موضوع تعبير، مقال علمي، أو رسالة...">'+esc(S.tx)+'</textarea><button class="b s" onclick="upT()">📎 رفع ملف نصي (.txt)</button><div class="grid3" style="margin-top:8px">'+
   '<button class="b" '+(S.busy?'disabled':'')+' onclick="tl(\'استلال\')">🔍 فحص الاستلال</button>'+
   '<button class="b" '+(S.busy?'disabled':'')+' onclick="tl(\'ذكاء\')">🤖 فحص الـ AI</button>'+
   '<button class="b" '+(S.busy?'disabled':'')+' onclick="tl(\'صياغة\')">✍️ إعادة صياغة</button></div></div>'+
@@ -4342,7 +5168,7 @@ function openProvKeyDialog(prov, cb){
     '<div style="font-size:26px;text-align:center">' + P.ico + '</div>' +
     '<b style="display:block;text-align:center;margin:4px 0">ربط ' + prov + ' بحسابك</b>' +
     '<div style="font-size:13px;line-height:1.8;margin-bottom:10px">' + steps + '</div>' +
-    '<a href="' + P.link + '" target="_blank" rel="noopener" class="b" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px;background:#15803d" ' + (prov === "Gemini" ? 'onclick="S.awaitingAutoKey=true"' : '') + '>🚀 فتح صفحة المفتاح</a>' +
+    '<a href="' + P.link + '" target="_blank" rel="noopener" class="b" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px;background:#15803d" ' + (prov === "Gemini" ? 'onclick="S.awaitingAutoKey=true;toast(\'سيحاول مسبار التقاط المفتاح تلقائياً عند عودتك..\')"' : '') + '>🚀 ' + (prov === "Gemini" ? 'إنشاء وربط المفتاح تلقائياً (ذكاء قوي/Pro)' : 'فتح صفحة المفتاح') + '</a>' +
     '<input id="ukIn" dir="ltr" placeholder="الصق المفتاح هنا (' + P.hint + ')" value="' + esc(provKey(prov)) + '">' +
     '<div class="mu" style="font-size:11px;margin:4px 0 8px">🔒 يُحفظ على جهازك فقط ولا يُرسل لأي سيرفر غير ' + (prov === "Gemini" ? "Google" : prov === "ChatGPT" ? "OpenAI" : "Anthropic") + '.</div>' +
     '<div class="row"><button class="b grow" id="ukSave">حفظ واختبار</button><button class="b s grow" id="ukClose">إلغاء</button></div>' +
@@ -4404,7 +5230,7 @@ function aiV(){
   }
   return '<h2>🤖 الذكاء الاصطناعي</h2>' +
     '<div class="card"><div class="row"><span class="grow mu" dir="ltr" style="text-align:start">' + esc(S.email) + '</span></div>' +
-    '<div class="mu" style="margin:4px 0">' + (isSub() ? '✅ اشتراك فعال: استخدام كامل' : 'مجاني: المتبقي اليوم ' + left + ' دخولات') + ' · اختر المنصة:</div>' +
+    '<div class="mu" style="margin:4px 0">' + (isSub() ? '✅ اشتراك فعال: استخدام غير محدود' : 'باقة تجريبية: متبقي لك ' + left + ' محاولات مجانية') + ' · المنصة:</div>' +
     '<div class="grid3" style="margin-top:8px">' + tabs + '</div></div>' + body;
 }
 
@@ -4428,7 +5254,586 @@ async function sendAI(){
   S.busy = false; draw(); scroll();
 }
 
-/* ==================== المجتمع، المقترحات للمالك، ومراسلة وكروبات مثل واتساب وتليجرام ==================== */
+
+/* ==================== المصحح الآلي (OMR) & العروض التقديمية ==================== */
+function omrV(){
+  var st = S.aiSubTab2 || 'omr';
+  var h = '<h2>💯 خدمات الأستاذ المتقدمة</h2>' +
+    '<div class="grid" style="margin-bottom:10px">' +
+      '<button class="b '+(st==='omr'?'':'s')+'" onclick="S.aiSubTab2='omr';draw()">💯 المصحح الآلي</button>' +
+      '<button class="b '+(st==='slides'?'':'s')+'" onclick="S.aiSubTab2='slides';draw()">📊 صانع العروض</button>' +
+    '</div>';
+    
+  if(st === 'omr'){
+    h += '<div class="card" style="border-inline-start:4px solid var(--ac)">' +
+      '<b>المصحح الآلي الذكي (للأسئلة الموضوعية والمقالية)</b>' +
+      '<div class="mu" style="margin-top:6px;line-height:1.7">' +
+      '💡 <b>للمقالي:</b> لا تقلق من خطوط الطلاب السيئة. مسبار يستخدم ذكاء Gemini لتحليل خط اليد، استيعاب الفكرة العلمية للطالب، ومقارنتها بالإجابة النموذجية التي تضعها أنت، ثم يقترح لك الدرجة مع تبرير علمي دقيق.<br>' +
+      '💡 <b>للموضوعي (Bubble Sheet):</b> تصحيح فوري فائق السرعة عبر الكاميرا.' +
+      '</div>' +
+      '<div class="grid" style="margin-top:12px">' +
+        '<button class="b" onclick="startBatchAIOmr()">📸 تصحيح أوراق الطلاب (دفعة كاملة)</button>' +
+        '<button class="b s" onclick="S.proPortal='grades';S.tab=0;draw()">📊 عرض وتصدير كل الدرجات</button>' +
+      '</div>' +
+      (S.omrResult ? '<div class="out" style="margin-top:12px"><b>نتيجة التصحيح:</b><br>' + esc(S.omrResult) + '</div>' : '') +
+    '</div>';
+  } else {
+    h += '<div class="card" style="border-inline-start:4px solid var(--gold)">' +
+      '<div class="row"><b>📊 صانع العروض التقديمية (Slides)</b></div>' +
+      '<div class="mu" style="margin-top:6px;line-height:1.7">دع الذكاء الاصطناعي يصمم لك هيكل عرض تقديمي متكامل. يمكنك الاعتماد على معلومات الإنترنت، أو لصق نص ملزمتك الخاصة ليستخرج العرض منها.</div>' +
+      '<label style="margin-top:10px">عنوان العرض / الدرس:</label>' +
+      '<input id="slideTopic" value="'+esc(S.slTopic||"")+'" oninput="S.slTopic=this.value" placeholder="مثال: الجهاز الهضمي للصف الخامس">' +
+      '<div class="grid">' +
+        '<div><label>عدد الشرائح:</label><input type="number" min="3" max="30" value="'+(S.slCount||5)+'" onchange="S.slCount=+this.value"></div>' +
+        '<div><label>مصدر المحتوى:</label><select onchange="S.slSource=this.value;draw()">' +
+          '<option value="ai" '+(S.slSource!=='text'?'selected':'')+'>الإنترنت (بحث ذكي)</option>' +
+          '<option value="text" '+(S.slSource==='text'?'selected':'')+'>نص من عندي (كتابة/لصق)</option>' +
+        '</select></div>' +
+      '</div>' +
+      (S.slSource === 'text' ? '<label>النص أو الملزمة (سيتم استخراج العرض منها حصراً):</label><textarea id="slideText" rows="4" oninput="S.slText=this.value" placeholder="ألصق النص هنا...">'+esc(S.slText||"")+'</textarea>' : '') +
+      '<button class="b" style="width:100%;margin-top:8px" '+(S.busy?'disabled':'')+' onclick="genSlides()">'+(S.busy?'⏳ جاري التصميم...':'✨ توليد العرض التقديمي')+'</button>' +
+      (S.slideResult ? '<div class="out" id="slideOutBox" style="margin-top:12px;background:#fff8eb;border:1px solid #fcd34d">' + S.slideResult + '</div>' + 
+      '<div class="grid" style="margin-top:8px"><button class="b s" onclick="saveFileToUserDrive(S.slTopic||\'عرض_تقديمي\', document.getElementById(\'slideOutBox\').innerHTML, true)">☁️ حفظ في Drive</button><button class="b s" onclick="downloadWordFile(S.slTopic||\'عرض_تقديمي\', document.getElementById(\'slideOutBox\').innerHTML, true)">📄 تنزيل Word</button></div>' : '') +
+    '</div>';
+  }
+  return h;
+}
+
+
+// Global state for Batch OMR
+var OMR = {
+  ansModel: "",
+  curStudentPages: []
+};
+
+function startBatchAIOmr(){
+  if(!gate("للتصحيح الآلي اللامحدود، يرجى الاشتراك بالباقة المدفوعة.")) return;
+  if(!getUserKey()){ toast("يرجى ربط حساب Gemini من تبويب الذكاء الاصطناعي للقيام بالتصحيح."); return; }
+  
+  if(!OMR.ansModel){
+    ask("اكتب الإجابة النموذجية والدرجة القصوى (مثال: الحل النموذجي هو كذا.. من 10):", function(ans){
+       if(ans){ OMR.ansModel = ans; OMR.curStudentPages = []; openOmrCamera(); }
+    });
+  } else {
+    OMR.curStudentPages = [];
+    openOmrCamera();
+  }
+}
+
+function openOmrCamera(){
+  var f = document.createElement("input");
+  f.type = "file"; f.accept = "image/*,application/pdf"; f.multiple = true; 
+  f.setAttribute("capture", "environment");
+  f.onchange = async function(){
+     var files = Array.from(f.files);
+     if(!files.length) return;
+     
+     var hasPdf = files.some(file => file.type === "application/pdf");
+     if(hasPdf){
+        toast("⏳ جاري قراءة ملف الـ PDF الجامعي...");
+        // In a real full-scale PDF parser we'd extract images using pdf.js, 
+        // For now, we will send the PDF file directly to Gemini API if the user's key supports it.
+        // Or instruct the user that PDF processing requires the API key.
+        var pdfFile = files.find(file => file.type === "application/pdf");
+        var reader = new FileReader();
+        reader.onload = async function(){
+           S.busy = true; S.omrResult = "⏳ جاري تحليل ملف الـ PDF الامتحاني بالذكاء الاصطناعي..."; draw();
+           try{
+              var base64Data = reader.result.split(',')[1];
+              var prompt = "أنت أستاذ جامعي تصحح دفتر امتحاني بصيغة PDF. الإجابة النموذجية هي: [" + OMR.ansModel + "]. اقرأ الدفتر الامتحاني بدقة. 1. استخرج اسم الطالب بوضوح. 2. قيّم الإجابة وأعطه درجة نهائية (رقم فقط). 3. اكتب تعليقاً يبرر الدرجة. أعد النتيجة بصيغة JSON فقط: {\"name\":\"اسم الطالب\",\"score\":الدرجة,\"feedback\":\"التعليق\"}";
+              
+              var body = { contents: [{ role: "user", parts: [ { text: prompt }, { inlineData: { mimeType: "application/pdf", data: base64Data } } ] }], generationConfig: { temperature: 0.65, responseMimeType: "application/json" } };
+              var res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + encodeURIComponent(getUserKey()), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+              var data = await res.json();
+              
+              if(res.ok && data.candidates && data.candidates[0].content){
+                 var txt = data.candidates[0].content.parts.map(p => p.text || "").join("");
+                 var obj = JSON.parse(txt);
+                 var sName = obj.name || "طالب غير معروف";
+                 var sScore = Number(obj.score) || 0;
+                 
+                 S.omrResult = "🧑‍🎓 اسم الطالب: " + sName + "\n💯 الدرجة: " + sScore + "\n📝 التقييم: " + (obj.feedback||"");
+                 S.gr = S.gr || [];
+                 S.gr.push([sName, sScore]);
+                 saveAllUserStorage();
+                 toast("✅ تم تصحيح الدفتر وإضافة الدرجة بنجاح!");
+              } else {
+                 S.omrResult = "تعذر تحليل الـ PDF: " + (data.error ? data.error.message : "خطأ غير معروف");
+              }
+           }catch(e){ S.omrResult = "خطأ: " + e.message; }
+           S.busy = false; draw();
+        };
+        reader.readAsDataURL(pdfFile);
+        return;
+     }
+     
+     toast("⏳ جاري تحميل " + files.length + " صفحة...");
+     var readPromises = files.map(file => new Promise((resolve) => {
+        var r = new FileReader();
+        r.onload = function(){ resolve(r.result); };
+        r.readAsDataURL(file);
+     }));
+     
+     Promise.all(readPromises).then(results => {
+        OMR.curStudentPages = OMR.curStudentPages.concat(results);
+        showOmrStudentReview();
+     });
+  };
+  f.click();
+}
+
+function showOmrStudentReview(){
+  var old = document.getElementById("md"); if(old) old.remove();
+  var d = document.createElement("div"); d.id = "md";
+  var pgCount = OMR.curStudentPages.length;
+  
+  d.innerHTML = '<div class="mc" style="width:min(360px,95%);text-align:center">' +
+    '<h3>📝 تصحيح إجابة طالب ('+pgCount+' صفحات)</h3>' +
+    '<div class="row" style="overflow-x:auto;gap:4px;padding-bottom:8px;justify-content:center">' +
+       OMR.curStudentPages.map((src, i) => '<img src="'+src+'" style="width:60px;height:80px;object-fit:cover;border-radius:6px;border:1px solid #ccc">').join("") +
+    '</div>' +
+    '<div class="grid" style="margin-top:10px">' +
+       '<button class="b s" onclick="openOmrCamera()">➕ إضافة صفحة أخرى للطالب</button>' +
+       '<button class="b d" onclick="OMR.curStudentPages=[];document.getElementById(\'md\').remove()">🗑️ مسح</button>' +
+    '</div>' +
+    '<button class="b" style="width:100%;margin-top:10px;background:#15803d;min-height:46px" onclick="submitOmrStudent()">✅ إنهاء وتصحيح الطالب (AI)</button>' +
+  '</div>';
+  document.body.appendChild(d);
+}
+
+async function submitOmrStudent(){
+  var md = document.getElementById("md"); if(md) md.remove();
+  if(!OMR.curStudentPages.length) return;
+  
+  S.busy = true; S.omrResult = "⏳ جاري استخراج اسم الطالب وتقييم الإجابات المدمجة..."; draw();
+  try{
+    // If multiple pages, we send them to Gemini in one prompt (Gemini 1.5 Flash handles multiple images well)
+    var parts = [{ text: "أنت أستاذ تصحح ورقة امتحانية مكوّنة من " + OMR.curStudentPages.length + " صفحات لطالب واحد. الإجابة النموذجية التي وضعها الأستاذ هي: [" + OMR.ansModel + "]. اقرأ جميع الصفحات المرفقة بتركيز. 1. استخرج اسم الطالب بوضوح. 2. قيّم الإجابة المدمجة وأعطه درجة نهائية (رقم فقط). 3. اكتب تعليقاً يبرر الدرجة. أعد النتيجة بصيغة JSON فقط: {\"name\":\"اسم الطالب\",\"score\":الدرجة,\"feedback\":\"التعليق\"}" }];
+    
+    OMR.curStudentPages.forEach(src => {
+        var sp = src.split("base64,");
+        var mime = sp[0].replace("data:","").replace(";","") || "image/jpeg";
+        parts.push({inlineData: {mimeType: mime, data: sp[1]}});
+    });
+    
+    var body = { contents: [{ role: "user", parts: parts }], generationConfig: { temperature: 0.65, responseMimeType: "application/json" } };
+    var res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + encodeURIComponent(getUserKey()), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    var data = await res.json();
+    
+    if(res.ok && data.candidates && data.candidates[0].content){
+       var txt = data.candidates[0].content.parts.map(p => p.text || "").join("");
+       var obj = JSON.parse(txt);
+       var sName = obj.name || "طالب غير معروف";
+       var sScore = Number(obj.score) || 0;
+       
+       S.omrResult = "🧑‍🎓 اسم الطالب: " + sName + "\n💯 الدرجة: " + sScore + "\n📝 التقييم: " + (obj.feedback||"");
+       S.gr = S.gr || [];
+       S.gr.push([sName, sScore]);
+       saveAllUserStorage();
+       toast("✅ تمت إضافة " + sName + " بنجاح!");
+       
+       // Prompt to continue with next student
+       setTimeout(() => {
+          askOmrNextStudent();
+       }, 800);
+       
+    } else {
+       S.omrResult = "تعذر تحليل الورقة: " + (data.error ? data.error.message : "مجهول");
+    }
+  }catch(e){ S.omrResult = "خطأ: " + e.message; }
+  
+  S.busy = false; draw();
+}
+
+function askOmrNextStudent(){
+   var d = document.createElement("div"); d.id = "md";
+   d.innerHTML = '<div class="mc" style="text-align:center">' +
+     '<b>تم تصحيح الطالب!</b><br><div class="mu" style="margin-top:6px">هل تريد تصوير أوراق الطالب التالي بنفس الإجابة النموذجية؟</div>' +
+     '<div class="grid" style="margin-top:14px">' +
+       '<button class="b" onclick="document.getElementById(\'md\').remove(); OMR.curStudentPages=[]; openOmrCamera()">📸 نعم، الطالب التالي</button>' +
+       '<button class="b s" onclick="document.getElementById(\'md\').remove()">⏹️ لا، اكتفيت</button>' +
+     '</div>' +
+   '</div>';
+   document.body.appendChild(d);
+}
+
+
+async function genSlides(){
+  if(!gate("لتصميم عدد غير محدود من العروض، يرجى الاشتراك.")) return;
+  var t = $("slideTopic") ? $("slideTopic").value.trim() : (S.slTopic||"");
+  if(!t){ toast("يرجى كتابة عنوان العرض أو الدرس أولاً."); return; }
+  var count = S.slCount || 5;
+  var isText = S.slSource === 'text';
+  var customTxt = $("slideText") ? $("slideText").value.trim() : (S.slText||"");
+  
+  if(isText && !customTxt){ toast("يرجى لصق النص المطلوب استخراج العرض منه."); return; }
+  if(!getUserKey()){ openAutoKeyConnect(); return; }
+  
+  S.busy = true; draw();
+  try{
+    var prompt = "أريد تصميم محتوى احترافي لعرض تقديمي (PowerPoint/Slides) عن موضوع: '" + t + "'.\n" +
+                 "قسّم المحتوى بالضبط إلى " + count + " شرائح.\n" +
+                 "في كل شريحة يجب أن تكتب:\n" +
+                 "1. عنوان الشريحة.\n" +
+                 "2. ثلاث نقاط رئيسية مختصرة ومفيدة.\n" +
+                 "3. وصف مرئي مقترح لصورة يمكن وضعها في هذه الشريحة.\n";
+                 
+    if(isText){
+       prompt += "\n[هام جداً: اعتمد في استخراج المعلومات حصراً على النص التالي ولا تضف معلومات خارجية من عندك]:\n" + customTxt;
+    }
+    
+    var res = await callUserGemini(prompt, "أنت خبير مناهج تعليمية ومصمم عروض تقديمية محترف.", null, false);
+    if(res) S.slideResult = esc(res).replace(/\n/g, '<br>');
+  }catch(e){ toast("خطأ: " + e.message); }
+  S.busy = false; draw();
+}
+
+
+function livePortalV(){
+  var tab = S.liveQuizTab || "quiz";
+  var h = '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">التفاعل والمتابعة</b></div>' +
+    '<div class="grid" style="margin-bottom:10px">' +
+      '<button class="b '+(tab==="quiz"?'':'s')+'" onclick="S.liveQuizTab=\'quiz\';draw()">📡 عين الأستاذ (كويز)</button>' +
+      '<button class="b '+(tab==="parents"?'':'s')+'" onclick="S.liveQuizTab=\'parents\';draw()">👨‍👩‍👦 أولياء الأمور</button>' +
+    '</div>';
+
+  if(tab === "parents"){
+    h += '<div class="card" style="border-inline-start:4px solid #25d366">' +
+      '<h2>📲 نظام تواصل أولياء الأمور الذكي</h2>' +
+      '<div class="mu" style="margin-bottom:12px;line-height:1.6">قم بإرسال إشعارات رسمية (غياب، درجات، سلوك) مباشرة إلى واتساب ولي الأمر بنقرة واحدة وبدون الحاجة لحفظ الرقم في هاتفك.</div>' +
+      '<label>اسم الطالب (الكامل)</label><input id="prName" placeholder="مثال: محمد علي حسن">' +
+      '<label>رقم هاتف ولي الأمر (واتساب)</label><div class="row" dir="ltr" style="margin-bottom:8px"><input id="prPhone" type="tel" placeholder="7801234567" style="margin:0"><b style="padding:0 8px">+964</b></div>' +
+      '<label>نوع الإشعار</label><select id="prType"><option value="grade">📝 تبليغ بدرجة امتحان</option><option value="absent">⚠️ تبليغ بغياب</option><option value="behavior">🗣️ استدعاء أو تبليغ سلوكي</option><option value="custom">💬 رسالة مخصصة</option></select>' +
+      '<label>التفاصيل / الدرجة المأخوذة</label><textarea id="prNote" rows="2" placeholder="اكتب الدرجة أو الملاحظة هنا..."></textarea>' +
+      '<button class="b" style="width:100%;background:#25d366;margin-top:8px;font-size:15px" onclick="sendParentWhatsApp()">✉️ إرسال عبر واتساب الآن</button>' +
+    '</div>';
+  } else {
+    if(S.liveQuiz){
+       var totalAnswers = Object.keys(S.liveQuizAnswers).length;
+       var counts = [0,0,0,0];
+       for(var k in S.liveQuizAnswers){ counts[S.liveQuizAnswers[k]]++; }
+       
+       h += '<div class="card" style="text-align:center;border:2px solid var(--ac)">' +
+         '<div class="mu">الرمز السري لدخول الطلاب:</div>' +
+         '<div style="font-size:48px;font-weight:900;letter-spacing:8px;color:var(--ac);margin:10px 0">'+esc(S.liveQuizPin)+'</div>' +
+         '<div style="font-weight:bold;font-size:18px;margin-bottom:16px">'+esc(S.liveQuiz.q)+'</div>';
+       
+       S.liveQuiz.opts.forEach(function(opt, idx){
+          var perc = totalAnswers === 0 ? 0 : Math.round((counts[idx] / totalAnswers) * 100);
+          h += '<div style="text-align:start;margin-bottom:12px">' +
+                 '<div style="font-size:13px;font-weight:600">'+esc(opt)+' (الخيار '+ (idx+1) +')</div>' +
+                 '<div class="bar-wrap">' +
+                    '<div class="bar-fill" style="width:'+perc+'%">'+counts[idx]+'</div>' +
+                    '<div class="bar-text">'+perc+'%</div>' +
+                 '</div>' +
+               '</div>';
+       });
+       
+       h += '<div class="mu" style="margin:12px 0">👥 إجمالي المجيبين: <b>'+totalAnswers+'</b> طالب</div>' +
+         '<label>اختر رقم الخيار الصحيح (لإعطاء الدرجة للطلاب):</label>' +
+         '<select id="lqCorrectAns"><option value="-1">بدون تقييم (استطلاع فقط)</option>' + S.liveQuiz.opts.map((o,i) => '<option value="'+i+'">الخيار '+(i+1)+'</option>').join("") + '</select>' +
+         '<button class="b d" style="width:100%;margin-top:8px" onclick="stopLiveQuizAndGrade()">⏹️ إنهاء الكويز وترحيل الدرجات</button>' +
+       '</div>';
+    } else {
+       h += '<div class="card" style="border-inline-start:4px solid var(--ac)">' +
+         '<h2>📡 إطلاق كويز مباشر (عين الأستاذ)</h2>' +
+         '<div class="mu" style="margin-bottom:12px;line-height:1.6">اكتب سؤالاً واختياراته. سيحصل الطلاب على رمز (PIN) للإجابة من هواتفهم، وسترى الإحصائيات تتغير أمامك على الشاشة في نفس اللحظة!</div>' +
+         '<label>نص السؤال (أو الأسئلة مفصولة بسطر فارغ للأسئلة العشوائية)</label><textarea id="lqQ" rows="3" placeholder="مثال:\nالسؤال الأول...\n\nالسؤال الثاني..."></textarea>' +
+         '<div class="grid">' +
+           '<div><label>الخيار الأول (صحيح دائماً للتوليد)</label><input id="lq1" placeholder="مثال: الجواب الصحيح"></div>' +
+           '<div><label>الخيار الثاني</label><input id="lq2" placeholder="خيار خاطئ"></div>' +
+           '<div><label>الخيار الثالث</label><input id="lq3" placeholder="خيار خاطئ"></div>' +
+           '<div><label>الخيار الرابع</label><input id="lq4" placeholder="خيار خاطئ"></div>' +
+         '</div>' +
+         '<div style="background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:10px;margin-top:10px">' +
+            '<b style="display:block;margin-bottom:6px;font-size:12px">⚙️ إعدادات الامتحان الصارمة:</b>' +
+            '<label class="row" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" id="lqStrict" style="width:auto;margin:0" checked> 🔒 منع الخروج من التطبيق (يتصفر الامتحان إذا غادر)</label>' +
+            '<label class="row" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" id="lqShuffle" style="width:auto;margin:0" checked> 🔀 عشوائية الأسئلة والخيارات لمنع الغش</label>' +
+            '<div class="row" style="gap:10px">' +
+               '<label class="grow" style="margin:0">⏱️ مدة الامتحان (بالدقائق، 0=مفتوح):</label>' +
+               '<input type="number" id="lqTime" value="5" min="0" style="width:60px;margin:0">' +
+            '</div>' +
+         '</div>' +
+         '<button class="b" style="width:100%;margin-top:10px;font-size:15px" onclick="launchLiveQuiz()">🚀 إطلاق الكويز المشدد الآن</button>' +
+       '</div>';
+    }
+  }
+  return h;
+}
+
+function sendParentWhatsApp(){
+  var name = $("prName").value.trim();
+  var phone = $("prPhone").value.trim();
+  var type = $("prType").value;
+  var note = $("prNote").value.trim();
+  
+  if(!name || !phone){ toast("يرجى كتابة اسم الطالب ورقم الهاتف"); return; }
+  
+  // Format Iraqi phone number correctly for wa.me
+  phone = phone.replace(/^0+/, ''); // remove leading zeros
+  var fullPhone = "964" + phone;
+  
+  var tName = S.dispName || "الأستاذ";
+  var msg = "السلام عليكم،\nرسالة من "+tName+" بخصوص الطالب/ة ( *"+name+"* ):\n\n";
+  
+  if(type === "grade") msg += "نود إعلامكم بنتيجة الطالب في الاختبار الأخير: " + note + "\nنرجو متابعته متمنين له دوام الموفقية.";
+  else if(type === "absent") msg += "نود إبلاغكم بغياب الطالب هذا اليوم. " + note + "\nنرجو بيان السبب حرصاً على مستقبله.";
+  else if(type === "behavior") msg += "نرجو حضوركم للإدارة لمناقشة وضع الطالب. " + note;
+  else msg += note;
+  
+  msg += "\n\n(تم الإرسال عبر منصة مسبار التعليمية 🎓)";
+  
+  var url = "https://wa.me/" + fullPhone + "?text=" + encodeURIComponent(msg);
+  window.open(url, "_blank");
+}
+
+function launchLiveQuiz(){
+  if(!window.fbStartLiveQuiz){ toast("جاري الاتصال بالسيرفر، انتظر لحظة..."); return; }
+  var q = $("lqQ").value.trim();
+  var o1 = $("lq1").value.trim(), o2 = $("lq2").value.trim(), o3 = $("lq3").value.trim(), o4 = $("lq4").value.trim();
+  if(!q || !o1 || !o2){ toast("اكتب السؤال وخيارين على الأقل"); return; }
+  
+  var strict = $("lqStrict").checked;
+  var shuffle = $("lqShuffle").checked;
+  var duration = parseInt($("lqTime").value) || 0;
+  
+  var opts = [o1, o2]; if(o3) opts.push(o3); if(o4) opts.push(o4);
+  var pin = Math.floor(1000 + Math.random() * 9000).toString(); // 4 digit PIN
+  
+  var quizData = { 
+     q: q, 
+     opts: opts, 
+     active: true, 
+     teacher: S.email, 
+     at: Date.now(),
+     strict: strict,
+     shuffle: shuffle,
+     duration: duration
+  };
+  S.liveQuizPin = pin;
+  S.liveQuizAnswers = {};
+  
+  window.fbStartLiveQuiz(pin, quizData).then(function(){
+     S.liveQuiz = quizData;
+     toast("تم إطلاق الكويز! اطلب من الطلاب إدخال الرمز: " + pin);
+     draw();
+  });
+}
+
+
+function stopLiveQuizAndGrade(){
+  var correctIdx = parseInt($("lqCorrectAns").value);
+  if(!window.fbStopLiveQuiz) return;
+  window.fbStopLiveQuiz(S.liveQuizPin);
+  
+  if(correctIdx > -1){
+     var added = 0;
+     for(var k in S.liveQuizAnswers){
+        var ansObj = S.liveQuizAnswers[k];
+        var sName = ansObj.name || "طالب مجهول";
+        var sScore = (ansObj.ans === correctIdx) ? 10 : 0; // 10 points for correct answer
+        S.gr = S.gr || [];
+        S.gr.push([sName, sScore]);
+        added++;
+     }
+     saveAllUserStorage();
+     if(added > 0) toast("✅ تم إغلاق الكويز وترحيل " + added + " درجات للطلاب إلى دفتر الدرجات!");
+     else toast("تم إغلاق الكويز (لم يجب أحد)");
+  } else {
+     toast("تم إغلاق الكويز (بدون تقييم درجات)");
+  }
+  
+  S.liveQuiz = null;
+  S.liveQuizPin = "";
+  draw();
+}
+
+function stopLiveQuiz(){
+  if(!window.fbStopLiveQuiz) return;
+  window.fbStopLiveQuiz(S.liveQuizPin);
+  S.liveQuiz = null;
+  S.liveQuizPin = "";
+  draw();
+}
+
+
+function stuJoinQuiz(){
+  var pin = $("stuPinIn").value.trim();
+  var name = $("stuNameIn").value.trim();
+  if(!name){ toast("يرجى كتابة اسمك الكامل أولاً"); return; }
+  if(!pin){ toast("أدخل رمز الكويز أولاً"); return; }
+  S.dispName = name; saveDeviceOnly();
+  if(!window.fbJoinLiveQuiz){ toast("غير متصل بالسيرفر"); return; }
+  
+  toast("جاري البحث عن الكويز...");
+  window.fbJoinLiveQuiz(pin).then(function(quiz){
+    if(quiz && quiz.active){
+       
+       // Handle Shuffle
+       if(quiz.shuffle){
+           // Shuffle options (simple randomize)
+           // But keep a map to original index for marking
+           quiz.optsMap = quiz.opts.map((opt, i) => ({txt: opt, oIdx: i})).sort(() => Math.random() - 0.5);
+           quiz.opts = quiz.optsMap.map(x => x.txt);
+           // if multi questions feature used in `q`, we could split by double newline and shuffle here
+           var qs = quiz.q.split('\n\n');
+           if(qs.length > 1){
+              quiz.q = qs[Math.floor(Math.random()*qs.length)]; // Give this specific student 1 random question from the bank
+           }
+       }
+       quiz.joinedAt = Date.now();
+       S.stuActiveQuiz = quiz;
+       S.stuActiveQuiz.pin = pin;
+       S.stuActiveQuiz.answered = false;
+       draw();
+       startStuQuizTimer();
+
+    } else {
+       toast("الرمز خاطئ أو الكويز مغلق");
+    }
+  }).catch(function(e){ toast("خطأ: " + e); });
+}
+
+function stuSubmitQuiz(ansIdx){
+  if(!window.fbSubmitQuizAns || !S.stuActiveQuiz) return;
+  var name = S.dispName || (S.email.split('@')[0]);
+  
+  var realAnsIdx = ansIdx;
+  if(S.stuActiveQuiz.shuffle && ansIdx >= 0 && S.stuActiveQuiz.optsMap){
+      realAnsIdx = S.stuActiveQuiz.optsMap[ansIdx].oIdx; 
+  }
+  if(ansIdx === -99) name = "🚫(غش) " + name; // Flag for teacher
+  if(ansIdx === -1) name = "⏳(تأخر) " + name; 
+  
+  window.fbSubmitQuizAns(S.stuActiveQuiz.pin, S.uid, name, realAnsIdx).then(function(){
+     S.stuActiveQuiz.answered = true;
+     draw();
+     toast("✅ تم إرسال الإجابة بنجاح!");
+  });
+}
+
+
+function adminPortalV(){
+  if(window.fbWatchAdminReports && !S.watchingAdmin) { window.fbWatchAdminReports(); S.watchingAdmin = true; }
+  
+  var orgName = S.dispName || "الإدارة";
+  
+  var repsHtml = (S.adminReports && S.adminReports.length) ? S.adminReports.map(function(r){
+     var avg = r.grades && r.grades.length ? (r.grades.reduce((a,b)=>a+Number(b[1]),0)/r.grades.length).toFixed(1) : 0;
+     var csv = encodeURIComponent("\ufeffاسم الطالب,الدرجة\n" + (r.grades || []).map(g => '"'+g[0]+'",'+g[1]).join("\n"));
+     
+     return '<div class="card">' +
+       '<div class="row"><b class="grow">👨‍🏫 '+esc(r.teacher)+'</b><span class="mu" dir="ltr" style="font-size:11px">'+esc(r.email)+'</span></div>' +
+       '<div class="mu" style="margin:6px 0">📅 '+fd(r.at)+' · 👥 '+(r.grades?r.grades.length:0)+' طالب · 📈 المعدل: '+avg+'</div>' +
+       '<a href="data:text/csv;charset=utf-8,'+csv+'" download="كشف_درجات_'+esc(r.teacher)+'.csv" class="b s" style="display:block;text-align:center;text-decoration:none;width:100%;color:#9333ea;background:#f3e8ff;padding:8px">⬇️ تنزيل كشف الأسماء والدرجات (Excel)</a>' +
+     '</div>';
+  }).join("") : '<div class="card mu" style="text-align:center;padding:20px 0">⏳ بانتظار استلام السجلات من الأساتذة...</div>';
+  
+  return '<div class="card" style="border-inline-start:4px solid #9333ea;background:#f3e8ff">' +
+    '<h2>🏢 لوحة تحكم ' + esc(orgName) + '</h2>' +
+    '<div class="mu" style="line-height:1.6">هنا تصلك جميع الدرجات والامتحانات المُرسلة من الأساتذة مباشرة.</div>' +
+  '</div>' +
+  '<h2>السجلات الواردة حديثاً ('+(S.adminReports?S.adminReports.length:0)+')</h2>' +
+  repsHtml +
+  '<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
+}
+
+function parentsPortalV(){
+  return '<div class="card" style="border-inline-start:4px solid #2563eb;background:#eff6ff">' +
+    '<h2>👨‍👩‍👦 بوابة أولياء الأمور</h2>' +
+    '<div class="mu" style="line-height:1.6">مرحباً بك. لربط حسابك بسجلات أبنائك ومتابعة درجاتهم وغياباتهم لحظة بلحظة، يرجى إدخال الكود المرجعي للطالب (الذي يزودك به الأستاذ أو المدرسة).</div>' +
+  '</div>' +
+  '<div class="card">' +
+    '<label>كود الطالب السري (Student ID)</label>' +
+    '<div class="row">' +
+       '<input type="text" placeholder="مثال: STU-12345" class="grow" style="margin:0" dir="ltr">' +
+       '<button class="b" style="background:#2563eb">ربط الطالب</button>' +
+    '</div>' +
+  '</div>' +
+  '<div class="card mu" style="text-align:center;padding:30px 10px">' +
+    'لم يتم ربط أي طلاب بحسابك بعد.<br>بمجرد الربط ستظهر لك هنا لوحة تفصيلية بمستواهم.' +
+  '</div>' +
+  '<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
+}
+
+
+var _quizInterval = null;
+
+function startStuQuizTimer(){
+   if(!S.stuActiveQuiz || S.stuActiveQuiz.duration <= 0 || S.stuActiveQuiz.answered) return;
+   var endTime = S.stuActiveQuiz.joinedAt + (S.stuActiveQuiz.duration * 60000);
+   
+   if(_quizInterval) clearInterval(_quizInterval);
+   _quizInterval = setInterval(function(){
+      if(!S.stuActiveQuiz || S.stuActiveQuiz.answered){ clearInterval(_quizInterval); return; }
+      var left = endTime - Date.now();
+      if(left <= 0){
+         clearInterval(_quizInterval);
+         toast("⏳ انتهى الوقت! تم تقديم الورقة فارغة.");
+         stuSubmitQuiz(-1); // timeout submission
+         return;
+      }
+      var el = document.getElementById("stuQuizTimer");
+      if(el){
+         var m = Math.floor(left / 60000);
+         var s = Math.floor((left % 60000) / 1000);
+         el.innerText = "⏳ " + m + ":" + (s < 10 ? "0"+s : s);
+      }
+   }, 1000);
+}
+
+// Anti-Cheat: Detect switching apps
+document.addEventListener("visibilitychange", function() {
+   if(document.hidden && S.role === "stu" && S.stuActiveQuiz && !S.stuActiveQuiz.answered && S.stuActiveQuiz.strict) {
+      toast("🚫 تحذير غش: لقد خرجت من التطبيق أثناء الامتحان!");
+      S.stuActiveQuiz.cheated = true;
+      stuSubmitQuiz(-99); // Cheat code submission
+   }
+});
+
+
+function calcSaee(){
+   if(!S.gr || !S.gr.length) { toast("دفتر الدرجات فارغ"); return; }
+   var st = {};
+   S.gr.forEach(function(g){
+      var n = g[0];
+      var cleanName = n.replace(/ \(معدل.*\)/g, ""); // strip old text if recalculating
+      if(!st[cleanName]) st[cleanName] = { sum: 0, count: 0 };
+      st[cleanName].sum += g[1];
+      st[cleanName].count++;
+   });
+   var newGr = [];
+   for(var n in st){
+      var avg = (st[n].sum / st[n].count).toFixed(1);
+      newGr.push([n + " (معدل " + st[n].count + ")", Number(avg)]);
+   }
+   S.gr = newGr;
+   saveAllUserStorage();
+   toast("✅ تم حساب السعي وتوحيد سجلات الطلاب!");
+   draw();
+}
+
+function sendGradesToAdmin(){
+   if(!S.gr || !S.gr.length) { toast("الدفتر فارغ"); return; }
+   if(!window.fbAddDoc) { toast("غير متصل بالسيرفر"); return; }
+   S.busy = true; draw();
+   var report = {
+      teacher: S.dispName || S.email,
+      email: S.email,
+      at: Date.now(),
+      grades: S.gr
+   };
+   if(window.fbSendAdminReport){
+      window.fbSendAdminReport(report).then(() => {
+         S.busy = false; draw();
+         toast("📤 تم إرسال السجل للإدارة بنجاح!");
+      }).catch(e => { S.busy=false; draw(); toast("خطأ: " + e); });
+   } else {
+      S.busy = false; draw(); toast("قاعدة البيانات غير جاهزة");
+   }
+}
+
+/* === Old chat stubs === */
 function avatarHtml(name, photo){
   if(photo) return '<span class="avatar-ci"><img src="'+esc(photo)+'" alt=""></span>';
   var ch = (name || "م").trim().charAt(0).toUpperCase();
@@ -5253,7 +6658,20 @@ function roomV(){
             '<button type="button" id="waRecStopBtn" class="b s" style="min-height:36px;width:36px;border-radius:50%;padding:0;font-size:15px;background:#e2e8f0;color:#0f172a" title="إيقاف ومعاينة" onclick="stopVoiceRecord(false)">⏸️</button>' +
             '<button type="button" id="waRecSendBtn" class="b" style="min-height:36px;width:36px;border-radius:50%;padding:0;font-size:15px;display:none" title="إرسال" onclick="stopVoiceRecord(true)">➤</button>' +
           '</div>' +
-          '<style>@keyframes pulse{0%{opacity:1}50%{opacity:0.3}100%{opacity:1}}</style>' ) +
+          '<style>@keyframes pulse{0%{opacity:1}50%{opacity:0.3}100%{opacity:1}}
+.bar-wrap { background: var(--ln); border-radius: 8px; height: 24px; width: 100%; overflow: hidden; position: relative; margin-top: 4px; }
+.bar-fill { background: var(--ac); height: 100%; width: 0%; transition: width 0.4s ease; display:flex; align-items:center; padding: 0 8px; color:#fff; font-size:11px; font-weight:bold; white-space:nowrap; }
+.bar-text { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: bold; color: var(--tx); z-index: 2; }
+
+/* Premium UI Upgrades */
+body { background: #f0f2f5; }
+.card { background: rgba(255,255,255,0.9); backdrop-filter: blur(12px); box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid rgba(255,255,255,0.4); transition: transform 0.2s, box-shadow 0.2s; }
+.card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
+button.b { transition: all 0.2s ease; font-weight: 700; letter-spacing: 0.2px; }
+button.b:not(:disabled):active { transform: scale(0.96); }
+main { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>' ) +
     '</div>' +
   '</div>';
 }
@@ -5525,7 +6943,41 @@ function stuV(){
       '</div>';
   }
   var myJoined=S.classes.filter(function(c){return S.joined.indexOf(c.c)>-1});
-  return driveBannerH()+'<h2>الانضمام لكلاس دراسي</h2><div class="row"><input id="jc" placeholder="أدخل رمز الكلاس (مثل AB12)" class="grow"><button class="b" onclick="joinCls()">انضمام</button></div>'+
+  return driveBannerH()+
+  '<div class="card" style="border-inline-start:4px solid var(--ac); background:var(--acs)">' +
+    '<div class="row">' +
+      '<div class="portal-ico" style="background:var(--ac);color:#fff">📡</div>' +
+      '<div class="grow"><b>كويز تفاعلي مباشر (من الأستاذ)</b><div class="mu">هل أعطاك الأستاذ رمزاً للكويز؟ أدخله هنا:</div></div>' +
+    '</div>' +
+    '<label style="margin-top:10px">اسمك الكامل الثلاثي:</label>' +
+    '<input id="stuNameIn" type="text" placeholder="اكتب اسمك هنا ليظهر للأستاذ..." value="'+esc(S.dispName||"")+'">' +
+    '<label>الرمز السري (PIN):</label>' +
+    '<div class="row">' +
+      '<input id="stuPinIn" type="number" placeholder="أدخل الرمز المكون من 4 أرقام" class="grow" style="margin:0">' +
+      '<button class="b" style="background:#15803d" onclick="stuJoinQuiz()">🚀 دخول</button>' +
+    '</div>' +
+  '</div>' +
+  (S.stuActiveQuiz ? 
+    '<div class="card" style="border:2px solid var(--ac)">' +
+      '<div class="row" style="margin-bottom:10px">' +
+         '<b class="grow" style="color:var(--tx)">📝 اختبار مشدد</b>' +
+         (S.stuActiveQuiz.duration > 0 && !S.stuActiveQuiz.answered ? '<span class="badge" style="background:#ef4444;color:#fff" id="stuQuizTimer">⏳ '+S.stuActiveQuiz.duration+':00</span>' : '') +
+      '</div>' +
+      (S.stuActiveQuiz.strict && !S.stuActiveQuiz.answered ? '<div class="mu" style="color:#ef4444;font-size:11px;margin-bottom:8px">🔒 لا تخرج من التطبيق. الخروج سيلغي امتحانك بصفر.</div>' : '') +
+      '<h3 style="margin-top:0">'+esc(S.stuActiveQuiz.q)+'</h3>' +
+      (S.stuActiveQuiz.answered ? 
+         '<div class="out" style="text-align:center;font-weight:bold;color:var(--ac)">تم إرسال إجابتك ('+(S.stuActiveQuiz.cheated?'مُلغاة للغش':'نجاح')+'). بانتظار إغلاق الأستاذ...</div>' +
+         '<button class="b s" style="width:100%;margin-top:8px" onclick="S.stuActiveQuiz=null;draw()">إغلاق</button>'
+       : S.stuActiveQuiz.opts.map(function(opt, idx){
+           // If shuffled, render shuffled display logic but keep original value internally
+           var showOpt = opt;
+           var renderIdx = idx;
+           return '<button class="quiz-opt" onclick="stuSubmitQuiz('+renderIdx+')">'+esc(showOpt)+'</button>';
+         }).join("")
+      ) +
+    '</div>' 
+  : '') +
+  '<h2>الانضمام لكلاس دراسي</h2><div class="row"><input id="jc" placeholder="أدخل رمز الكلاس (مثل AB12)" class="grow"><button class="b" onclick="joinCls()">انضمام</button></div>'+
   (myJoined.length?myJoined.map(function(c){
     var mats=c.mats||[];
     return '<h2>🏫 '+esc(c.n)+'</h2>'+
@@ -5632,7 +7084,7 @@ function reqV(){
   return '<h2>إدارة طلبات الاشتراكات ('+tl+' جديد)</h2><div class="card"><div class="row" style="flex-wrap:wrap">'+tabs+'</div><div class="mu" style="margin:8px 0">المشتركون بباقة '+esc(sel.n)+': '+subsN+'</div><div class="row" style="flex-wrap:wrap">'+sts+'</div><input dir="ltr" placeholder="ابحث بالإيميل" value="'+esc(S.rq)+'" onchange="S.rq=this.value;draw()"></div>'+(list.length?list.map(function(r){var a='';if(r.st=="new")a='<button class="b" onclick="reqSt('+r.id+',\'ok\')">قبول</button><button class="b s" onclick="reqSt('+r.id+',\'no\')">رفض</button>';else if(r.st=="ok")a='<input type="date" id="sd'+r.id+'" value="'+new Date().toISOString().slice(0,10)+'"><button class="b" onclick="actv('+r.id+')">تأكيد الدفع وتفعيل</button>';else if(r.st=="act")a='<button class="b s" onclick="extR('+r.id+')">تمديد</button><button class="b s" onclick="stopR('+r.id+')">إيقاف</button>';var sb=S.subs.filter(function(s){return s.e==r.e})[0];return '<div class="card"><b dir="ltr">'+esc(r.e)+'</b><div class="mu">'+esc(r.n)+' · '+Number(r.p).toLocaleString("ar-IQ")+' د.ع · طُلب '+fd(r.d)+'</div>'+(r.st=="act"&&sb?'<div class="mu">من '+fd(sb.s||r.d)+' إلى '+fd(sb.end)+'</div>':'')+'<div class="row" style="flex-wrap:wrap;margin-top:6px">'+a+'</div></div>'}).join(""):'<div class="card mu">لا توجد طلبات هنا</div>');
 }
 function plansV(){
-  return '<h2>الباقات</h2>'+S.plans.map(function(x,i){return '<div class="card"><label>اسم الباقة</label><input value="'+esc(x.n)+'" onchange="S.plans['+i+'].n=this.value;draw()"><div class="grid"><div><label>السعر (د.ع)</label><input type="number" value="'+x.p+'" onchange="S.plans['+i+'].p=this.value"></div><div><label>المدة</label><div class="row"><input type="number" min="1" value="'+x.v+'" onchange="S.plans['+i+'].v=+this.value||1;draw()"><select onchange="S.plans['+i+'].u=this.value;draw()">'+["يوم","أسبوع","شهر"].map(function(u){return '<option'+(u==x.u?' selected':'')+'>'+u+'</option>'}).join("")+'</select></div></div></div><label>المميزات (تظهر للمستخدم)</label><textarea rows="2" onchange="S.plans['+i+'].f=this.value">'+esc(x.f||"")+'</textarea><div class="row"><span class="grow">إظهار الباقة للمستخدمين</span><button class="tog'+(x.hide?'':' on')+'" onclick="S.plans['+i+'].hide=!S.plans['+i+'].hide;draw()"></button></div><button class="b d" style="margin-top:8px" onclick="S.plans.splice('+i+',1);draw()">حذف الباقة</button></div>'}).join("")+'<button class="b" onclick="S.plans.push({n:\'باقة جديدة\',p:0,v:1,u:\'شهر\'});draw()">+ إضافة باقة</button><button class="b" style="width:100%;margin-top:8px" onclick="savePlans()">💾 حفظ الباقات ونشرها</button><h2>المشتركون الفعالون</h2>'+S.subs.map(function(s){var on=s.end>Date.now();return '<div class="card row"><span class="grow" dir="ltr">'+esc(s.e)+'<div class="mu" dir="rtl">'+esc(s.n)+' · '+(on?'ينتهي ':'منتهي ')+fd(s.end)+'</div></span></div>'}).join("")+'<div class="card"><label>دخولات الذكاء الاصطناعي المجانية يومياً</label><input type="number" value="'+S.free+'" onchange="S.free=+this.value"></div>';
+  return '<h2>الباقات</h2>'+S.plans.map(function(x,i){return '<div class="card"><label>اسم الباقة</label><input value="'+esc(x.n)+'" onchange="S.plans['+i+'].n=this.value;draw()"><div class="grid"><div><label>السعر (د.ع)</label><input type="number" value="'+x.p+'" onchange="S.plans['+i+'].p=this.value"></div><div><label>المدة</label><div class="row"><input type="number" min="1" value="'+x.v+'" onchange="S.plans['+i+'].v=+this.value||1;draw()"><select onchange="S.plans['+i+'].u=this.value;draw()">'+["يوم","أسبوع","شهر"].map(function(u){return '<option'+(u==x.u?' selected':'')+'>'+u+'</option>'}).join("")+'</select></div></div></div><label>المميزات (تظهر للمستخدم)</label><textarea rows="2" onchange="S.plans['+i+'].f=this.value">'+esc(x.f||"")+'</textarea><div class="row"><span class="grow">إظهار الباقة للمستخدمين</span><button class="tog'+(x.hide?'':' on')+'" onclick="S.plans['+i+'].hide=!S.plans['+i+'].hide;draw()"></button></div><button class="b d" style="margin-top:8px" onclick="S.plans.splice('+i+',1);draw()">حذف الباقة</button></div>'}).join("")+'<button class="b" onclick="S.plans.push({n:\'باقة جديدة\',p:0,v:1,u:\'شهر\'});draw()">+ إضافة باقة</button><button class="b" style="width:100%;margin-top:8px" onclick="savePlans()">💾 حفظ الباقات ونشرها</button><h2>المشتركون الفعالون</h2>'+S.subs.map(function(s){var on=s.end>Date.now();return '<div class="card row"><span class="grow" dir="ltr">'+esc(s.e)+'<div class="mu" dir="rtl">'+esc(s.n)+' · '+(on?'ينتهي ':'منتهي ')+fd(s.end)+'</div></span></div>'}).join("")+'<div class="card" style="border-inline-start:4px solid #8b5cf6"><b>⚙️ إعدادات التطبيق العامة (للمالك)</b><label style="margin-top:8px">عدد المحاولات التجريبية المجانية (لكل مستخدم جديد)</label><input type="number" value="'+S.free+'" onchange="if(window.fbSaveAppConfig) window.fbSaveAppConfig({freeLimit: Number(this.value)})"><div class="mu">يتم تطبيق هذا التغيير فوراً على جميع مستخدمي التطبيق عبر السحابة. (إذا وضعت 0 فلن يتمكن أحد من تجربة التطبيق مجاناً).</div></div>';
 }
 function changeCode(){ask("اكتب الرمز الحالي",function(o){if(o!==S.code){toast("الرمز الحالي غير صحيح");return}ask("اكتب الرمز الجديد (4 أرقام أو أكثر)",function(n){if(n.length<4){toast("الرمز قصير");return}S.code=n;toast("تم تغيير الرمز")},1)},1)}
 
@@ -5676,13 +7128,28 @@ function ownV(){
 
 function loginV(){
   $("app").className="";
-  $("app").innerHTML='<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">منصة الأستاذ والطالب الذكية</p></div>'+
-  '<main><div class="card" style="text-align:center">'+
-    '<p style="margin-top:0">سجّل دخولك بحساب Google للمتابعة:</p>'+
-    '<button class="b" style="width:100%;font-size:15px" onclick="fbLogin()">🔐 تسجيل الدخول بـ Google</button>'+
-    '<div class="mu" style="margin-top:10px">تُحفظ ملفاتك ومستنداتك تلقائياً على جهازك وعلى <b>Google Drive</b> الخاص بحسابك.</div>'+
-    '<div class="mu" style="margin-top:6px;font-size:11px">إصدار v'+APP_VERSION+' · تحديث تلقائي</div>'+
-  '</div></main>';
+  $("app").innerHTML = '<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">المنظومة التعليمية المتكاملة</p></div>'+
+  '<main>' +
+    '<h2 style="text-align:center;margin-top:0">اختر بوابتك للدخول</h2>' +
+    '<div class="grid" style="margin-bottom:12px">' +
+      '<div class="card" onclick="S.loginRole=\'pro_stu\';fbLogin()" style="cursor:pointer;text-align:center;border:2px solid var(--ac);background:var(--acs);transition:transform 0.2s" onmousedown="this.style.transform=\'scale(0.95)\'" onmouseup="this.style.transform=\'none\'">' +
+         '<div style="font-size:40px;margin-bottom:8px">👨‍🏫🎓</div>' +
+         '<b style="display:block;color:var(--ac);font-size:15px">الأستاذ والطالب</b>' +
+         '<div class="mu" style="font-size:11px;margin-top:4px">الدروس، الامتحانات، والذكاء الاصطناعي</div>' +
+      '</div>' +
+      '<div class="card" onclick="S.loginRole=\'parent\';fbLogin()" style="cursor:pointer;text-align:center;border:2px solid #2563eb;background:#eff6ff;transition:transform 0.2s" onmousedown="this.style.transform=\'scale(0.95)\'" onmouseup="this.style.transform=\'none\'">' +
+         '<div style="font-size:40px;margin-bottom:8px">👨‍👩‍👦</div>' +
+         '<b style="display:block;color:#1d4ed8;font-size:15px">أولياء الأمور</b>' +
+         '<div class="mu" style="font-size:11px;margin-top:4px">متابعة الدرجات والغيابات والواجبات</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="card" onclick="S.loginRole=\'admin\';fbLogin()" style="cursor:pointer;text-align:center;border:2px solid #9333ea;background:#f3e8ff;transition:transform 0.2s" onmousedown="this.style.transform=\'scale(0.98)\'" onmouseup="this.style.transform=\'none\'">' +
+       '<div style="font-size:32px;margin-bottom:8px">🏢</div>' +
+       '<b style="display:block;color:#7e22ce;font-size:15px">لوحة تحكم الإدارة / القسم</b>' +
+       '<div class="mu" style="font-size:11px;margin-top:4px">استلام الدرجات من الأساتذة وإصدار التقارير النهائية</div>' +
+    '</div>' +
+    '<div class="mu" style="text-align:center;margin-top:14px;font-size:11px">المنظومة السحابية v'+APP_VERSION+' · تحديث تلقائي</div>'+
+  '</main>';
 }
 
 
@@ -5719,6 +7186,7 @@ function draw(){
   if(S.profileOpen){profileScr();return}
   if(S.subv&&(S.role=="pro"||S.role=="stu")){subScr();return}
   if(S.scnPrintDoc){scnPrintScr();return}
+  if(S.scnCam){scnLiveCameraScr();return}
   if(S.scnEd){scnEditorScr();return}
   if(S.role=="pro"&&S.gw){
     if(S.gw.view=="ed_q"&&S.pp){ppEdScr();return}
@@ -5727,22 +7195,37 @@ function draw(){
   }
 
   var _mt=$("mt"),_mtv=_mt?_mt.value:null,_mtf=!!_mt&&document.activeElement===_mt;
+
+  // Set system role from login choice if not set
+  if(!S.sysRole && S.loginRole) { S.sysRole = S.loginRole; saveDeviceOnly(); }
+  if(!S.sysRole) S.sysRole = 'pro_stu'; // fallback
+
   var h="",r=S.role;
-  if(!r){
-    h='<header><button class="hat" onclick="hat()">🎓</button><h1>مسبار AI</h1><button class="b s" style="min-width:38px;padding:4px 0;font-size:16px" onclick="openProfileModal()" title="حسابي">👤</button><button class="b d" onclick="fbLogout()">خروج</button></header>'+
+  
+  // 1. Admin Portal
+  if(S.sysRole === 'admin') {
+     h = head("الإدارة / رئيس القسم") + '<main>' + adminPortalV() + '</main>';
+  }
+  // 2. Parents Portal
+  else if(S.sysRole === 'parent') {
+     h = head("بوابة أولياء الأمور") + '<main>' + parentsPortalV() + '</main>';
+  }
+  // 3. Pro/Stu Portal (Requires choosing role first if not set)
+  else if(S.sysRole === 'pro_stu' && !r){
+    h='<header><button class="hat" onclick="hat()">🎓</button><h1>مسبار AI</h1><button class="b s" style="min-width:38px;padding:4px 0;font-size:16px" onclick="openProfileModal()" title="حسابي">👤</button><button class="b d" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">خروج</button></header>'+
     '<div class="hero" style="padding-top:22px"><div class="hat">🎓</div><h1>أهلاً بك في مسبار AI</h1><p class="mu" dir="ltr">'+esc(S.email)+'</p></div>'+
     '<main>'+driveBannerH()+'<div class="grid">'+
       '<button class="b" style="background:#15803d;min-height:56px;font-size:16px" onclick="setRole(\'pro\')">👨‍🏫 أنا أستاذ</button>'+
       '<button class="b" style="min-height:56px;font-size:16px" onclick="setRole(\'stu\')">🎓 أنا طالب</button>'+
     '</div>'+
-    '<button class="b s" style="width:100%;margin-top:14px" onclick="fbLogout()">🚪 تسجيل الخروج وتغيير الحساب</button>'+
+    '<button class="b s" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">🚪 تسجيل الخروج وتغيير الحساب</button>'+
     '<div class="mu" style="text-align:center;margin-top:10px;font-size:11px">v'+APP_VERSION+'</div></main>';
-  }else if(r=="pro"){
-    h=head("واجهة الأستاذ")+'<main>'+topBarH()+[proPortalsV,filesV,bagV,clsV,aiAndTextV,chatV][S.tab]()+'</main>'+
-      navb([["🏛️","البوابات"],["📷","السكنر"],["🎒","الحقيبة"],["🏫","الكلاسات"],["🤖","الذكاء والنص"],["💬","المجتمع"]]);
+  }else if(r=="pro" && S.sysRole === 'pro_stu'){
+    h=head("واجهة الأستاذ")+'<main>'+topBarH()+[proPortalsV,filesV,bagV,clsV,aiAndTextV,omrV][S.tab]()+'</main>'+
+      navb([["🏛️","البوابات"],["📷","السكنر"],["🎒","الحقيبة"],["🏫","الكلاسات"],["🤖","الذكاء والنص"],["💯","التصحيح الآلي"]]);
   }else if(r=="stu"){
-    h=head("واجهة الطالب")+'<main>'+topBarH()+[stuV,filesV,revV,aiAndTextV,chatV][S.tab]()+'</main>'+
-      navb([["📚","كلاساتي"],["📷","السكنر"],["🧠","المراجعة"],["🤖","الذكاء والنص"],["💬","المجتمع"]]);
+    h=head("واجهة الطالب")+'<main>'+topBarH()+[stuV,filesV,revV,aiAndTextV,omrV][S.tab]()+'</main>'+
+      navb([["📚","كلاساتي"],["📷","السكنر"],["🧠","المراجعة"],["🤖","الذكاء والنص"],["💯","التصحيح الآلي"]]);
   }else{
     h=head("لوحة المالك")+'<main>'+ownV()+'</main>';
   }
@@ -5773,7 +7256,20 @@ function checkIOSInstallPrompt(){
     '<style>' +
       '@keyframes slideUp{from{transform:translate(-50%,120%)}to{transform:translate(-50%,0)}}' +
       '@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}' +
-    '</style>';
+    '
+.bar-wrap { background: var(--ln); border-radius: 8px; height: 24px; width: 100%; overflow: hidden; position: relative; margin-top: 4px; }
+.bar-fill { background: var(--ac); height: 100%; width: 0%; transition: width 0.4s ease; display:flex; align-items:center; padding: 0 8px; color:#fff; font-size:11px; font-weight:bold; white-space:nowrap; }
+.bar-text { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: bold; color: var(--tx); z-index: 2; }
+
+/* Premium UI Upgrades */
+body { background: #f0f2f5; }
+.card { background: rgba(255,255,255,0.9); backdrop-filter: blur(12px); box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid rgba(255,255,255,0.4); transition: transform 0.2s, box-shadow 0.2s; }
+.card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
+button.b { transition: all 0.2s ease; font-weight: 700; letter-spacing: 0.2px; }
+button.b:not(:disabled):active { transform: scale(0.96); }
+main { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>';
     document.body.appendChild(d);
   }
 }
@@ -5829,6 +7325,48 @@ window.fbLogin=function(){
   });
 };
 
+
+window.fbStartLiveQuiz = function(pin, data){
+  return setDoc(doc(db, "live_quizzes", pin), data).then(() => {
+     // Start listening to answers
+     var unsubsIdx = unsubs.length;
+     unsubs.push(onSnapshot(collection(db, "live_quizzes", pin, "answers"), function(snap){
+        snap.forEach(function(doc){
+           var ansData = doc.data();
+           S.liveQuizAnswers[doc.id] = ansData;
+        });
+        if(S.proPortal === 'live' && S.liveQuizTab === 'quiz') draw();
+     }));
+     S.liveQuizUnsub = unsubs[unsubsIdx];
+  });
+};
+
+window.fbStopLiveQuiz = function(pin){
+  if(S.liveQuizUnsub) { S.liveQuizUnsub(); S.liveQuizUnsub = null; }
+  return updateDoc(doc(db, "live_quizzes", pin), {active: false}).catch(err);
+};
+
+window.fbJoinLiveQuiz = function(pin){
+  return getDoc(doc(db, "live_quizzes", pin)).then(s => s.exists() ? s.data() : null);
+};
+
+window.fbSubmitQuizAns = function(pin, uid, name, ansIdx){
+  return setDoc(doc(db, "live_quizzes", pin, "answers", uid || Date.now().toString()), {name: name, ans: ansIdx, at: Date.now()});
+};
+
+
+window.fbSendAdminReport = function(report){
+   return setDoc(doc(collection(db, "admin_reports"), Date.now().toString() + "_" + S.uid), report);
+};
+window.fbWatchAdminReports = function(){
+   onSnapshot(collection(db, "admin_reports"), function(snap){
+      var reps = [];
+      snap.forEach(function(d){ reps.push(d.data()); });
+      S.adminReports = reps.sort((a,b) => b.at - a.at);
+      if(S.sysRole === 'admin') draw();
+   });
+};
+
 window.fbSyncUserProfile=function(){
   if(!S.uid||!S.profLoaded)return;
   var payload={uid:S.uid,email:S.email,name:S.dispName,customName:S.customName||"",photo:(auth.currentUser&&auth.currentUser.photoURL)||"",lastSeen:Date.now(),updatedAt:S.updatedAt||Date.now()};
@@ -5869,6 +7407,7 @@ window.fbClaimUsername=function(handle,name,cb){
   window.fbOnSnapshot = function(ref, cb, eb) { return onSnapshot(ref, cb, eb || function(e){ console.log('snapshot error', e && e.code); }); };
   window.fbSaveTurnConfig = function(obj) { return setDoc(doc(db, "config", "turn"), obj); };
   window.fbLoadTurnConfig = function() { return getDoc(doc(db, "config", "turn")).then(function(s){ return s.exists() ? s.data() : null; }); };
+  window.fbSaveAppConfig = function(obj) { return setDoc(doc(db, "config", "app"), obj, {merge:true}); };
 
   window.fbFindUser=function(handle,cb){
   getDoc(doc(db,"usernames",String(handle||"").toLowerCase())).then(function(s){
@@ -5961,6 +7500,10 @@ onAuthStateChanged(auth,function(u){
     if(s.empty&&S.isOwner&&!S.seeded){S.seeded=1;setTimeout(function(){window.savePlans()},600)}
     draw();
   },err));
+
+  unsubs.push(onSnapshot(doc(db, "config", "app"), function(s){
+    if(s.exists()){ var d = s.data(); if(typeof d.freeLimit === "number"){ S.free = d.freeLimit; draw(); } }
+  }, err));
 
   if(S.isOwner){
     unsubs.push(onSnapshot(collection(db,"users"),function(s){
@@ -6184,3 +7727,10 @@ window.savePlans=function(){
 </script>
 </body>
 </html>
+function chatV(){ return omrV(); }
+function startCall(){}
+function toggleBlockUser(){}
+function openChatLongMenu(){}
+function confirmDeleteChat(){}
+function confirmLeaveGroup(){}
+function clearChatMessages(){}
