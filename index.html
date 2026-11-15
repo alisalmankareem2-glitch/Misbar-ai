@@ -159,6 +159,26 @@ header{background:color-mix(in srgb,var(--sf) 80%,transparent);backdrop-filter:b
 .portal .ic{width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.22);display:grid;place-items:center;flex:none}
 .portal b{display:block;font-size:17px}.portal span{font-size:12px;opacity:.92}
 .portal.p1{background:linear-gradient(135deg,#15803d,#0ea5a4)}.portal.p2{background:linear-gradient(135deg,#1d4ed8,#6366f1)}.portal.p3{background:linear-gradient(135deg,#7e22ce,#c026d3)}
+
+/* ===== v2.55: توحيد الألوان (فاتح/داكن) وعرض أنيق ===== */
+:root{--ac2:var(--ac);--card:rgba(255,255,255,.92);--bd:rgba(255,255,255,.55)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ac2:#8fb0ff;--card:rgba(24,32,58,.94);--bd:rgba(255,255,255,.08)}
+:root:not([data-theme="light"]).pro,:root:not([data-theme="light"]) .pro{--ac2:#5fd68f}
+:root:not([data-theme="light"]) .card{box-shadow:0 6px 22px rgba(0,0,0,.35)}
+button.b.d{background:#3b1d24;color:#fca5a5}
+.hero h1{background-image:linear-gradient(135deg,#4ade80,#8fb0ff)}}
+body{background-color:var(--bg)}
+.card{background:var(--card);border-color:var(--bd)}
+button.b.s,.badge,nav button.on,.subj-ico,.portal-ico,.avatar-ci,.flt-btn.on,.ai-prov-card.on{color:var(--ac2)}
+input[readonly]{background:var(--bg);opacity:.85}
+label.b{display:inline-flex;align-items:center;justify-content:center;gap:5px;background:linear-gradient(135deg,var(--ac),color-mix(in srgb,var(--ac) 68%,#000));color:#fff;border-radius:12px;padding:8px 12px;font:700 13px Cairo,sans-serif;min-height:40px;cursor:pointer;margin:0;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.opt{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--ln);border-radius:12px;margin:6px 0;color:var(--tx);font-size:13px;line-height:1.6;cursor:pointer;background:var(--bg)}
+.opt input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--ac)}
+.idcard{display:flex;align-items:center;gap:12px;padding:14px;border-radius:18px;color:#fff;margin-bottom:10px;background:linear-gradient(135deg,#0e7490,#1d4ed8);box-shadow:0 8px 20px rgba(29,78,216,.25)}
+.idcard .ic{width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:24px;flex:none}
+.idcard b{display:block;font-size:16px}.idcard span{font-size:12px;opacity:.9}
+@media (min-width:760px){main{max-width:760px}header{padding-inline:max(13px,calc((100% - 760px)/2))}nav{max-width:760px;margin-inline:auto;border-radius:18px 18px 0 0;border:1px solid var(--ln);border-bottom:0}}
+@media (min-width:1100px){main{max-width:880px}header{padding-inline:max(13px,calc((100% - 880px)/2))}nav{max-width:880px}}
 </style>
 </head>
 <body>
@@ -171,7 +191,7 @@ header{background:color-mix(in srgb,var(--sf) 80%,transparent);backdrop-filter:b
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.55.2";
+var APP_VERSION = "2.56.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -374,6 +394,7 @@ function saveDeviceOnly(){
 var _driveDebounce = null;
 function saveAllUserStorage(){
   saveDeviceOnly();
+  if(window.autoPubAll) autoPubAll();
   if(window.fbSyncUserProfile) window.fbSyncUserProfile();
   clearTimeout(_driveDebounce);
   _driveDebounce = setTimeout(function(){
@@ -781,10 +802,23 @@ Object.defineProperty(S,"used",{
 function dd(p){return p.v*(p.u=="أسبوع"?7:p.u=="شهر"?30:1)}
 function fd(t){return new Date(t).toLocaleDateString("ar-IQ")}
 function pid(p){if(!p.id)p.id=Math.random().toString(36).slice(2,8);return p.id}
-function isSub(){var n=Date.now();return S.isOwner||S.subs.some(function(s){return s.e==S.email&&s.end>n&&(!s.s||s.s<=n)})}
+/* ===== v2.56: اشتراكات حسب الفئة (أولياء أمور / إدارة / أستاذ / طالب) ===== */
+var AUD=[{k:"parent",i:"👨‍👩‍👦",n:"أولياء الأمور"},{k:"admin",i:"🏢",n:"الإدارة / القسم"},{k:"pro",i:"👨‍🏫",n:"الأساتذة"},{k:"stu",i:"🎓",n:"الطلاب"}];
+function AUDN(a){var x=AUD.filter(function(y){return y.k===a})[0];return x?x.i+" "+x.n:a}
+function curAud(){if(S.sysRole==="admin")return "admin";if(S.sysRole==="parent")return "parent";if(S.role==="pro"||S.role==="stu")return S.role;return null}
+function planFor(p,a){var x=p.a&&p.a.length?p.a:["pro","stu"];return x.indexOf(a)>-1}
+function subActive(a){var n=Date.now();return S.subs.filter(function(s){return s.e==S.email&&s.end>n&&(!s.s||s.s<=n)&&planFor(s,a)})[0]}
+function hasAud(a){return !!(S.isOwner||subActive(a))}
+function payMode(a){if(!S.pay){try{S.pay=JSON.parse(localStorage.getItem("misbar_pay")||"{}")}catch(e){S.pay={}}}var m=S.pay[a];return m||(a==="pro"||a==="stu"?"trial":"free")}
+function setPayMode(a,v){S.pay=S.pay||{};S.pay[a]=v;try{localStorage.setItem("misbar_pay",JSON.stringify(S.pay))}catch(e){}if(window.fbSaveAppConfig)window.fbSaveAppConfig({pay:S.pay});toast("✅ حُفظ")}
+function togAud(i,a){var p=S.plans[i],x=(p.a&&p.a.length?p.a:["pro","stu"]).slice(),k=x.indexOf(a);if(k>-1)x.splice(k,1);else x.push(a);if(!x.length){toast("لازم تختار فئة وحدة على الأقل");return}p.a=x;draw()}
+function audChipsH(x,i){return '<label>الفئات التي تفتحها الباقة</label><div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:8px">'+AUD.map(function(a){return '<button class="chip'+(planFor(x,a.k)?' on':'')+'" onclick="togAud('+i+',\''+a.k+'\')">'+a.i+' '+a.n+'</button>'}).join("")+'</div>'}
+function payCfgH(){return '<div class="card" style="border-inline-start:4px solid #f59e0b"><b>💳 نظام الدفع لكل فئة</b><div class="mu" style="margin:4px 0 8px;line-height:1.7">لكل فئة اختر: مجانية، أو تجربة محدودة ثم اشتراك، أو مقفلة حتى الاشتراك. كل فئة ترى فقط الباقات المخصصة لها، ولا تدفع عن واجهة ما تستخدمها.</div>'+AUD.map(function(a){var m=payMode(a.k),o=[["free","مجانية"]].concat(a.k==="pro"||a.k==="stu"?[["trial","تجربة ثم اشتراك"]]:[]).concat([["lock","مقفلة حتى الاشتراك"]]);return '<label>'+a.i+' '+a.n+'</label><select onchange="setPayMode(\''+a.k+'\',this.value)">'+o.map(function(x){return '<option value="'+x[0]+'"'+(m===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join("")+'</select>'}).join("")+'</div>'}
+function subDocId(r){return r.a&&r.a.length?r.uid+"_"+r.a.slice().sort().join("-"):r.uid}
+function isSub(){var a=curAud(),n=Date.now();return a?hasAud(a):(S.isOwner||S.subs.some(function(s){return s.e==S.email&&s.end>n&&(!s.s||s.s<=n)}))}
 function stat(){return S.email?(isSub()?"💳 مشترك":"💳 اشترك"):""}
 function refundTry(){if(!isSub())S.used=Math.max(0,S.used-1)}
-function gate(customMsg){if(isSub())return true;if(S.used>=S.free){confirmModal(customMsg||"انتهت محاولاتك المجانية (التجريبية). يرجى الاشتراك للمتابعة وفتح جميع ميزات التطبيق.", function(){S.subv=1;draw();});return false}S.used=S.used+1;return true}
+function gate(customMsg){var _a=curAud();if(_a&&payMode(_a)==="free")return true;if(isSub())return true;if(S.used>=S.free){confirmModal(customMsg||"انتهت محاولاتك المجانية (التجريبية). يرجى الاشتراك للمتابعة وفتح جميع ميزات التطبيق.", function(){S.subv=1;draw();});return false}S.used=S.used+1;return true}
 
 /* ============================================================================
    [الأساس ٥] محرك الذكاء الاصطناعي بحساب Gmail الخاص بالزبون نفسه
@@ -5147,9 +5181,13 @@ async function appWebSearch(q){
         doc.querySelectorAll(".result").forEach(function(el){if(n>=5)return;var a=el.querySelector(".result__a"),s=el.querySelector(".result__snippet");
           if(a&&s){var hr=a.getAttribute("href")||"",m=hr.match(/uddg=([^&]+)/);out.push({t:a.textContent.trim(),s:s.textContent.trim(),u:m?decodeURIComponent(m[1]):hr});n++}});
         return n>0}).catch(function(){return false}),9000)})},Promise.resolve(false))};
-  await Promise.all([wk(ar?"ar":"en"),wk(ar?"en":"ar"),ddg()]);
+  var PX="";try{PX=localStorage.getItem("misbar_sproxy")||""}catch(e){}
+  if(PX){var pr=await T(fetch(PX+(PX.indexOf("?")>-1?"&":"?")+"q="+encodeURIComponent(q)).then(function(r){return r.json()}).catch(function(){return false}),9000);
+    if(Array.isArray(pr))pr.forEach(function(x){if(x&&x.u)out.push({t:x.t||x.u,s:x.s||"",u:x.u})})}
+  var jobs=[wk(ar?"ar":"en"),wk(ar?"en":"ar")];if(!out.length)jobs.push(ddg());await Promise.all(jobs);
   var seen={};return out.filter(function(x){if(!x.u||seen[x.u])return false;seen[x.u]=1;return true}).slice(0,8);
 }
+function setSearchProxy(){ask("رابط وسيط البحث (Cloudflare Worker). اكتب - للحذف",function(v){v=(v||"").trim();try{if(v==="-"){localStorage.removeItem("misbar_sproxy");toast("تم حذف الوسيط")}else if(/^https:\/\//.test(v)){localStorage.setItem("misbar_sproxy",v);toast("✅ حُفظ وسيط البحث")}else toast("الرابط لازم يبدأ بـ https://")}catch(e){}})}
 function aiTag(){
   var L=S.aiLast||{},t=L.mode==="native"?"🌐 بحث حقيقي مباشر من "+S.prov:L.mode==="app"?"🌐 بحث عبر مسبار (محرك ويب + ويكيبيديا) لأن بحث "+S.prov+" المباشر غير متاح لمفتاحك":(S.aiWeb===false?"":"⚠️ أُجيب بدون بحث: "+(L.why||"البحث غير متاح"));
   var seen={},s=(L.src||[]).filter(function(x){if(!x.u||seen[x.u])return false;seen[x.u]=1;return true}).slice(0,4).map(function(x){return "• "+(x.t||"")+" — "+x.u}).join("\n");
@@ -5250,7 +5288,7 @@ function openProvKeyDialog(prov, cb){
     var oldKey = provKey(prov);
     setProvKey(prov, v);
     try{
-      await callAIText(prov, [{ role: "user", content: "قل: جاهز" }], "أجب بكلمة واحدة.");
+      var _w=S.aiWeb;S.aiWeb=false;try{ await callAIText(prov, [{ role: "user", content: "قل: جاهز" }], "أجب بكلمة واحدة."); }finally{ S.aiWeb=_w; }
       d.remove(); S.prov = prov; S._provChosen = true;
       toast("✅ تم ربط " + prov + " وهو جاهز للاستخدام");
       draw(); if(cb) cb();
@@ -5289,6 +5327,7 @@ function aiV(){
       '<div class="row" style="margin-bottom:6px"><b class="grow">💬 ' + esc(S.prov) + '</b>' +
         '<button class="b s" onclick="S.aiWeb=(S.aiWeb===false);draw()" aria-label="بحث الإنترنت">' + (S.aiWeb === false ? '🌐 ✖' : '🌐 بحث') + '</button>' +
         '<button class="b s" onclick="openProvKeyDialog(\'' + S.prov + '\')" aria-label="المفتاح">🔑</button>' +
+        '<button class="b s" onclick="setSearchProxy()" aria-label="وسيط البحث">⚙️</button>' +
         '<button class="b s" onclick="chatOf(S.prov).length=0;draw()" aria-label="مسح">🗑</button></div>' +
       '<div id="aiBox" style="max-height:46vh;overflow-y:auto">' +
         (hist.length ? hist.map(function(m){ return '<div class="msg' + (m[1] ? ' me' : '') + '" style="white-space:pre-wrap">' + esc(m[0]) + '</div>'; }).join("") : '<div class="mu" style="text-align:center;padding:14px 0">اسأل ' + esc(S.prov) + ' أي سؤال تعليمي أو أكاديمي</div>') +
@@ -5778,11 +5817,12 @@ function launchLiveQuiz(){
   };
   S.liveQuizPin = pin;
   S.liveQuizAnswers = {};
-  window.fbStartLiveQuiz(pin, quizData).then(function(){
+  var tryStart=function(n){var p=S.liveQuizPin;window.fbStartLiveQuiz(p, quizData).then(function(){
      S.liveQuiz = quizData;
-     toast("🚀 انطلق الامتحان المشدد! رمز الدخول للطلاب: " + pin);autoPubExam(pin);
+     toast("🚀 انطلق الامتحان المشدد! رمز الدخول للطلاب: " + p);autoPubExam(p);
      draw();
-  });
+  }).catch(function(e){if(e&&e.code==="pin-taken"&&n<4){S.liveQuizPin=String(Math.floor(1000+Math.random()*9000));tryStart(n+1)}else toast("تعذر إطلاق الامتحان: "+((e&&e.code)||(e&&e.message)||e))})};
+  tryStart(0);
 }
 
 function resetStudentQuiz(stuUid, stuName){
@@ -6141,7 +6181,10 @@ function waNum(v){var d=String(v||"").replace(/\D/g,"");if(d.length<7)return "";
 function sendCodeWA(c){var x=(S.rsPub||[]).filter(function(y){return y.c===c})[0],ph=(S.rsPh||{})[c],ins=(S.myInsts||[]).filter(function(i){return i.id===S.curInstId})[0];if(!x||!ph)return;
   var m="السلام عليكم ورحمة الله،\nتم تسجيل الطالب/ة *"+x.n+"* رسمياً في «"+(ins?ins.name:"المؤسسة")+"».\n🔑 كود متابعة ولي الأمر: *"+x.p+"*\nأدخله في بوابة أولياء الأمور بتطبيق مسبار AI لمتابعة الدرجات والغيابات:\n"+location.origin+location.pathname;
   window.open("https://wa.me/"+ph+"?text="+encodeURIComponent(m),"_blank")}
-function rsParse(t){var seen={},out=[];String(t||"").split("\n").forEach(function(l){l=l.trim();if(!l)return;var p=l.split("|"),n=p[0].replace(/^\s*\d+\s*[-.)]\s*/,"").trim(),g=(p[1]||"").trim(),k=normNm(n);if(n.length<3||seen[k])return;seen[k]=1;out.push({n:n,g:g,ph:waNum(p[2])})});return out}
+function rsDel(c){var x=(S.rsPub||[]).filter(function(y){return y.c===c})[0],ins=(S.myInsts||[]).filter(function(i){return i.id===S.curInstId})[0];if(!x||!ins)return;
+  ask("للتأكيد اكتب: حذف — سيُحذف «"+x.n+"» وتتعطل أكواده",function(v){if(v!=="حذف")return;
+    window.fbPubRoster(ins.id,S.rsPub.filter(function(y){return y.c!==c}),S.rsAuto||{t:1,p:1},{}).then(function(){return window.fbDelStd(c)}).then(function(){toast("🗑 تم حذف الطالب. لتعديل اسم: احذفه وأضفه بالاسم الصحيح")}).catch(function(e){toast("تعذر الحذف: "+((e&&e.code)||e))})})}
+function rsParse(t){var seen={},out=[];String(t||"").split("\n").forEach(function(l){l=l.trim();if(!l)return;var p=l.split("|"),n=p[0].replace(/^\s*\d+\s*[-.)]\s*/,"").replace(/\s+/g," ").trim(),g=(p[1]||"").trim(),k=normNm(n);if(n.length<3)return;if(seen[k]){var n2=g?n+" ("+g+")":n+" (2)";k=normNm(n2);if(seen[k])return;n=n2}seen[k]=1;out.push({n:n,g:g,ph:waNum(p[2])})});return out}
 function shrinkImg(f,cb){var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){var s=Math.min(1,1600/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=im.width*s;c.height=im.height*s;c.getContext("2d").drawImage(im,0,0,c.width,c.height);cb(c.toDataURL("image/jpeg",0.85))};im.onerror=function(){cb(null)};im.src=r.result};r.readAsDataURL(f)}
 async function rsOcr(inp){
   var fs=Array.prototype.slice.call(inp.files||[]);if(!fs.length)return;
@@ -6163,13 +6206,13 @@ async function rsOcr(inp){
 function publishRoster(){
   var ins=(S.myInsts||[]).filter(function(x){return x.id===S.curInstId})[0];if(!ins||!keyParts()){toast("أنشئ المؤسسة أولاً");return}
   var l=rsParse(S.rsDraft);if(!l.length){toast("لا توجد أسماء للاعتماد");return}
-  var au=S.rsAuto||{t:1,p:1},have={};(S.rsPub||[]).forEach(function(x){have[x.c]=1});
+  var raw=String(S.rsDraft||"").split("\n").filter(function(x){return x.trim()}).length,au=S.rsAuto||{t:1,p:1},have={};(S.rsPub||[]).forEach(function(x){have[x.c]=1});
   var map={},ph={};(S.rsPub||[]).forEach(function(x){map[x.c]=x});
   l.forEach(function(x){x.c=stdCode(x.n);x.p=stuCode(x.n);map[x.c]={n:x.n,g:x.g||"",c:x.c,p:x.p};if(x.ph)ph[x.c]=x.ph});
   var all=Object.keys(map).map(function(k){return map[k]});S.busy=true;draw();
   window.fbPubRoster(ins.id,all,au,ph).then(function(){
     return au.p?Promise.all(l.filter(function(x){return !have[x.c]}).map(function(x,i){return window.fbPutCardItem(x.p,{student:x.n,teacher:"الإدارة",type:"note",note:"تم تسجيل الطالب رسمياً في «"+ins.name+"»"+(x.g?" — "+x.g:"")+". ستصلكم هنا الدرجات والغيابات تلقائياً.",at:Date.now()+i},i)})):0;
-  }).then(function(){S.rsDraft="";S.busy=false;draw();toast("✅ اعتُمد "+l.length+" طالب وتولّدت أكوادهم")})
+  }).then(function(){S.rsDraft="";S.busy=false;draw();toast("✅ اعتُمد "+l.length+" طالب وتولّدت أكوادهم"+(raw>l.length?" — تم تجاهل "+(raw-l.length)+" اسم مكرر أو قصير، راجعها":""))})
     .catch(function(e){S.busy=false;draw();toast("تعذر الاعتماد: "+((e&&e.code)||(e&&e.message)||e))});
 }
 function rsCsv(){var p=S.rsPub||[];return "data:text/csv;charset=utf-8,"+encodeURIComponent("\ufeffالاسم,الصف,كود الطالب,كود ولي الأمر\n"+p.map(function(x){return '"'+x.n+'","'+(x.g||"")+'","'+x.c+'","'+x.p+'"'}).join("\n"))}
@@ -6182,7 +6225,7 @@ function printRosterCards(){
 function rosterAdminH(cur){
   if(window.fbWatchRoster&&S._rsW!==cur.id){S._rsW=cur.id;S.rsPub=[];S.rsPh={};if(window.fbWatchPhones)window.fbWatchPhones(cur.id,function(m){S.rsPh=m;draw()});window.fbWatchRoster(cur.id,function(a){S.rsPub=(a||[]).sort(function(x,y){return String(x.n).localeCompare(String(y.n),"ar")});draw()})}
   var pub=S.rsPub||[],au=S.rsAuto=S.rsAuto||{t:1,p:1},n=rsParse(S.rsDraft).length;
-  var chk=function(k,t){return '<label class="row" style="color:var(--tx);margin:4px 0"><input type="checkbox" style="width:auto;margin:0" '+(au[k]?'checked':'')+' onchange="S.rsAuto.'+k+'=this.checked?1:0"><span>'+t+'</span></label>'};
+  var chk=function(k,t){return '<label class="opt"><input type="checkbox" '+(au[k]?'checked':'')+' onchange="S.rsAuto.'+k+'=this.checked?1:0"><span>'+t+'</span></label>'};
   return '<div class="card" style="border-inline-start:4px solid #0891b2"><h2>👥 سجل الطلاب الرسمي ('+pub.length+')</h2>'+
     '<div class="mu" style="line-height:1.7">صوّر قائمة الأسماء الرسمية أو الصقها؛ يستخرجها الذكاء، وتراجعها أنت، ثم يولّد مسبار لكل طالب كود دخول وكود ولي أمر.</div>'+
     '<div class="grid" style="margin:8px 0"><label class="b" style="text-align:center;cursor:pointer;margin:0">📸 تصوير / رفع قائمة<input type="file" accept="image/*" multiple style="display:none" onchange="rsOcr(this)"></label>'+
@@ -6190,20 +6233,21 @@ function rosterAdminH(cur){
     '<textarea rows="7" placeholder="الاسم | الصف | رقم ولي الأمر (اختياري) — سطر لكل طالب" oninput="S.rsDraft=this.value">'+esc(S.rsDraft||"")+'</textarea>'+
     chk("t","👨‍🏫 أتمتة مع الأساتذة: يستوردون القائمة الرسمية بمفتاح المؤسسة")+chk("p","👨‍👩‍👦 أتمتة مع الأهالي: تفعيل كود كل ولي أمر فوراً برسالة تسجيل")+
     '<button class="b" style="width:100%;background:#0891b2;margin-top:6px" '+(S.busy?'disabled':'')+' onclick="publishRoster()">'+(S.busy?'⏳ ...':'✅ اعتماد وتوليد الأكواد'+(n?' ('+n+')':''))+'</button>'+
-    (pub.length?'<div style="max-height:200px;overflow-y:auto;background:var(--bg);border-radius:8px;padding:6px 8px;margin-top:8px;font-size:12px">'+pub.map(function(x){return '<div class="row" style="padding:3px 0;border-bottom:1px dashed var(--ln)"><span class="grow">'+esc(x.n)+(x.g?' <span class="mu">'+esc(x.g)+'</span>':'')+'</span><span class="badge" dir="ltr">'+esc(x.c)+'</span></div>'}).join("")+'</div>'+
+    (pub.length?'<div style="max-height:200px;overflow-y:auto;background:var(--bg);border-radius:8px;padding:6px 8px;margin-top:8px;font-size:12px">'+pub.map(function(x){return '<div class="row" style="padding:3px 0;border-bottom:1px dashed var(--ln)"><span class="grow">'+esc(x.n)+(x.g?' <span class="mu">'+esc(x.g)+'</span>':'')+'</span><span class="badge" dir="ltr">'+esc(x.c)+'</span><button class="b d" style="min-height:28px;padding:2px 8px" onclick="rsDel(\''+x.c+'\')">✖</button></div>'}).join("")+'</div>'+
       '<div class="grid" style="margin-top:8px"><a href="'+rsCsv()+'" download="سجل_الطلاب_والأكواد.csv" class="b s" style="text-align:center;text-decoration:none">⬇️ Excel</a><button class="b s" onclick="printRosterCards()">🖨️ طباعة البطاقات</button></div>':'')+
     (function(){var w=pub.filter(function(x){return (S.rsPh||{})[x.c]});return w.length?'<div style="margin-top:8px"><b>📲 إرسال أكواد الأهالي عبر واتساب ('+w.length+')</b><div class="mu" style="font-size:11px">يفتح واتساب برسالة جاهزة لكل ولي أمر، وتضغط إرسال بنفسك.</div><div style="max-height:160px;overflow-y:auto">'+w.map(function(x){return '<div class="row" style="padding:3px 0"><span class="grow">'+esc(x.n)+'</span><button class="b s" onclick="sendCodeWA(\''+x.c+'\')">📲 إرسال</button></div>'}).join("")+'</div></div>':''})()+'</div>';
 }
 /* ---- جهة الأستاذ ---- */
 function clsAutoH(ci,c){var n=(c.roster||[]).length;return '<div class="mu" style="font-size:12px;margin:4px 0">👥 '+n+' طالب مرتبط'+(n?' · يظهر لهم الكلاس تلقائياً':'')+'</div>'+
-  '<label class="row" style="color:var(--tx);margin:4px 0"><input type="checkbox" style="width:auto;margin:0" '+(c.autoExam?'checked':'')+' onchange="S.classes['+ci+'].autoExam=this.checked;saveAllUserStorage()"><span>📝 أتمتة الامتحانات: أي امتحان مباشر أطلقه يصل لطلاب هذا الكلاس</span></label>'+
+  '<label class="opt"><input type="checkbox" '+(c.autoExam?'checked':'')+' onchange="S.classes['+ci+'].autoExam=this.checked;saveAllUserStorage()"><span>📝 أتمتة الامتحانات: أي امتحان مباشر أطلقه يصل لطلاب هذا الكلاس</span></label>'+
   '<div class="grid"><button class="b s" onclick="importRoster('+ci+')">👥 استيراد طلاب الإدارة</button><button class="b s" onclick="pubClass('+ci+')">☁️ تحديث للطلاب</button></div>'}
 function importRoster(ci){
   var kp=keyParts();if(!requireKey())return;
   ask("الصف/الشعبة المطلوبة (اكتب - لكل الطلاب)",function(g){
     g=(g||"").trim();if(g==="-")g="";
-    var un=window.fbWatchRoster(kp.id,function(a,e){
+    var un=window.fbWatchRoster(kp.id,function(a,e,meta){
       if(un)un();
+      if(a&&meta&&meta.auto&&!meta.auto.t){toast("الإدارة لم تفعّل مشاركة القائمة مع الأساتذة");return}
       if(!a){toast("تعذر جلب القائمة: "+((e&&e.code)||"")+" — تأكد من المفتاح ومن قواعد Firestore");return}
       var l=a.filter(function(x){return !g||String(x.g||"").indexOf(g)>-1}).map(function(x){return {n:x.n,c:x.c}});
       if(!l.length){toast("لا يوجد طلاب مطابقون");return}
@@ -6212,14 +6256,23 @@ function importRoster(ci){
     });
   });
 }
+function pubId(c){return String(S.uid||"x").slice(0,10)+"_"+c}
+function sigOf(c){return JSON.stringify([c.n,(c.mats||[]).map(function(m){return [m.title,String(m.text||"").length]}),(c.roster||[]).length])}
+var _pubDeb=null;
+function autoPubAll(){clearTimeout(_pubDeb);_pubDeb=setTimeout(function(){
+  if(!S.uid||!window.fbPubClass)return;S._pubSig=S._pubSig||{};
+  (S.classes||[]).forEach(function(c,ci){if(!(c.roster||[]).length)return;var g=sigOf(c);
+    if(S._pubSig[c.c]===undefined){S._pubSig[c.c]=g;return}
+    if(S._pubSig[c.c]!==g)pubClass(ci,1)})},1500)}
 function pubClass(ci,q){
   var c=S.classes[ci],kp=keyParts();if(!S.uid||!window.fbPubClass){toast("سجّل الدخول أولاً");return}
   var d={n:c.n,tEmail:S.email,tName:S.dispName||S.email,inst:kp?kp.id:"",rc:(c.roster||[]).map(function(x){return x.c}),mats:(c.mats||[]).map(function(m){return {title:m.title,text:String(m.text||"").slice(0,12000)}}),at:Date.now()};
   if(JSON.stringify(d).length>900000){toast("حجم الكلاس كبير جداً");return}
-  window.fbPubClass(c.c,d).then(function(){if(!q)toast("☁️ تم تحديث الكلاس للطلاب")}).catch(function(e){toast("تعذر النشر: "+((e&&e.code)||e))});
+  S._pubSig=S._pubSig||{};S._pubSig[c.c]=sigOf(c);
+  window.fbPubClass(pubId(c.c),d).then(function(){if(!q)toast("☁️ تم تحديث الكلاس للطلاب")}).catch(function(e){toast("تعذر النشر: "+((e&&e.code)||e))});
 }
 function autoPubExam(pin){
-  var codes=S.classes.filter(function(c){return c.autoExam&&(c.roster||[]).length}).map(function(c){return c.c});
+  var codes=S.classes.filter(function(c){return c.autoExam&&(c.roster||[]).length}).map(function(c){return pubId(c.c)});
   if(!codes.length||!window.fbClassPin)return;
   S.examClasses=S.examClasses||{};S.examClasses[pin]=codes;
   window.fbClassPin(codes,pin).then(function(){toast("📡 وصل الامتحان تلقائياً لـ "+codes.length+" كلاس")});
@@ -6242,7 +6295,7 @@ function stuIdentH(){
   if(!l)return '<div class="card" style="border-inline-start:4px solid #0891b2"><b>🎓 هويتي الرسمية</b><div class="mu" style="margin:4px 0;line-height:1.7">أدخل كود الطالب (STD-...) المسلَّم لك من الإدارة ليظهر اسمك الرسمي وكلاساتك وامتحاناتك تلقائياً.</div><div class="row"><input id="stdIn" dir="ltr" placeholder="STD-XXXX-XXXX-XXXX" class="grow" style="margin:0"><button class="b" onclick="redeemStd()">ربط</button></div></div>';
   if(window.fbWatchMyClasses&&S._swc!==l.c){S._swc=l.c;S.stuClasses=[];window.fbWatchMyClasses(l.c,function(a){S.stuClasses=a||[];draw()})}
   var cl=S.stuClasses||[];
-  return '<div class="card" style="border-inline-start:4px solid #0891b2"><b>🎓 '+esc(l.n)+'</b> <span class="mu">'+esc(l.g)+'</span></div>'+
+  return '<div class="idcard"><div class="ic">🎓</div><div><b>'+esc(l.n)+'</b><span>'+esc(l.g||"طالب")+' · هويتك الرسمية ✓</span></div></div>'+
     (cl.length?cl.map(function(c,ci){return '<div class="card"><div class="row"><b class="grow">🏫 '+esc(c.n)+'</b><span class="mu">👨‍🏫 '+esc(c.tName||"")+'</span></div>'+
       (c.livePin?'<button class="b" style="width:100%;background:#dc2626;margin:8px 0" onclick="stuEnterClassExam(\''+esc(c.livePin)+'\')">📝 امتحان متاح الآن — اضغط للدخول</button>':'')+
       (c.mats||[]).map(function(m,i){return '<div class="row" style="padding:5px 0;border-top:1px solid var(--ln);cursor:pointer" onclick="S.openMat=S.stuClasses['+ci+'].mats['+i+'];S.out=\'\';S.quiz=null;draw()"><span class="grow">📄 '+esc(m.title)+'</span><span>‹</span></div>'}).join("")+'</div>'}).join(""):'<div class="card mu">لم يضف الأستاذ كلاساً لك بعد، يظهر هنا تلقائياً.</div>');
@@ -6283,7 +6336,7 @@ function stuV(){
       '<div class="grow"><b>كويز تفاعلي مباشر (من الأستاذ)</b><div class="mu">هل أعطاك الأستاذ رمزاً للكويز؟ أدخله هنا:</div></div>' +
     '</div>' +
     '<label style="margin-top:10px">اسمك الكامل الثلاثي:</label>' +
-    '<input id="stuNameIn" type="text" placeholder="اكتب اسمك هنا ليظهر للأستاذ..." value="'+esc(S.dispName||"")+'">' +
+    '<input id="stuNameIn" type="text" placeholder="اكتب اسمك هنا ليظهر للأستاذ..." '+(S.stuLink?'readonly ':'')+'value="'+esc(S.dispName||"")+'">' +
     '<label>الرمز السري (PIN):</label>' +
     '<div class="row">' +
       '<input id="stuPinIn" type="number" placeholder="أدخل الرمز المكون من 4 أرقام" class="grow" style="margin:0">' +
@@ -6395,13 +6448,13 @@ function renderQuizH(){
 function revV(){return bankV()+'<h2>بطاقات المراجعة السريعة</h2><div class="card" onclick="this.innerHTML=\'<b>الجواب:</b> الكلوروفيل (اليخضور)\'" style="cursor:pointer;min-height:80px"><b>ما الصبغة التي تمتص الطاقة الضوئية في النبات؟</b><div class="mu">اضغط لإظهار الجواب</div></div>'}
 
 /* ==================== الاشتراكات ==================== */
-function subScr(){
-  var now=Date.now(),cur=S.subs.filter(function(s){return s.e==S.email&&s.end>now})[0];
+function subScr(lock){
+  var aud=curAud(),now=Date.now(),cur=aud?subActive(aud):S.subs.filter(function(s){return s.e==S.email&&s.end>now})[0];
   var L={new:"قيد المراجعة",ok:"مقبول بانتظار الدفع",act:"مفعّل",no:"مرفوض أو موقوف"};
   var sel=S.plans[S.pick],mine=S.req.filter(function(r){return r.e==S.email});
-  var pl=S.plans.map(function(p,i){return p.hide?'':'<div class="card" onclick="S.pick='+i+';draw()" style="cursor:pointer;border:2px solid '+(S.pick===i?'var(--ac)':'var(--ln)')+'"><div class="row"><b class="grow">'+esc(p.n)+'</b><span>'+(S.pick===i?'✅':'⚪')+'</span></div><div>'+Number(p.p).toLocaleString("ar-IQ")+' د.ع · '+p.v+' '+p.u+'</div>'+(p.f?'<div class="mu">'+esc(p.f)+'</div>':'')+'</div>'}).join("");
+  var pl=S.plans.map(function(p,i){return p.hide||(aud&&!planFor(p,aud))?'':'<div class="card" onclick="S.pick='+i+';draw()" style="cursor:pointer;border:2px solid '+(S.pick===i?'var(--ac)':'var(--ln)')+'"><div class="row"><b class="grow">'+esc(p.n)+'</b><span>'+(S.pick===i?'✅':'⚪')+'</span></div><div>'+Number(p.p).toLocaleString("ar-IQ")+' د.ع · '+p.v+' '+p.u+'</div>'+(p.f?'<div class="mu">'+esc(p.f)+'</div>':'')+'</div>'}).join("");
   $("app").className=S.role=="pro"?"pro":"";
-  $("app").innerHTML='<header><h1>الاشتراكات</h1><button class="b s" onclick="S.subv=0;draw()">رجوع</button></header><main>'+
+  $("app").innerHTML='<header><h1>'+(lock?'🔒 يتطلب اشتراكاً':'الاشتراكات')+'</h1>'+(lock?(S.sysRole==="pro_stu"?'<button class="b s" onclick="setRole(null)">🔄 تبديل</button>':'')+'<button class="b d" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">خروج</button>':'<button class="b s" onclick="S.subv=0;draw()">رجوع</button>')+'</header><main>'+(lock?'<div class="card" style="border-inline-start:4px solid #f59e0b;line-height:1.8">واجهة <b>'+esc(AUDN(aud))+'</b> متاحة بالاشتراك فقط. اختر باقتك وأرسل الطلب، وبعد تفعيل المالك تفتح لك مباشرة.</div>':'')+
     '<div class="card">'+(cur?'✅ اشتراكك: '+esc(cur.n)+' · ينتهي '+fd(cur.end):'حسابك مجاني حالياً')+'</div>'+
     '<h2>اختر باقة وأرسل طلباً</h2>'+(pl||'<div class="card mu">لا توجد باقات متاحة</div>')+
     (sel&&!sel.hide?'<div class="card"><b>تفاصيل: '+esc(sel.n)+'</b><div>السعر: '+Number(sel.p).toLocaleString("ar-IQ")+' د.ع</div><div>المدة: '+dd(sel)+' يوماً من تاريخ التفعيل</div><div class="mu">بعد إرسال الطلب يتواصل معك المالك لتأكيد الدفع ثم يفعّل اشتراكك.</div></div>':'')+
@@ -6422,7 +6475,7 @@ function reqV(){
   return '<h2>إدارة طلبات الاشتراكات ('+tl+' جديد)</h2><div class="card"><div class="row" style="flex-wrap:wrap">'+tabs+'</div><div class="mu" style="margin:8px 0">المشتركون بباقة '+esc(sel.n)+': '+subsN+'</div><div class="row" style="flex-wrap:wrap">'+sts+'</div><input dir="ltr" placeholder="ابحث بالإيميل" value="'+esc(S.rq)+'" onchange="S.rq=this.value;draw()"></div>'+(list.length?list.map(function(r){var a='';if(r.st=="new")a='<button class="b" onclick="reqSt('+r.id+',\'ok\')">قبول</button><button class="b s" onclick="reqSt('+r.id+',\'no\')">رفض</button>';else if(r.st=="ok")a='<input type="date" id="sd'+r.id+'" value="'+new Date().toISOString().slice(0,10)+'"><button class="b" onclick="actv('+r.id+')">تأكيد الدفع وتفعيل</button>';else if(r.st=="act")a='<button class="b s" onclick="extR('+r.id+')">تمديد</button><button class="b s" onclick="stopR('+r.id+')">إيقاف</button>';var sb=S.subs.filter(function(s){return s.e==r.e})[0];return '<div class="card"><b dir="ltr">'+esc(r.e)+'</b><div class="mu">'+esc(r.n)+' · '+Number(r.p).toLocaleString("ar-IQ")+' د.ع · طُلب '+fd(r.d)+'</div>'+(r.st=="act"&&sb?'<div class="mu">من '+fd(sb.s||r.d)+' إلى '+fd(sb.end)+'</div>':'')+'<div class="row" style="flex-wrap:wrap;margin-top:6px">'+a+'</div></div>'}).join(""):'<div class="card mu">لا توجد طلبات هنا</div>');
 }
 function plansV(){
-  return '<h2>الباقات</h2>'+S.plans.map(function(x,i){return '<div class="card"><label>اسم الباقة</label><input value="'+esc(x.n)+'" onchange="S.plans['+i+'].n=this.value;draw()"><div class="grid"><div><label>السعر (د.ع)</label><input type="number" value="'+x.p+'" onchange="S.plans['+i+'].p=this.value"></div><div><label>المدة</label><div class="row"><input type="number" min="1" value="'+x.v+'" onchange="S.plans['+i+'].v=+this.value||1;draw()"><select onchange="S.plans['+i+'].u=this.value;draw()">'+["يوم","أسبوع","شهر"].map(function(u){return '<option'+(u==x.u?' selected':'')+'>'+u+'</option>'}).join("")+'</select></div></div></div><label>المميزات (تظهر للمستخدم)</label><textarea rows="2" onchange="S.plans['+i+'].f=this.value">'+esc(x.f||"")+'</textarea><div class="row"><span class="grow">إظهار الباقة للمستخدمين</span><button class="tog'+(x.hide?'':' on')+'" onclick="S.plans['+i+'].hide=!S.plans['+i+'].hide;draw()"></button></div><button class="b d" style="margin-top:8px" onclick="S.plans.splice('+i+',1);draw()">حذف الباقة</button></div>'}).join("")+'<button class="b" onclick="S.plans.push({n:\'باقة جديدة\',p:0,v:1,u:\'شهر\'});draw()">+ إضافة باقة</button><button class="b" style="width:100%;margin-top:8px" onclick="savePlans()">💾 حفظ الباقات ونشرها</button><h2>المشتركون الفعالون</h2>'+S.subs.map(function(s){var on=s.end>Date.now();return '<div class="card row"><span class="grow" dir="ltr">'+esc(s.e)+'<div class="mu" dir="rtl">'+esc(s.n)+' · '+(on?'ينتهي ':'منتهي ')+fd(s.end)+'</div></span></div>'}).join("")+'<div class="card" style="border-inline-start:4px solid #8b5cf6"><b>⚙️ إعدادات التطبيق العامة (للمالك)</b><label style="margin-top:8px">عدد المحاولات التجريبية المجانية (لكل مستخدم جديد)</label><input type="number" value="'+S.free+'" onchange="if(window.fbSaveAppConfig) window.fbSaveAppConfig({freeLimit: Number(this.value)})"><div class="mu">يتم تطبيق هذا التغيير فوراً على جميع مستخدمي التطبيق عبر السحابة. (إذا وضعت 0 فلن يتمكن أحد من تجربة التطبيق مجاناً).</div></div>';
+  return '<h2>الباقات</h2>'+S.plans.map(function(x,i){return '<div class="card"><label>اسم الباقة</label><input value="'+esc(x.n)+'" onchange="S.plans['+i+'].n=this.value;draw()"><div class="grid"><div><label>السعر (د.ع)</label><input type="number" value="'+x.p+'" onchange="S.plans['+i+'].p=this.value"></div><div><label>المدة</label><div class="row"><input type="number" min="1" value="'+x.v+'" onchange="S.plans['+i+'].v=+this.value||1;draw()"><select onchange="S.plans['+i+'].u=this.value;draw()">'+["يوم","أسبوع","شهر"].map(function(u){return '<option'+(u==x.u?' selected':'')+'>'+u+'</option>'}).join("")+'</select></div></div></div><label>المميزات (تظهر للمستخدم)</label><textarea rows="2" onchange="S.plans['+i+'].f=this.value">'+esc(x.f||"")+'</textarea>'+audChipsH(x,i)+'<div class="row"><span class="grow">إظهار الباقة للمستخدمين</span><button class="tog'+(x.hide?'':' on')+'" onclick="S.plans['+i+'].hide=!S.plans['+i+'].hide;draw()"></button></div><button class="b d" style="margin-top:8px" onclick="S.plans.splice('+i+',1);draw()">حذف الباقة</button></div>'}).join("")+'<button class="b" onclick="S.plans.push({n:\'باقة جديدة\',p:0,v:1,u:\'شهر\',a:[\'pro\',\'stu\']});draw()">+ إضافة باقة</button><button class="b" style="width:100%;margin-top:8px" onclick="savePlans()">💾 حفظ الباقات ونشرها</button><h2>المشتركون الفعالون</h2>'+S.subs.map(function(s){var on=s.end>Date.now();return '<div class="card row"><span class="grow" dir="ltr">'+esc(s.e)+'<div class="mu" dir="rtl">'+esc(s.n)+' ['+(s.a&&s.a.length?s.a:["pro","stu"]).map(function(k){return AUDN(k)}).join(" + ")+'] · '+(on?'ينتهي ':'منتهي ')+fd(s.end)+'</div></span></div>'}).join("")+'<div class="card" style="border-inline-start:4px solid #8b5cf6"><b>⚙️ إعدادات التطبيق العامة (للمالك)</b><label style="margin-top:8px">عدد المحاولات التجريبية المجانية (لكل مستخدم جديد)</label><input type="number" value="'+S.free+'" onchange="if(window.fbSaveAppConfig) window.fbSaveAppConfig({freeLimit: Number(this.value)})"><div class="mu">يتم تطبيق هذا التغيير فوراً على جميع مستخدمي التطبيق عبر السحابة. (إذا وضعت 0 فلن يتمكن أحد من تجربة التطبيق مجاناً).</div></div>'+payCfgH();
 }
 function changeCode(){ask("اكتب الرمز الحالي",function(o){if(o!==S.code){toast("الرمز الحالي غير صحيح");return}ask("اكتب الرمز الجديد (4 خانات أو أكثر، حروف وأرقام)",function(n){if(n.length<4){toast("الرمز قصير");return}S.code=n;try{localStorage.setItem("misbar_ocode",n)}catch(e){}toast("تم تغيير الرمز وحُفظ على هذا الجهاز")},2)},2)}
 
@@ -6533,6 +6586,7 @@ function draw(){
   // Set system role from login choice if not set
   if(!S.sysRole && S.loginRole) { S.sysRole = S.loginRole; saveDeviceOnly(); }
   if(!S.sysRole) S.sysRole = 'pro_stu'; // fallback
+  var _la=curAud();if(_la&&payMode(_la)==="lock"&&!hasAud(_la)){subScr(true);return}
 
   var h="",r=S.role;
   
@@ -6648,7 +6702,7 @@ window.fbLogin=function(){
 
 
 window.fbStartLiveQuiz = function(pin, data){
-  return setDoc(doc(db, "live_quizzes", pin), data).then(() => {
+  return getDoc(doc(db,"live_quizzes",pin)).then(function(ex){if(ex.exists()&&ex.data().active&&ex.data().teacher!==data.teacher)throw {code:"pin-taken"};return setDoc(doc(db, "live_quizzes", pin), data)}).then(() => {
      // Start listening to answers
      var unsubsIdx = unsubs.length;
      unsubs.push(onSnapshot(collection(db, "live_quizzes", pin, "answers"), function(snap){
@@ -6715,9 +6769,10 @@ window.fbWatchMyInsts=function(){if(_wi)_wi();_wi=onSnapshot(query(collection(db
 window.fbWatchInstReports=function(id){if(_wr)_wr();_wr=onSnapshot(collection(db,"inst",id,"reports"),function(s){var r=[];s.forEach(function(d){r.push(d.data())});S.adminReports=r.sort(function(a,b){return (b.at||0)-(a.at||0)});if(S.sysRole==="admin")draw()},function(e){toast("تعذر قراءة التقارير: "+e.message)})};
 window.fbWatchCard=function(code){if(_wc)_wc();_wc=onSnapshot(collection(db,"parent_cards",code,"items"),function(s){var r=[];s.forEach(function(d){r.push(d.data())});S.cardItems=r.sort(function(a,b){return (b.at||0)-(a.at||0)});if(S.sysRole==="parent")draw()},function(e){S.cardItems=[];toast("تعذر القراءة: "+e.message)})};
 
-window.fbPubRoster=function(inst,list,auto,phones){var t=Date.now(),rid=window.rosterDocId();return Promise.all(list.map(function(x){return setDoc(doc(db,"student_codes",x.c),{inst:inst,n:x.n,g:x.g||"",at:t},{merge:true})})).then(function(){return setDoc(doc(db,"rosters",rid),{inst:inst,list:list,at:t})}).then(function(){return updateDoc(doc(db,"inst",inst),{auto:auto,rosterN:list.length,rosterAt:t})}).then(function(){return Object.keys(phones||{}).length?setDoc(doc(db,"inst",inst,"private","phones"),{m:phones},{merge:true}):0})};
-window.fbWatchRoster=function(inst,cb){var u=onSnapshot(doc(db,"rosters",window.rosterDocId()),function(s){cb(s.exists()?(s.data().list||[]):[])},function(e){cb(null,e)});unsubs.push(u);return u};
+window.fbPubRoster=function(inst,list,auto,phones){var t=Date.now(),rid=window.rosterDocId();return Promise.all(list.map(function(x){return setDoc(doc(db,"student_codes",x.c),{inst:inst,n:x.n,g:x.g||"",at:t},{merge:true})})).then(function(){return setDoc(doc(db,"rosters",rid),{inst:inst,list:list,auto:auto,at:t})}).then(function(){return updateDoc(doc(db,"inst",inst),{auto:auto,rosterN:list.length,rosterAt:t})}).then(function(){return Object.keys(phones||{}).length?setDoc(doc(db,"inst",inst,"private","phones"),{m:phones},{merge:true}):0})};
+window.fbWatchRoster=function(inst,cb){var u=onSnapshot(doc(db,"rosters",window.rosterDocId()),function(s){cb(s.exists()?(s.data().list||[]):[],null,s.exists()?s.data():{})},function(e){cb(null,e)});unsubs.push(u);return u};
 window.fbWatchPhones=function(inst,cb){var u=onSnapshot(doc(db,"inst",inst,"private","phones"),function(s){cb(s.exists()?(s.data().m||{}):{})},function(){});unsubs.push(u);return u};
+window.fbDelStd=function(c){return deleteDoc(doc(db,"student_codes",c))};
 window.fbClaimStd=function(code,uid){var ref=doc(db,"student_codes",code);return runTransaction(db,async function(tx){var s=await tx.get(ref);if(!s.exists())throw {code:"nf"};var d=s.data();if(d.uid&&d.uid!==uid)throw {code:"taken"};tx.update(ref,{uid:uid,claimedAt:Date.now()});return d})};
 window.fbPubClass=function(code,d){return setDoc(doc(db,"classes_pub",code),d,{merge:true})};
 window.fbClassPin=function(codes,pin){return Promise.all(codes.map(function(c){return updateDoc(doc(db,"classes_pub",c),{livePin:pin,liveAt:Date.now()}).catch(err)}))};
@@ -6726,7 +6781,7 @@ window.fbWatchMyClasses=function(code,cb){var u=onSnapshot(query(collection(db,"
 window.fbSyncUserProfile=function(){
   if(!S.uid||!S.profLoaded)return;
   var payload={uid:S.uid,email:S.email,name:S.dispName,customName:S.customName||"",photo:(auth.currentUser&&auth.currentUser.photoURL)||"",lastSeen:Date.now(),updatedAt:S.updatedAt||Date.now()};
-  if(S.userAiKey)payload.userAiKey=S.userAiKey;
+  payload.userAiKey="";
   try{
     var docsJson=JSON.stringify(S.docs||[]);
     if(docsJson.length<450000)payload.docsJson=docsJson;
@@ -6831,7 +6886,7 @@ onAuthStateChanged(auth,function(u){
         S.updatedAt=ud.updatedAt;
         saveDeviceOnly();
       }
-      if(ud.userAiKey&&!getUserKey()){
+      if(false){
         S.userAiKey=ud.userAiKey;
         try{localStorage.setItem("misbar_gkey_"+u.uid,ud.userAiKey)}catch(e){}
       }
@@ -6858,7 +6913,7 @@ onAuthStateChanged(auth,function(u){
   },err));
 
   unsubs.push(onSnapshot(doc(db, "config", "app"), function(s){
-    if(s.exists()){ var d = s.data(); if(typeof d.freeLimit === "number"){ S.free = d.freeLimit; draw(); } }
+    if(s.exists()){ var d = s.data(); if(typeof d.freeLimit === "number"){ S.free = d.freeLimit; } if(d.pay){ S.pay = d.pay; try{localStorage.setItem("misbar_pay",JSON.stringify(d.pay))}catch(e){} } draw(); }
   }, err));
 
   if(S.isOwner){
@@ -7030,7 +7085,7 @@ window.fbDeleteRoomMessage=function(chatId, msgId){
       a.sort(function(x,y){return y.d-x.d});S.req=a;draw();
     },err));
     unsubs.push(onSnapshot(collection(db,"subscriptions"),function(s){
-      var a=[];s.forEach(function(d){var x=d.data();x.uid=d.id;a.push(x)});
+      var a=[];s.forEach(function(d){var x=d.data();x.id=d.id;x.uid=x.uid||d.id;a.push(x)});
       S.subs=a;draw();
     },err));
   }else{
@@ -7038,9 +7093,12 @@ window.fbDeleteRoomMessage=function(chatId, msgId){
       var a=[];s.forEach(function(d){var x=d.data();x.id=Number(d.id);a.push(x)});
       a.sort(function(x,y){return y.d-x.d});S.req=a;draw();
     },err));
+    var sa=[],sb=[],mix=function(){S.subs=sa.concat(sb);draw()};
     unsubs.push(onSnapshot(doc(db,"subscriptions",u.uid),function(s){
-      S.subs=s.exists()?[{uid:u.uid,e:S.email,n:s.data().n,s:s.data().s,end:s.data().end}]:[];
-      draw();
+      sa=s.exists()?[{id:u.uid,uid:u.uid,e:S.email,n:s.data().n,s:s.data().s,end:s.data().end,a:s.data().a}]:[];mix();
+    },err));
+    unsubs.push(onSnapshot(query(collection(db,"subscriptions"),where("uid","==",u.uid)),function(s){
+      sb=[];s.forEach(function(d){if(d.id!==u.uid){var x=d.data();x.id=d.id;x.e=S.email;sb.push(x)}});mix();
     },err));
   }
   draw();
@@ -7050,32 +7108,32 @@ window.sendReq=function(){
   var p=S.plans[S.pick];if(!p){toast("اختر باقة أولاً");return}
   if(S.req.some(function(r){return r.pid==pid(p)&&r.st=="new"})){toast("لديك طلب معلق لهذه الباقة");return}
   var id=Date.now();
-  setDoc(doc(db,"requests",String(id)),{uid:S.uid,e:S.email,pid:pid(p),n:String(p.n),p:Number(p.p)||0,v:Number(p.v)||1,u:p.u,d:id,st:"new"})
+  setDoc(doc(db,"requests",String(id)),{uid:S.uid,e:S.email,pid:pid(p),n:String(p.n),p:Number(p.p)||0,v:Number(p.v)||1,u:p.u,a:p.a||["pro","stu"],d:id,st:"new"})
     .then(function(){S.pick=null;toast("أُرسل طلبك للمالك")}).catch(fail);
 };
 window.reqSt=function(id,st){updateDoc(doc(db,"requests",String(id)),{st:st}).catch(fail)};
-function subOf(uid){return S.subs.filter(function(s){return s.uid==uid})[0]}
+function subOf(id){return S.subs.filter(function(s){return (s.id||s.uid)==id})[0]}
 window.actv=function(id){
-  var r=gr(id),v=$("sd"+id).value,now=Date.now(),cur=subOf(r.uid),st=v?new Date(v+"T00:00:00").getTime():now;
+  var r=gr(id),v=$("sd"+id).value,now=Date.now(),cur=subOf(subDocId(r)),st=v?new Date(v+"T00:00:00").getTime():now;
   if(cur&&cur.end>now)st=cur.end;
-  setDoc(doc(db,"subscriptions",r.uid),{e:r.e,n:r.n,s:cur&&cur.end>now?cur.s:st,end:st+dd(r)*864e5})
+  setDoc(doc(db,"subscriptions",subDocId(r)),{uid:r.uid,a:r.a||["pro","stu"],e:r.e,n:r.n,s:cur&&cur.end>now?cur.s:st,end:st+dd(r)*864e5})
     .then(function(){return updateDoc(doc(db,"requests",String(id)),{st:"act"})}).catch(fail);
 };
 window.extR=function(id){
-  var r=gr(id),now=Date.now(),cur=subOf(r.uid),base=cur&&cur.end>now?cur.end:now;
-  setDoc(doc(db,"subscriptions",r.uid),{e:r.e,n:r.n,s:cur&&cur.end>now?cur.s:now,end:base+dd(r)*864e5})
+  var r=gr(id),now=Date.now(),cur=subOf(subDocId(r)),base=cur&&cur.end>now?cur.end:now;
+  setDoc(doc(db,"subscriptions",subDocId(r)),{uid:r.uid,a:r.a||["pro","stu"],e:r.e,n:r.n,s:cur&&cur.end>now?cur.s:now,end:base+dd(r)*864e5})
     .then(function(){toast("تم التمديد")}).catch(fail);
 };
 window.stopR=function(id){
   var r=gr(id);
-  setDoc(doc(db,"subscriptions",r.uid),{end:Date.now()},{merge:true})
+  setDoc(doc(db,"subscriptions",subDocId(r)),{end:Date.now()},{merge:true})
     .then(function(){return updateDoc(doc(db,"requests",String(id)),{st:"no"})}).catch(fail);
 };
 window.savePlans=function(){
   var keep={};
   S.plans.forEach(function(p,i){
     keep[pid(p)]=1;
-    setDoc(doc(db,"plans",pid(p)),{n:String(p.n),p:Number(p.p)||0,v:Number(p.v)||1,u:p.u,f:p.f||"",hide:!!p.hide,o:i}).catch(fail);
+    setDoc(doc(db,"plans",pid(p)),{n:String(p.n),p:Number(p.p)||0,v:Number(p.v)||1,u:p.u,f:p.f||"",hide:!!p.hide,a:p.a||["pro","stu"],o:i}).catch(fail);
   });
   remotePlans.forEach(function(id){if(!keep[id])deleteDoc(doc(db,"plans",id)).catch(fail)});
   toast("تم حفظ الباقات ونشرها");
