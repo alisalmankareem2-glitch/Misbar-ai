@@ -191,7 +191,7 @@ label.b{display:inline-flex;align-items:center;justify-content:center;gap:5px;ba
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.56.0";
+var APP_VERSION = "2.57.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -839,7 +839,47 @@ window.addEventListener("focus",async function(){
   }catch(e){}
 });
 
-async function callUserGemini(prompt,sysInst,imgDataUrl,jsonMode){
+/* ===== v2.57: ذكاء سريع: بث مباشر + إيقاف التفكير الزائد + بحث (ملزمة / ذكاء / إنترنت) ===== */
+function nz(s){return String(s||"").toLowerCase().replace(/[\u064B-\u065F\u0640]/g,"").replace(/[إأآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/[\u060C\u061B\u061F\u066A-\u066D\u06D4]/g," ").replace(/[^\u0600-\u06FFa-z0-9\s]/g," ")}
+var STOP={};"في من على الى عن ما هو هي هل كيف ماذا لماذا ان او ثم هذا هذه ذلك التي الذي كان يكون مع بين كل قد لا ماهي ماهو اشرح لي عن وضح".split(" ").forEach(function(w){STOP[w]=1});
+function qwords(s){return nz(s).split(/\s+/).map(function(w){return w.length>3?w.replace(/^ال/,""):w}).filter(function(w){return w.length>1&&!STOP[w]})}
+function chunksOf(t){var out=[],buf="";String(t||"").split(/\n+/).forEach(function(l){l=l.trim();if(!l)return;if((buf+" "+l).length>450){if(buf)out.push(buf);buf=l}else buf=buf?buf+" "+l:l});if(buf)out.push(buf);return out}
+function corpus(){var c=[];(S.bag||[]).forEach(function(f){(f.f||[]).forEach(function(m){c.push({t:m.name,x:m.text})})});(S.classes||[]).forEach(function(k){(k.mats||[]).forEach(function(m){c.push({t:m.title,x:m.text})})});(S.stuClasses||[]).forEach(function(k){(k.mats||[]).forEach(function(m){c.push({t:m.title,x:m.text})})});return c}
+function matSearch(q,only){var qw=qwords(q);if(!qw.length)return [];var all=[];(only?[only]:corpus()).forEach(function(d){chunksOf(d.x).forEach(function(c){all.push({t:d.t,c:c,n:nz(c)})})});
+  var N=all.length||1,df={};qw.forEach(function(w){df[w]=all.filter(function(k){return k.n.indexOf(w)>-1}).length});
+  var res=[];all.forEach(function(k){var sc=0;qw.forEach(function(w){var i=-1,n=0;while((i=k.n.indexOf(w,i+1))>-1&&n<5)n++;if(n)sc+=(1+Math.log(1+n))*Math.log(1+N/(1+df[w]))});if(sc>0)res.push({t:k.t,c:k.c,s:sc})});
+  res.sort(function(a,b){return b.s-a.s});return res.slice(0,4)}
+function matBlock(r){return r.length?"📄 من ملازمك:\n"+r.slice(0,3).map(function(x){return "• «"+x.t+"»: "+x.c.slice(0,260)+(x.c.length>260?"…":"")}).join("\n"):"📄 لا يوجد في ملازمك ما يطابق سؤالك."}
+function quickSummary(t,n){n=n||6;var ss=String(t||"").split(/[.!؟?\n]+/).map(function(x){return x.trim()}).filter(function(x){return x.length>25&&x.length<400});if(ss.length<=n)return ss.map(function(x){return "• "+x}).join("\n");
+  var f={};ss.forEach(function(x){qwords(x).forEach(function(w){f[w]=(f[w]||0)+1})});
+  var sc=ss.map(function(x,i){var w=qwords(x),v=0;w.forEach(function(k){v+=f[k]});return {i:i,x:x,v:v/Math.sqrt(w.length+3)+(i<2?1.5:0)}});
+  return sc.sort(function(a,b){return b.v-a.v}).slice(0,n).sort(function(a,b){return a.i-b.i}).map(function(o){return "• "+o.x}).join("\n")}
+function fetchT(u,o,ms){var c=new AbortController(),id=setTimeout(function(){c.abort()},ms);o=o||{};o.signal=c.signal;return fetch(u,o).finally(function(){clearTimeout(id)})}
+async function gStream(key,model,body,onText){
+  var res=await fetchT("https://generativelanguage.googleapis.com/v1beta/models/"+model+":streamGenerateContent?alt=sse&key="+encodeURIComponent(key),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)},20000);
+  if(!res.ok){var d={};try{d=await res.json()}catch(e){}var er=new Error((d.error&&d.error.message)||("HTTP "+res.status));er.status=res.status;throw er}
+  var txt="",src=[];
+  var eat=function(ln){ln=ln.trim();if(ln.indexOf("data:")!==0)return;try{var j=JSON.parse(ln.slice(5)),c=j.candidates&&j.candidates[0];if(c&&c.content&&c.content.parts)c.content.parts.forEach(function(p){if(p.text){txt+=p.text;if(onText)onText(txt)}});var g=c&&c.groundingMetadata&&c.groundingMetadata.groundingChunks;if(g)g.forEach(function(x){if(x.web)src.push({t:x.web.title||x.web.uri,u:x.web.uri})})}catch(e){}};
+  if(res.body&&res.body.getReader){var rd=res.body.getReader(),dec=new TextDecoder(),buf="";for(;;){var r=await rd.read();if(r.done)break;buf+=dec.decode(r.value,{stream:true});var ps=buf.split("\n");buf=ps.pop();ps.forEach(eat)}if(buf)eat(buf)}
+  else{(await res.text()).split("\n").forEach(eat)}
+  if(!txt){var e2=new Error("رد فارغ");e2.status=res.status;throw e2}
+  return {txt:txt,src:src};
+}
+async function aiFast(msgs,sys,web,onText){
+  var key=provKey("Gemini"),models=S._gm||["gemini-2.5-flash","gemini-2.0-flash"],err=null;if(!S._gm)geminiModels(key).catch(function(){});
+  for(var i=0;i<Math.min(models.length,2);i++){
+    var mk=function(off){var gc={temperature:0.65};if(off)gc.thinkingConfig={thinkingBudget:0};var b={contents:msgs.map(function(m){return {role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]}}),generationConfig:gc};if(sys)b.systemInstruction={parts:[{text:sys}]};if(web)b.tools=[{google_search:{}}];return b};
+    try{return await gStream(key,models[i],mk(/2\.5|latest/.test(models[i])),onText)}
+    catch(e){err=e;if(e.status===400){try{return await gStream(key,models[i],mk(false),onText)}catch(e2){err=e2}}if(e.status===401||e.status===403)break}
+  }
+  throw err;
+}
+async function askAI(p,msgs,sys,web,onText){
+  S.aiWeb=!!web;S.aiLast={mode:"none",src:[]};
+  if(p==="Gemini"&&provKey("Gemini")){try{var r=await aiFast(msgs,sys,web,onText);S.aiLast={mode:web?"native":"none",src:r.src};return r.txt}catch(e){if(e.status===401||e.status===403)throw e}}
+  return await callAIText(p,msgs,sys);
+}
+async function callUserGemini(prompt,sysInst,imgDataUrl,jsonMode,onChunk){
   var key=getUserKey();
   if(!key){
     var alt=(provKey("ChatGPT")?"ChatGPT":(provKey("Claude")?"Claude":""));
@@ -854,25 +894,21 @@ async function callUserGemini(prompt,sysInst,imgDataUrl,jsonMode){
     var mime=sp[0].replace("data:","").replace(";","")||"image/jpeg";
     parts.push({inlineData:{mimeType:mime,data:sp[1]}});
   }
-  var body={contents:[{role:"user",parts:parts}],generationConfig:{temperature:0.65}};
-  if(sysInst)body.systemInstruction={parts:[{text:sysInst}]};
-  if(jsonMode)body.generationConfig.responseMimeType="application/json";
-
-  var models=["gemini-2.5-flash","gemini-2.0-flash"];
-  try{models=await geminiModels(key)}catch(e){}
+  var models=S._gm||["gemini-2.5-flash","gemini-2.0-flash"];if(!S._gm)geminiModels(key).catch(function(){});
+  var last=null;
   for(var m=0;m<models.length;m++){
-    try{
-      var res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+models[m]+":generateContent?key="+encodeURIComponent(key),{
-        method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)
-      });
-      var data=await res.json();
-      if(data&&data.candidates&&data.candidates[0]&&data.candidates[0].content){
-        return data.candidates[0].content.parts.map(function(p){return p.text||""}).join("");
-      }
-      if(data&&data.error && m===models.length-1) throw new Error(data.error.message);
-    }catch(err){if(m===models.length-1)throw err}
+    var go=async function(off){
+      var gc={temperature:0.65};if(jsonMode)gc.responseMimeType="application/json";if(off)gc.thinkingConfig={thinkingBudget:0};
+      var body={contents:[{role:"user",parts:parts}],generationConfig:gc};if(sysInst)body.systemInstruction={parts:[{text:sysInst}]};
+      if(onChunk&&!jsonMode)return (await gStream(key,models[m],body,onChunk)).txt;
+      var res=await fetchT("https://generativelanguage.googleapis.com/v1beta/models/"+models[m]+":generateContent?key="+encodeURIComponent(key),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)},30000),data=await res.json();
+      if(data&&data.candidates&&data.candidates[0]&&data.candidates[0].content)return data.candidates[0].content.parts.map(function(p){return p.text||""}).join("");
+      var er=new Error((data&&data.error&&data.error.message)||"رد فارغ");er.status=res.status;throw er;
+    };
+    try{return await go(/2\.5|latest/.test(models[m]))}
+    catch(e){if(e.status===400){try{return await go(false)}catch(e2){e=e2}}last=e;if(e.status===401||e.status===403)break}
   }
-  return null;
+  if(last)throw last;return null;
 }
 
 /* ==================== تصدير ملفات Word (.doc) على الجهاز ==================== */
@@ -5189,7 +5225,7 @@ async function appWebSearch(q){
 }
 function setSearchProxy(){ask("رابط وسيط البحث (Cloudflare Worker). اكتب - للحذف",function(v){v=(v||"").trim();try{if(v==="-"){localStorage.removeItem("misbar_sproxy");toast("تم حذف الوسيط")}else if(/^https:\/\//.test(v)){localStorage.setItem("misbar_sproxy",v);toast("✅ حُفظ وسيط البحث")}else toast("الرابط لازم يبدأ بـ https://")}catch(e){}})}
 function aiTag(){
-  var L=S.aiLast||{},t=L.mode==="native"?"🌐 بحث حقيقي مباشر من "+S.prov:L.mode==="app"?"🌐 بحث عبر مسبار (محرك ويب + ويكيبيديا) لأن بحث "+S.prov+" المباشر غير متاح لمفتاحك":(S.aiWeb===false?"":"⚠️ أُجيب بدون بحث: "+(L.why||"البحث غير متاح"));
+  var L=S.aiLast||{},t=L.mode==="native"?"🌐 بحث حقيقي مباشر من "+S.prov:L.mode==="app"?"🌐 بحث عبر مسبار (محرك ويب + ويكيبيديا) لأن بحث "+S.prov+" المباشر غير متاح لمفتاحك":(S.aiWeb===true?"⚠️ أُجيب بدون بحث: "+(L.why||"البحث غير متاح"):"");
   var seen={},s=(L.src||[]).filter(function(x){if(!x.u||seen[x.u])return false;seen[x.u]=1;return true}).slice(0,4).map(function(x){return "• "+(x.t||"")+" — "+x.u}).join("\n");
   return t?"\n\n— "+t+(s?"\n"+s:""):"";
 }
@@ -5233,7 +5269,7 @@ async function aiOnce(prov,key,model,messages,sys,web){
 }
 async function callAIText(prov, messages, sys){
   var key=provKey(prov);if(!key)throw new Error("NOKEY");
-  var want=S.aiWeb!==false,errs=[],last=0,models=AI_PROVS[prov].models;
+  var want=S.aiWeb===true,errs=[],last=0,models=AI_PROVS[prov].models;
   if(prov==="Gemini"){try{models=await geminiModels(key)}catch(e){errs.push(e.message)}}
   S.aiLast={mode:"none",src:[]};
   var run=async function(web,sx){
@@ -5325,14 +5361,14 @@ function aiV(){
   } else {
     body = '<div class="card">' +
       '<div class="row" style="margin-bottom:6px"><b class="grow">💬 ' + esc(S.prov) + '</b>' +
-        '<button class="b s" onclick="S.aiWeb=(S.aiWeb===false);draw()" aria-label="بحث الإنترنت">' + (S.aiWeb === false ? '🌐 ✖' : '🌐 بحث') + '</button>' +
-        '<button class="b s" onclick="openProvKeyDialog(\'' + S.prov + '\')" aria-label="المفتاح">🔑</button>' +
+                '<button class="b s" onclick="openProvKeyDialog(\'' + S.prov + '\')" aria-label="المفتاح">🔑</button>' +
         '<button class="b s" onclick="setSearchProxy()" aria-label="وسيط البحث">⚙️</button>' +
         '<button class="b s" onclick="chatOf(S.prov).length=0;draw()" aria-label="مسح">🗑</button></div>' +
       '<div id="aiBox" style="max-height:46vh;overflow-y:auto">' +
         (hist.length ? hist.map(function(m){ return '<div class="msg' + (m[1] ? ' me' : '') + '" style="white-space:pre-wrap">' + esc(m[0]) + '</div>'; }).join("") : '<div class="mu" style="text-align:center;padding:14px 0">اسأل ' + esc(S.prov) + ' أي سؤال تعليمي أو أكاديمي</div>') +
-        (S.busy ? '<div class="msg mu">⏳ يكتب الإجابة...</div>' : '') +
+        (S.busy ? '<div class="msg" id="aiLive" style="white-space:pre-wrap">' + (S.liveTxt ? esc(S.liveTxt) : '<span class="mu">' + esc(S.stage || "⏳ يكتب الإجابة...") + '</span>') + '</div>' : '') +
       '</div>' +
+      '<div class="row" style="gap:6px;margin-top:8px">' + [["ai","🧠 الذكاء"],["mat","📄 الملازم"],["web","🌐 الإنترنت"]].map(function(x){return '<button class="chip' + ((S.aiSrc||"ai")===x[0] ? ' on' : '') + '" onclick="S.aiSrc=\'' + x[0] + '\';draw()">' + x[1] + '</button>'}).join("") + '</div>' +
       '<div class="row" style="margin-top:8px"><input id="aiIn" placeholder="اكتب سؤالك..." class="grow" onkeydown="if(event.key===\'Enter\')sendAI()"><button class="b" ' + (S.busy ? 'disabled' : '') + ' onclick="sendAI()">إرسال</button></div>' +
     '</div>';
   }
@@ -5343,23 +5379,31 @@ function aiV(){
 }
 
 async function sendAI(){
-  var el = $("aiIn"), v = el ? el.value.trim() : "";
-  if(!v || S.busy) return;
-  var p = S.prov;
-  if(!provKey(p)){ openProvKeyDialog(p); return; }
-  if(!gate()) return;
-  var hist = chatOf(p); hist.push([v, 1]); S.ai = hist; S.busy = true; draw();
-  var scroll = function(){ var b = $("aiBox"); if(b) b.scrollTop = b.scrollHeight; };
-  scroll();
+  var el=$("aiIn"),v=el?el.value.trim():"";
+  if(!v||S.busy)return;
+  var p=S.prov;if(!provKey(p)){openProvKeyDialog(p);return}
+  var src=S.aiSrc||"ai";
+  if(src==="mat"&&!corpus().length){toast("ما عندك ملازم محفوظة للبحث فيها — ضيف ملزمة أو جرّب الذكاء");return}
+  if(!gate())return;
+  var hist=chatOf(p);hist.push([v,1]);S.ai=hist;S.busy=true;S.liveTxt="";
+  S.stage=src==="web"?"🔎 أبحث في الإنترنت…":(src==="mat"?"📄 أبحث في ملازمك…":"⏳ يفكر…");draw();
+  var scroll=function(){var b=$("aiBox");if(b)b.scrollTop=b.scrollHeight};scroll();
+  var prefix="",live=function(t){S.liveTxt=prefix+t;var e=$("aiLive");if(e){e.textContent=S.liveTxt;scroll()}};
   try{
-    var msgs = hist.slice(-12).map(function(m){ return { role: m[1] ? "user" : "assistant", content: m[0] }; });
-    while(msgs.length && msgs[0].role !== "user") msgs.shift();
-    var ans = await callAIText(p, msgs, AI_SYS);
-    hist.push([(ans || "(لا يوجد رد)") + aiTag(), 0]);
+    var msgs=hist.slice(-12).map(function(m){return {role:m[1]?"user":"assistant",content:m[0]}});
+    while(msgs.length&&msgs[0].role!=="user")msgs.shift();
+    if(src==="mat"){
+      var res=matSearch(v);prefix=matBlock(res)+"\n\n";live("");
+      if(!res.length){hist.push([prefix.trim(),0]);S.busy=false;S.liveTxt="";draw();scroll();return}
+      msgs[msgs.length-1]={role:"user",content:"أجب عن السؤال اعتماداً على المقاطع التالية من ملازم الطالب فقط، وإن لم تكفِ فقل ذلك:\n\n"+res.map(function(r,i){return (i+1)+") ["+r.t+"] "+r.c}).join("\n\n")+"\n\nالسؤال: "+v};
+      prefix+="🧠 جواب الذكاء:\n";
+    }
+    var ans=await askAI(p,msgs,AI_SYS,src==="web",live);
+    hist.push([prefix+(ans||"(لا يوجد رد)")+(src==="web"?aiTag():""),0]);
   }catch(e){
-    hist.push(["⚠️ " + (e.message === "NOKEY" ? "اربط المفتاح أولاً" : e.message), 0]);
+    hist.push(["⚠️ "+(e.message==="NOKEY"?"اربط المفتاح أولاً":e.message),0]);
   }
-  S.busy = false; draw(); scroll();
+  S.aiWeb=false;S.busy=false;S.liveTxt="";draw();scroll();
 }
 
 
@@ -6320,9 +6364,10 @@ function stuV(){
         '<button class="b" '+(S.busy?'disabled':'')+' onclick="startStuQuiz()">📝 اختبار تفاعلي</button>'+
         '<button class="b s" onclick="S.openMat=null;S.out=\'\';S.quiz=null;draw()">رجوع</button>'+
       '</div>'+
-      (S.busy?'<div class="card mu" style="margin-top:8px">⏳ جاري التحضير...</div>':'')+
+      '<div class="card" style="margin-top:8px"><input id="matQ" placeholder="🔍 اسأل أو ابحث عن شيء في هذا الدرس…" style="margin:0" onkeydown="if(event.key===\'Enter\')matAsk(\'mat\')"><div class="grid3" style="margin-top:8px"><button class="b s" '+(S.busy?'disabled':'')+' onclick="matAsk(\'mat\')">📄 الملزمة</button><button class="b s" '+(S.busy?'disabled':'')+' onclick="matAsk(\'ai\')">🧠 الذكاء</button><button class="b s" '+(S.busy?'disabled':'')+' onclick="matAsk(\'web\')">🌐 الإنترنت</button></div></div>'+
+      (S.busy&&!S.out?'<div class="card mu" style="margin-top:8px">⏳ جاري التحضير...</div>':'')+
       (S.quiz?renderQuizH():'')+
-      (S.out?'<div class="out" style="margin-top:10px">'+esc(S.out)+'</div>':'')+
+      (S.out?'<div class="out" id="stuOut" style="margin-top:10px;white-space:pre-wrap">'+esc(S.out)+'</div>':'')+
       '<div class="grid" style="margin-top:8px">'+
         '<button class="b s" onclick="saveFileToUserDrive(S.openMat.title,\'<pre style=font-family:Tahoma;white-space:pre-wrap>\'+esc(S.openMat.text)+\'</pre>\',true)">☁️ حفظ في Drive</button>'+
         '<button class="b s" onclick="downloadWordFile(S.openMat.title,\'<pre style=font-family:Tahoma;white-space:pre-wrap>\'+esc(S.openMat.text)+\'</pre>\',true)">⬇️ تنزيل Word</button>'+
@@ -6386,24 +6431,42 @@ function joinCls(){
   }else toast("رمز الكلاس غير موجود");
 }
 
+async function matAsk(src){
+  var q=($("matQ")?$("matQ").value:"").trim(),m=S.openMat;
+  if(!m||S.busy)return;if(!q){toast("اكتب سؤالك أو كلمة البحث");return}
+  S.quiz=null;
+  if(src==="mat"){var r=matSearch(q,{t:m.title,x:m.text});S.out=r.length?"📄 نتائج داخل الملزمة:\n\n"+r.map(function(x,i){return (i+1)+") "+x.c.slice(0,420)}).join("\n\n"):"📄 ما لقيت «"+q+"» داخل هذي الملزمة. جرّب 🧠 الذكاء أو 🌐 الإنترنت.";draw();return}
+  if(!gate())return;
+  if(!(getUserKey()||provKey("ChatGPT")||provKey("Claude"))){refundTry();openAutoKeyConnect();return}
+  S.busy=true;S.out=src==="web"?"🔎 أبحث في الإنترنت…":"⏳ يفكر…";draw();
+  var upd=function(t){S.out=t;var e=$("stuOut");if(e)e.textContent=t};
+  try{
+    var p=firstReadyProv()||"Gemini";
+    var msgs=[{role:"user",content:src==="ai"?"اعتماداً على الملزمة التالية أجب عن السؤال بوضوح وإيجاز:\n\n"+String(m.text).slice(0,9000)+"\n\nالسؤال: "+q:q+"\n(سياق: درس «"+m.title+"»)"}];
+    var ans=await askAI(p,msgs,AI_SYS,src==="web",upd);
+    S.out=(ans||"(لا يوجد رد)")+(src==="web"?aiTag():"");
+  }catch(e){S.out="⚠️ "+e.message}
+  S.aiWeb=false;S.busy=false;draw();
+}
 async function runStuAI(kind){
   if(!gate())return;
   var m=S.openMat;S.quiz=null;
-  if(!getUserKey()){
-    S.out = kind + " لـ «" + m.title + "»:\n\n" + m.text + "\n\n💡 للمناقشة الموسعة افتح ChatGPT أو Gemini أو Claude من تبويب «الذكاء والنص».";
+  var quick=kind==="تلخيص"?"⚡ ملخص فوري:\n"+quickSummary(m.text)+"\n\n":"";
+  if(!(getUserKey()||provKey("ChatGPT")||provKey("Claude"))){
+    S.out=quick?quick+"💡 اربط الذكاء من تبويب «الذكاء والنص» لملخص أعمق.":kind+" لـ «"+m.title+"»:\n\n"+m.text+"\n\n💡 للمناقشة الموسعة افتح ChatGPT أو Gemini أو Claude من تبويب «الذكاء والنص».";
     draw();return;
   }
-  S.busy=true;draw();
+  S.busy=true;S.out=quick+"⏳ ملخص الذكاء قادم…";draw();
+  var upd=function(t){S.out=quick+t;var e=$("stuOut");if(e)e.textContent=S.out};
   try{
-    var pMap={
-      "شرح مبسط":"اشرح هذه الملزمة للطالب بأسلوب مبسط جداً مع أمثلة توضيحية ونقاط رئيسية للحفظ:\n\n"+m.text.slice(0,10000),
-      "ترجمة":"ترجم محتوى هذه الملزمة بين العربية والإنجليزية مع إبراز المصطلحات العلمية المهمة في جدول أو نقاط:\n\n"+m.text.slice(0,10000),
-      "تلخيص":"لخّص هذه الملزمة في نقاط مركزة وشاملة جاهزة للمراجعة السريعة ليلة الامتحان:\n\n"+m.text.slice(0,10000),
-      "أسئلة":"ضع مجموعة أسئلة مراجعة شاملة مع أجوبتها النموذجية من هذه الملزمة:\n\n"+m.text.slice(0,10000)
-    };
-    var ans=await callUserGemini(pMap[kind],"أنت مدرس خصوصي ذكي تشرح للطلاب بأسلوب شيق وواضح.");
-    if(ans)S.out=ans;
-  }catch(e){toast("خطأ: "+e.message)}
+    var T=m.text.slice(0,10000),pMap={
+      "شرح مبسط":"اشرح هذه الملزمة للطالب بأسلوب مبسط جداً مع أمثلة توضيحية ونقاط رئيسية للحفظ:\n\n"+T,
+      "ترجمة":"ترجم محتوى هذه الملزمة بين العربية والإنجليزية مع إبراز المصطلحات العلمية المهمة في جدول أو نقاط:\n\n"+T,
+      "تلخيص":"لخّص هذه الملزمة في نقاط مركزة وشاملة جاهزة للمراجعة السريعة ليلة الامتحان:\n\n"+T,
+      "أسئلة":"ضع مجموعة أسئلة مراجعة شاملة مع أجوبتها النموذجية من هذه الملزمة:\n\n"+T};
+    var ans=await callUserGemini(pMap[kind],"أنت مدرس خصوصي ذكي تشرح للطلاب بأسلوب شيق وواضح.",null,false,upd);
+    if(ans)S.out=quick+ans;
+  }catch(e){toast("خطأ: "+e.message);S.out=quick||S.out}
   S.busy=false;draw();
 }
 
