@@ -208,7 +208,8 @@ label.b{display:inline-flex;align-items:center;justify-content:center;gap:5px;ba
 .idcard b{display:block;font-size:16px}.idcard span{font-size:12px;opacity:.9}
 @media (min-width:760px){main{max-width:760px}header{padding-inline:max(13px,calc((100% - 760px)/2))}nav{max-width:760px;margin-inline:auto;border-radius:18px 18px 0 0;border:1px solid var(--ln);border-bottom:0}}
 @media (min-width:1100px){main{max-width:880px}header{padding-inline:max(13px,calc((100% - 880px)/2))}nav{max-width:880px}}
-.splash{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;color:#fff;background:linear-gradient(160deg,#0f172a 0%,#0b5d4b 55%,#059669 100%)}
+html:has(.splash){background:#0f172a;overscroll-behavior:none}
+.splash{position:fixed;inset:0;z-index:50;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;color:#fff;background:linear-gradient(160deg,#0f172a 0%,#0b5d4b 55%,#059669 100%)}
 .splash .sp-logo{width:96px;height:96px;border-radius:24px;box-shadow:0 14px 34px rgba(0,0,0,.35);animation:spf 2.2s ease-in-out infinite}
 .splash h1{margin:6px 0 0;font-size:30px;font-weight:800;color:#fff;background:none;-webkit-text-fill-color:#fff}
 .splash p{margin:0;font-size:14px;opacity:.8}
@@ -221,6 +222,40 @@ label.b{display:inline-flex;align-items:center;justify-content:center;gap:5px;ba
 </style>
 </head>
 <body>
+<script>
+/* حارس الإقلاع: يلتقط الأخطاء، وإذا بقيت شاشة التهيئة أكثر من 12 ثانية يعرض السبب وأزرار الحل */
+window.__errs=[];
+window.addEventListener("error",function(e){window.__errs.push((e.message||"error")+(e.lineno?" @"+e.lineno:""))});
+window.addEventListener("unhandledrejection",function(e){var r=e.reason;window.__errs.push("promise: "+((r&&(r.message||r.code))||r))});
+function misbarStuck(){
+  var a=document.getElementById("app");
+  return !!(a&&a.querySelector(".splash"));
+}
+function misbarShowFail(){
+  var a=document.getElementById("app");if(!a)return;
+  var er=(window.__errs||[]).slice(-3).join(" | ").replace(/</g,"&lt;");
+  a.innerHTML='<div class="splash"><img src="./icon-192.png" alt="" class="sp-logo"><h1>مسبار AI</h1><p>تعذّر إكمال التهيئة.<br>تأكد من الإنترنت ثم أعد المحاولة.</p>'
+    +'<button class="sp-btn" onclick="location.reload()">إعادة المحاولة</button>'
+    +'<button class="sp-btn g" onclick="misbarHardReset()">مسح الذاكرة المؤقتة وإعادة التحميل</button>'
+    +(er?'<p dir="ltr" style="font-size:11px;opacity:.6;max-width:90%;word-break:break-word;margin-top:12px">'+er+'</p>':'')+'</div>';
+}
+setTimeout(function(){
+  try{
+    if(!misbarStuck())return;
+    if(window.S&&window.fbLogin&&!S.authReady){S.authReady=true;try{draw()}catch(e){window.__errs.push("draw: "+e.message)}}
+    if(misbarStuck())misbarShowFail();
+  }catch(e){misbarShowFail()}
+},12000);
+window.misbarHardReset=function(){
+  var done=function(){location.reload()};
+  try{
+    Promise.all([
+      window.caches?caches.keys().then(function(k){return Promise.all(k.map(function(x){return caches.delete(x)}))}):0,
+      navigator.serviceWorker?navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}):0
+    ]).then(done,done);
+  }catch(e){done()}
+};
+</script>
 <div id="app">
   <div class="splash"><img src="./icon-192.png" alt="" class="sp-logo"><h1>مسبار AI</h1><p>جاري تهيئة الجلسة...</p><div class="sp-bar"><i></i></div></div>
 </div>
@@ -230,7 +265,7 @@ label.b{display:inline-flex;align-items:center;justify-content:center;gap:5px;ba
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.61.1";
+var APP_VERSION = "2.61.2";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -6869,34 +6904,12 @@ window.addEventListener("load", function(){ setTimeout(checkIOSInstallPrompt, 30
 
 </script>
 
-<script>
-/* حارس الإقلاع: إذا لم تكتمل التهيئة خلال 10 ثوانٍ لا يبقى التطبيق عالقاً */
-setTimeout(function(){
-  try{
-    if(window.S && S.authReady) return;
-    if(window.fbLogin){ S.authReady=true; draw(); return; }
-    var a=document.getElementById("app"); if(!a) return;
-    a.innerHTML='<div class="splash"><img src="./icon-192.png" alt="" class="sp-logo"><h1>مسبار AI</h1><p>تعذّر تحميل خدمة الدخول.<br>تأكد من الإنترنت ثم أعد المحاولة.</p>'
-      +'<button class="sp-btn" onclick="location.reload()">إعادة المحاولة</button>'
-      +'<button class="sp-btn g" onclick="misbarHardReset()">مسح الذاكرة المؤقتة وإعادة التحميل</button></div>';
-  }catch(e){}
-},10000);
-window.misbarHardReset=function(){
-  var done=function(){location.reload()};
-  try{
-    Promise.all([
-      window.caches?caches.keys().then(function(k){return Promise.all(k.map(function(x){return caches.delete(x)}))}):0,
-      navigator.serviceWorker?navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}):0
-    ]).then(done,done);
-  }catch(e){done()}
-};
-</script>
 <script type="module">
 var FB=null;
 for(var _v of ["13.2.0","12.18.0"]){
   try{
     var _b="https://www.gstatic.com/firebasejs/"+_v+"/";
-    FB=await Promise.all([import(_b+"firebase-app.js"),import(_b+"firebase-auth.js"),import(_b+"firebase-firestore.js")]);
+    FB=await Promise.race([Promise.all([import(_b+"firebase-app.js"),import(_b+"firebase-auth.js"),import(_b+"firebase-firestore.js")]),new Promise(function(_,r){setTimeout(function(){r(new Error("timeout"))},5000)})]);
     break;
   }catch(e){console.warn("firebase "+_v+" failed",e)}
 }
