@@ -6226,20 +6226,6 @@ function adminPortalV(){
 }
 
 
-  var items=okFmt?(S.cardItems||[]):[];
-  var body;
-  if(!codeIn)body='<div class="card mu" style="text-align:center;padding:24px 10px">أدخل كود الطالب أعلاه لعرض درجاته وتبليغاته.</div>';
-  else if(!okFmt)body='<div class="card mu" style="text-align:center;padding:24px 10px;line-height:1.8">'+(S._resMsg==="easy"?'هذا <b>كود الطالب</b> وليس كود ولي الأمر. اطلب من الإدارة أو الأستاذ كود ولي الأمر (يبدأ بـ STU-).':S._resMsg==="nf"?'الكود غير موجود، تأكد من كتابته.':S._resMsg==="err"?'تعذر التحقق من الكود الآن، حاول مرة ثانية.':'اكتب كود ولي الأمر (STU-XXXX-XXXX-XXXX) أو كود الطالب كما استلمته.')+'</div>';
-  else if(!items.length)body='<div class="card mu" style="text-align:center;padding:24px 10px">ما كو سجلات لهذا الكود لحد الآن. تأكد من الكود المرسل لك من الأستاذ.</div>';
-  else body='<h2>📊 سجل الطالب: '+esc(items[0].student||"")+'</h2>'+items.map(function(n){
-    if(n.type==="grade")return '<div class="card"><div class="row"><div class="grow"><b>🧑‍🎓 '+esc(n.student||"")+'</b><div class="mu">الأستاذ: '+esc(n.teacher)+' · '+fd(n.at)+'</div></div><span class="badge" style="font-size:15px;padding:6px 12px;background:#dcfce7;color:#15803d">الدرجة: '+esc(n.score)+'</span></div>'+parentReplyH(codeIn, n)+'</div>';
-    return '<div class="card" style="border-inline-start:4px solid '+(n.type==="absent"?"#dc2626":"#f59e0b")+'"><b>'+(n.type==="absent"?"⚠️ تبليغ غياب من ":"📩 تبليغ من ")+esc(n.teacher)+' ('+fd(n.at)+')</b><div style="margin-top:4px">'+esc(n.note)+'</div>'+parentReplyH(codeIn, n)+'</div>';
-  }).join("");
-  return '<div class="card" style="border-inline-start:4px solid #2563eb;background:#eff6ff"><h2>👨‍👩‍👦 بوابة أولياء الأمور</h2><div class="mu" style="line-height:1.6">أدخل كود ابنك (مثل <b>STU-AB12-CD34-EF56</b>) اللي استلمته من الأستاذ لعرض درجاته وغياباته وتبليغاته. تشوف ابنك فقط.</div></div>'+
-  '<div class="card"><label>كود الطالب:</label><div class="row"><input id="pCodeIn" dir="ltr" type="text" value="'+esc(S.parentStuCode||"")+'" placeholder="STU-XXXX-XXXX-XXXX" class="grow" style="margin:0" oninput="S.parentStuCode=this.value"><button class="b" style="background:#2563eb" onclick="S.parentStuCode=document.getElementById(\'pCodeIn\').value;draw()">🔍 متابعة</button></div></div>'+body+
-  '<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
-}
-
 var _quizInterval = null;
 
 function startStuQuizTimer(){
@@ -7109,70 +7095,11 @@ window.fbClaimUsername=function(handle,name,cb){
   window.fbLoadTurnConfig = function() { return getDoc(doc(db, "config", "turn")).then(function(s){ return s.exists() ? s.data() : null; }); };
   window.fbSaveAppConfig = function(obj) { return setDoc(doc(db, "config", "app"), obj, {merge:true}); };
 
-  window.fbCreateInst = function(id, data){ return setDoc(doc(db, "inst", id), data); };
-  window.fbSetKey = function(instId, key, secret, oldKey){
-     var p = setDoc(doc(db, "inst_keys", key), {inst: instId, secret: secret, at: Date.now()});
-     if (oldKey && oldKey !== key) deleteDoc(doc(db, "inst_keys", oldKey)).catch(function(){});
-     return p.then(function(){ return updateDoc(doc(db, "inst", instId), {keyName: key}); });
-  };
-  window.fbResolveKey = function(key){ return getDoc(doc(db, "inst_keys", key)).then(function(s){ return s.exists() ? s.data() : null; }); };
-  window.fbPubRoster = function(instId, list, autoCfg, phones){
-      return setDoc(doc(db, "rosters", instId), {list: list, auto: autoCfg, phones: phones, updatedAt: Date.now()});
-  };
-  window.fbDelStd = function(c){ return deleteDoc(doc(db, "student_codes", c)); };
-  window.fbResolveStd = function(code){ return getDoc(doc(db, "student_codes", code)).then(function(s){ return s.exists() ? s.data() : null; }); };
-  window.fbWatchCard = function(code){
-      onSnapshot(collection(db, "parent_cards", code, "items"), function(s){
-         var arr = []; s.forEach(function(d){ var x=d.data(); x.id=d.id; arr.push(x); });
-         arr.sort(function(a,b){ return b.at - a.at; });
-         S.cardItems = arr; draw();
-      });
-  };
-  window.fbPutCardItem = function(code, item, delay){
-      return new Promise(function(resolve){
-         setTimeout(function(){
-            setDoc(doc(db, "parent_cards", code, "items", "i_"+item.at), item).then(resolve).catch(resolve);
-         }, delay || 0);
-      });
-  };
   window.fbReplyCardItem = function(code, itemId, replyText){
-      return updateDoc(doc(db, "parent_cards", code, "items", itemId), {
-          reply: replyText, repliedAt: Date.now()
-      });
+    return updateDoc(doc(db, "parent_cards", code, "items", itemId), {
+      reply: String(replyText || ""), repliedAt: Date.now()
+    });
   };
-  window.fbSendReport = function(instId, report){
-      return setDoc(doc(db, "inst", instId, "reports", "r_"+Date.now()+"_"+(S.uid||"x")), report);
-  };
-  window.fbWatchInstReports = function(instId){
-      onSnapshot(collection(db, "inst", instId, "reports"), function(s){
-         var arr = []; s.forEach(function(d){ arr.push(d.data()); });
-         arr.sort(function(a,b){ return b.at - a.at; });
-         S.adminReports = arr; draw();
-      });
-  };
-  window.fbWatchMyInsts = function(){
-      if(!S.uid) return;
-      onSnapshot(query(collection(db, "inst"), where("adminUid", "==", S.uid)), function(s){
-         var arr = []; s.forEach(function(d){ var x=d.data(); x.id=d.id; arr.push(x); });
-         S.myInsts = arr; draw();
-      });
-  };
-  window.fbWatchRoster = function(instId, cb){
-      onSnapshot(doc(db, "rosters", instId), function(s){ cb(s.exists() ? s.data().list : []); });
-  };
-  window.fbWatchPhones = function(instId, cb){
-      onSnapshot(doc(db, "rosters", instId), function(s){ cb(s.exists() ? s.data().phones : {}); });
-  };
-
-  window.fbGetColRef = function(parentRef, subCol) { return collection(parentRef, subCol); };
-  window.fbSetDoc = function(ref, data) { return setDoc(ref, data); };
-  window.fbUpdateDoc = function(ref, data) { return updateDoc(ref, data); };
-  window.fbAddDoc = function(colRef, data) { return setDoc(doc(colRef, "cand_" + Date.now() + "_" + Math.random().toString(36).slice(2,6)), data); };
-  window.fbGetDoc = function(ref) { return getDoc(ref); };
-  window.fbOnSnapshot = function(ref, cb, eb) { return onSnapshot(ref, cb, eb || function(e){ console.log('snapshot error', e && e.code); }); };
-  window.fbSaveTurnConfig = function(obj) { return setDoc(doc(db, "config", "turn"), obj); };
-  window.fbLoadTurnConfig = function() { return getDoc(doc(db, "config", "turn")).then(function(s){ return s.exists() ? s.data() : null; }); };
-  window.fbSaveAppConfig = function(obj) { return setDoc(doc(db, "config", "app"), obj, {merge:true}); };
 
   window.fbFindUser=function(handle,cb){
   getDoc(doc(db,"usernames",String(handle||"").toLowerCase())).then(function(s){
@@ -7462,7 +7389,11 @@ var _unAuth=null;
 function bindAuth(){if(_unAuth){try{_unAuth()}catch(e){}}_unAuth=onAuthStateChanged(auth,onAuth)}
 window.fbUsePortal=function(p){
   if(!APPS[p])return;
-  if(p===curPortal&&_unAuth){if(S.authReady)draw();return}
+  if(p===curPortal&&_unAuth){
+    if(S.authReady){draw();return;}
+    try{_unAuth()}catch(e){}
+    _unAuth=null;
+  }
   unsubs.forEach(function(f){try{f()}catch(e){}});unsubs=[];
   [typeof _wi!=="undefined"&&_wi,typeof _wr!=="undefined"&&_wr,typeof _wc!=="undefined"&&_wc].forEach(function(f){try{if(f)f()}catch(e){}});
   curPortal=p;app=APPS[p];auth=AUTHS[p];db=DBS[p];
