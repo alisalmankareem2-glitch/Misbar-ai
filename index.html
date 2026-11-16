@@ -220,7 +220,7 @@ label.b{display:inline-flex;align-items:center;justify-content:center;gap:5px;ba
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.60.0";
+var APP_VERSION = "2.61.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -6032,7 +6032,7 @@ function adminPortalV(){
   var ins=S.myInsts||[],cur=ins.filter(function(x){return x.id===S.curInstId})[0]||ins[0];
   if(cur&&S.curInstId!==cur.id){S.curInstId=cur.id;S.instKey=cur.id+"."+cur.secret;S.adminReports=[];if(window.fbWatchInstReports)window.fbWatchInstReports(cur.id)}
   var out='<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;S.watchingInsts=false;S.curInstId=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
-  var head='<div class="card" style="border-inline-start:4px solid #9333ea;background:#f3e8ff"><h2>🏢 لوحة الإدارة / القسم</h2><div class="mu" style="line-height:1.6">تستلم هنا درجات وغيابات الأساتذة المرتبطين بمؤسستك فقط.</div></div>';
+  var head=driveBannerH() + '<div class="card" style="border-inline-start:4px solid #9333ea;background:#f3e8ff"><h2>🏢 لوحة الإدارة / القسم</h2><div class="mu" style="line-height:1.6">تستلم هنا درجات وغيابات الأساتذة المرتبطين بمؤسستك فقط.</div></div>';
   var create='<div class="card"><b>➕ إنشاء مؤسسة جديدة</b><input id="instName" placeholder="اسم المدرسة / القسم" style="margin-top:6px"><input id="instKeyNew" dir="ltr" placeholder="مفتاح سهل (اختياري) مثل ABBASIYA2026"><button class="b" style="width:100%;background:#9333ea" onclick="createInst()">إنشاء المؤسسة</button></div>';
   if(!cur)return head+'<div class="card mu" style="text-align:center">ما عندك مؤسسة بعد. أنشئ واحدة وسلّم مفتاحها للأساتذة.</div>'+create+out;
   var keyCard=keyCardAdm(cur);
@@ -6065,7 +6065,7 @@ function parentsPortalV(){
     if(n.type==="grade")return '<div class="card row"><div class="grow"><b>🧑‍🎓 '+esc(n.student||"")+'</b><div class="mu">الأستاذ: '+esc(n.teacher)+' · '+fd(n.at)+'</div></div><span class="badge" style="font-size:15px;padding:6px 12px;background:#dcfce7;color:#15803d">الدرجة: '+esc(n.score)+'</span></div>';
     return '<div class="card" style="border-inline-start:4px solid '+(n.type==="absent"?"#dc2626":"#f59e0b")+'"><b>'+(n.type==="absent"?"⚠️ تبليغ غياب من ":"📩 تبليغ من ")+esc(n.teacher)+' ('+fd(n.at)+')</b><div style="margin-top:4px">'+esc(n.note)+'</div></div>';
   }).join("");
-  return '<div class="card" style="border-inline-start:4px solid #2563eb;background:#eff6ff"><h2>👨‍👩‍👦 بوابة أولياء الأمور</h2><div class="mu" style="line-height:1.6">أدخل كود ابنك (مثل <b>STU-AB12-CD34-EF56</b>) اللي استلمته من الأستاذ لعرض درجاته وغياباته وتبليغاته. تشوف ابنك فقط.</div></div>'+
+  return driveBannerH() + '<div class="card" style="border-inline-start:4px solid #2563eb;background:#eff6ff"><h2>👨‍👩‍👦 بوابة أولياء الأمور</h2><div class="mu" style="line-height:1.6">أدخل كود ابنك (مثل <b>STU-AB12-CD34-EF56</b>) اللي استلمته من الأستاذ لعرض درجاته وغياباته وتبليغاته. تشوف ابنك فقط.</div></div>'+
   '<div class="card"><label>كود الطالب:</label><div class="row"><input id="pCodeIn" dir="ltr" type="text" value="'+esc(S.parentStuCode||"")+'" placeholder="STU-XXXX-XXXX" class="grow" style="margin:0" oninput="S.parentStuCode=this.value"><button class="b" style="background:#2563eb" onclick="S.parentStuCode=document.getElementById(\'pCodeIn\').value;draw()">🔍 متابعة</button></div></div>'+body+
   '<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
 }
@@ -6703,7 +6703,34 @@ function portalLoginV(p){
 }
 function loginV(){
   $("app").className="";
-  var svg=function(p){return '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>'};
+  $("app").innerHTML = '<div class="hero"><div class="hat" style="font-size:54px;margin-bottom:10px">🎓</div><h1 style="font-size:32px;background:linear-gradient(135deg,#059669,#1e3a8a);-webkit-background-clip:text;color:transparent;font-weight:800">مسبار AI</h1><p class="mu" style="font-size:14px;margin-top:4px">المنظومة التعليمية المتكاملة</p></div>'+
+  '<main>' +
+    '<h2 style="text-align:center;margin-top:0;margin-bottom:16px">اختر بوابتك للدخول</h2>' +
+    '<div class="grid" style="margin-bottom:12px;gap:12px">' +
+      '<div class="card" onclick="S.loginRole=\'admin\';fbLogin()" style="cursor:pointer;text-align:center;border:2px solid #9333ea;background:linear-gradient(145deg,#f3e8ff,#ffffff);transition:all 0.2s;padding:20px 10px">' +
+         '<div style="font-size:38px;margin-bottom:10px">🏢</div>' +
+         '<b style="display:block;color:#7e22ce;font-size:15px">الإدارة والقسم</b>' +
+         '<div class="mu" style="font-size:11px;margin-top:6px;line-height:1.5">استلام الدرجات والتقارير</div>' +
+      '</div>' +
+      '<div class="card" onclick="S.loginRole=\'pro\';fbLogin()" style="cursor:pointer;text-align:center;border:2px solid #15803d;background:linear-gradient(145deg,#dcfce7,#ffffff);transition:all 0.2s;padding:20px 10px">' +
+         '<div style="font-size:38px;margin-bottom:10px">👨‍🏫</div>' +
+         '<b style="display:block;color:#15803d;font-size:15px">بوابة الأستاذ</b>' +
+         '<div class="mu" style="font-size:11px;margin-top:6px;line-height:1.5">إدارة الدروس والامتحانات</div>' +
+      '</div>' +
+      '<div class="card" onclick="S.loginRole=\'stu\';fbLogin()" style="cursor:pointer;text-align:center;border:2px solid #ea580c;background:linear-gradient(145deg,#ffedd5,#ffffff);transition:all 0.2s;padding:20px 10px">' +
+         '<div style="font-size:38px;margin-bottom:10px">🎓</div>' +
+         '<b style="display:block;color:#ea580c;font-size:15px">بوابة الطالب</b>' +
+         '<div class="mu" style="font-size:11px;margin-top:6px;line-height:1.5">دخول الكلاس والاختبارات</div>' +
+      '</div>' +
+      '<div class="card" onclick="S.loginRole=\'parent\';fbLogin()" style="cursor:pointer;text-align:center;border:2px solid #2563eb;background:linear-gradient(145deg,#eff6ff,#ffffff);transition:all 0.2s;padding:20px 10px">' +
+         '<div style="font-size:38px;margin-bottom:10px">👨‍👩‍👦</div>' +
+         '<b style="display:block;color:#1d4ed8;font-size:15px">أولياء الأمور</b>' +
+         '<div class="mu" style="font-size:11px;margin-top:6px;line-height:1.5">متابعة الأبناء والدرجات</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="mu" style="text-align:center;margin-top:20px;font-size:11px">المنظومة السحابية v'+APP_VERSION+' · تحديث تلقائي</div>'+
+  '</main>';
+};
   var cards=[
     ["pro_stu","p1","الأستاذ والطالب","الدروس والامتحانات والذكاء الاصطناعي",svg('<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>')],
     ["parent","p2","أولياء الأمور","الدرجات والغيابات والتبليغات بكود الطالب",svg('<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.3"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><path d="M15 15c3-.6 6 1 6 4.5"/>')],
@@ -6770,41 +6797,36 @@ function draw(){
 
   // Set system role from login choice if not set
   if(!S.sysRole && S.loginRole) { S.sysRole = S.loginRole; saveDeviceOnly(); }
-  if(!S.sysRole) S.sysRole = 'pro_stu'; // fallback
-  var _la=curAud();if(_la&&payMode(_la)==="lock"&&!hasAud(_la)){subScr(true);return}
+  
+  // Direct mapping to avoid the middle screen
+  if(S.sysRole === 'pro' && S.role !== 'pro') { S.role = 'pro'; saveDeviceOnly(); }
+  if(S.sysRole === 'stu' && S.role !== 'stu') { S.role = 'stu'; saveDeviceOnly(); }
 
   var h="",r=S.role;
   
-  // 1. Admin Portal
   if(S.sysRole === 'admin') {
      h = head("الإدارة / رئيس القسم") + '<main>' + adminPortalV() + '</main>';
   }
-  // 2. Parents Portal
   else if(S.sysRole === 'parent') {
      h = head("بوابة أولياء الأمور") + '<main>' + parentsPortalV() + '</main>';
   }
-  // 3. Pro/Stu Portal (Requires choosing role first if not set)
-  else if(S.sysRole === 'pro_stu' && !r){
-    h='<header><button class="hat" onclick="hat()">🎓</button><h1>مسبار AI</h1><button class="b s" style="min-width:38px;padding:4px 0;font-size:16px" onclick="openProfileModal()" title="حسابي">👤</button><button class="b s" title="تبديل البوابة" onclick="leavePortal()">🔀</button><button class="b d" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">خروج</button></header>'+
-    '<div class="hero" style="padding-top:22px"><div class="hat">🎓</div><h1>أهلاً بك في مسبار AI</h1><p class="mu" dir="ltr">'+esc(S.email)+'</p></div>'+
-    '<main>'+driveBannerH()+'<div class="grid">'+
-      '<button class="b" style="background:#15803d;min-height:56px;font-size:16px" onclick="setRole(\'pro\')">👨‍🏫 أنا أستاذ</button>'+
-      '<button class="b" style="min-height:56px;font-size:16px" onclick="setRole(\'stu\')">🎓 أنا طالب</button>'+
-    '</div>'+
-    '<button class="b s" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">🚪 تسجيل الخروج وتغيير الحساب</button>'+
-    '<div class="mu" style="text-align:center;margin-top:10px;font-size:11px">v'+APP_VERSION+'</div></main>';
-  }else if(r=="pro" && S.sysRole === 'pro_stu'){
+  else if(S.sysRole === 'pro' && r === 'pro'){
     h=head("واجهة الأستاذ")+'<main>'+topBarH()+[proPortalsV,filesV,bagV,clsV,aiAndTextV,omrV][S.tab]()+'</main>'+
-      navb([["🏛️","البوابات"],["📷","السكنر"],["🎒","الحقيبة"],["🏫","الكلاسات"],["🤖","الذكاء"],["💯","خدمات متقدمة"]]);
-  }else if(r=="stu"){
+      navb([["🏛️","البوابات"],["📷","السكنر"],["🎒","الحقيبة"],["🏫","الكلاسات"],["🤖","الذكاء"],["💯","الخدمات"]]);
+  }
+  else if(S.sysRole === 'stu' && r === 'stu'){
     h=head("واجهة الطالب")+'<main>'+topBarH()+[stuV,filesV,revV,aiAndTextV][S.tab]()+'</main>'+
       navb([["📚","كلاساتي"],["📷","السكنر"],["🧠","المراجعة"],["🤖","الذكاء والنص"]]);
-  }else{
+  }
+  else if(r === "own"){
     h=head("لوحة المالك")+'<main>'+ownV()+'</main>';
+  }
+  else {
+    S.sysRole = null; S.loginRole = null; fbLogout(); return;
   }
   $("app").className=r=="pro"?"pro":"";
   $("app").innerHTML=h;
-  var _nm=$("mt");if(_nm&&_mtv!==null){_nm.value=_mtv;if(_mtf)_nm.focus();}
+  var _nm=$("mt");if(_nm&&_mtv!==null){if(_mtf)_nm.focus();}
   if(S.curChatId!==null){var _wb=$("waBody");if(_wb)_wb.scrollTop=_wb.scrollHeight;}
   else { if(typeof cancelVoiceRecord === "function" && (S.isRecording || S.hasRecBlob)) cancelVoiceRecord(); }
 }
