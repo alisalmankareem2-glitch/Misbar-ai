@@ -191,7 +191,7 @@ label.b{display:inline-flex;align-items:center;justify-content:center;gap:5px;ba
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.57.0";
+var APP_VERSION = "2.58.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -943,7 +943,8 @@ function head(t){
     : '';
   return '<header><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button>'+av+'<h1>'+t+'</h1>'+
   (S.role?'<button class="b s" title="تبديل بين الأستاذ والطالب" onclick="setRole(null)">🔄</button>':'')+
-  '<button class="b d" title="تسجيل الخروج النهائي" onclick="fbLogout()">خروج</button></header>';
+  '<button class="b s" title="تبديل البوابة بدون تسجيل خروج" onclick="leavePortal()">🔀</button>'+
+  '<button class="b d" title="تسجيل الخروج من هذه البوابة" onclick="fbLogout()">خروج</button></header>';
 }
 
 /* بطاقة الحساب أعلى الصفحة: الاسم واليوزر نيم + Drive + الاشتراك */
@@ -6580,6 +6581,18 @@ function ownV(){
   '<div class="mu" style="text-align:center;margin-top:16px">إصدار التطبيق: v'+APP_VERSION+'</div>';
 }
 
+function inAppBrowser(){return /FBAN|FBAV|Instagram|Telegram|WhatsApp|MicroMessenger|TikTok|Snapchat|Line\/|; wv\)/i.test(navigator.userAgent||"")}
+function copyAppLink(){var u=location.origin+location.pathname;try{navigator.clipboard.writeText(u);toast("✅ نُسخ الرابط، افتحه في Chrome أو Safari")}catch(e){prompt("انسخ الرابط:",u)}}
+function pickPortal(p){S.sysRole=p;S.loginRole=p;try{localStorage.setItem("misbar_portal",p)}catch(e){}if(window.fbUsePortal)window.fbUsePortal(p);else draw()}
+function leavePortal(){S.sysRole=null;S.loginRole=null;S.role=null;try{localStorage.removeItem("misbar_portal")}catch(e){}draw()}
+function portalLoginV(p){
+  $("app").className="";
+  var n={pro_stu:"الأستاذ والطالب",parent:"أولياء الأمور",admin:"الإدارة / القسم"}[p]||"";
+  $("app").innerHTML='<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">بوابة '+n+'</p></div><main>'+
+    (inAppBrowser()?'<div class="card" style="border-inline-start:4px solid #f59e0b;line-height:1.8"><b>⚠️ افتح الرابط في المتصفح</b><br>Google لا يسمح بتسجيل الدخول من داخل تلغرام أو واتساب أو إنستغرام. انسخ الرابط وافتحه في Chrome أو Safari.<button class="b s" style="width:100%;margin-top:8px" onclick="copyAppLink()">📋 نسخ رابط التطبيق</button></div>':'')+
+    '<div class="card"><div class="mu" style="line-height:1.8;margin-bottom:10px">سجّل الدخول بحساب Google الخاص ببوابة <b>'+n+'</b>. تقدر تستعمل حساباً مختلفاً لكل بوابة على نفس الجهاز.</div><button class="b" style="width:100%;min-height:50px;font-size:15px" onclick="fbLogin()">🔐 تسجيل الدخول بحساب Google</button></div>'+
+    '<button class="b s" style="width:100%;margin-top:10px" onclick="leavePortal()">↩ رجوع لاختيار البوابة</button></main>';
+}
 function loginV(){
   $("app").className="";
   var svg=function(p){return '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>'};
@@ -6590,7 +6603,7 @@ function loginV(){
   ];
   $("app").innerHTML='<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">المنظومة التعليمية المتكاملة</p></div><main>'+
   '<h2 style="text-align:center;margin-top:0">اختر بوابتك</h2>'+
-  cards.map(function(c){return '<div class="portal '+c[1]+'" role="button" tabindex="0" onclick="S.loginRole=\''+c[0]+'\';fbLogin()"><div class="ic">'+c[4]+'</div><div><b>'+c[2]+'</b><span>'+c[3]+'</span></div></div>'}).join("")+
+  cards.map(function(c){return '<div class="portal '+c[1]+'" role="button" tabindex="0" onclick="pickPortal(\''+c[0]+'\')"><div class="ic">'+c[4]+'</div><div><b>'+c[2]+'</b><span>'+c[3]+'</span>'+((S.portalUsers||{})[c[0]]?'<span dir="auto" style="display:block;font-weight:700;margin-top:4px;font-size:12px">✅ مسجّل: '+esc(S.portalUsers[c[0]])+'</span>':'')+'</div></div>'}).join("")+
   '<div class="mu" style="text-align:center;margin-top:14px;font-size:11px">v'+APP_VERSION+' · تحديث تلقائي</div></main>';
 }
 
@@ -6632,7 +6645,8 @@ function draw(){
   /* تم إزالة الدائرة العائمة بالكامل بناءً على طلبك ليبقى التطبيق نظيفاً وسلساً */
   var oldFab=$("fab");if(oldFab)oldFab.remove();
   if(!S.authReady)return;
-  if(!S.uid){loginV();return}
+  if(!S.sysRole){loginV();return}
+  if(!S.uid){portalLoginV(S.sysRole);return}
   if(S.profileOpen){profileScr();return}
   if(S.subv&&(S.role=="pro"||S.role=="stu")){subScr();return}
   if(S.scnPrintDoc){scnPrintScr();return}
@@ -6663,7 +6677,7 @@ function draw(){
   }
   // 3. Pro/Stu Portal (Requires choosing role first if not set)
   else if(S.sysRole === 'pro_stu' && !r){
-    h='<header><button class="hat" onclick="hat()">🎓</button><h1>مسبار AI</h1><button class="b s" style="min-width:38px;padding:4px 0;font-size:16px" onclick="openProfileModal()" title="حسابي">👤</button><button class="b d" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">خروج</button></header>'+
+    h='<header><button class="hat" onclick="hat()">🎓</button><h1>مسبار AI</h1><button class="b s" style="min-width:38px;padding:4px 0;font-size:16px" onclick="openProfileModal()" title="حسابي">👤</button><button class="b s" title="تبديل البوابة" onclick="leavePortal()">🔀</button><button class="b d" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">خروج</button></header>'+
     '<div class="hero" style="padding-top:22px"><div class="hat">🎓</div><h1>أهلاً بك في مسبار AI</h1><p class="mu" dir="ltr">'+esc(S.email)+'</p></div>'+
     '<main>'+driveBannerH()+'<div class="grid">'+
       '<button class="b" style="background:#15803d;min-height:56px;font-size:16px" onclick="setRole(\'pro\')">👨‍🏫 أنا أستاذ</button>'+
@@ -6718,19 +6732,22 @@ window.addEventListener("load", function(){ setTimeout(checkIOSInstallPrompt, 30
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,reauthenticateWithPopup,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {getFirestore,doc,setDoc,getDoc,updateDoc,deleteDoc,collection,onSnapshot,query,where,runTransaction,arrayUnion} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import {getFirestore,initializeFirestore,doc,setDoc,getDoc,updateDoc,deleteDoc,collection,onSnapshot,query,where,runTransaction,arrayUnion} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 var OWNER="alisalmankareem2@gmail.com";
 
-var app=initializeApp({
+var CFG={
   apiKey:"AIzaSyBpH-gVzeE0tGB1jvmdm7tXphamoq8fydg",
   authDomain:"misbar-ai.firebaseapp.com",
   projectId:"misbar-ai",
   storageBucket:"misbar-ai.firebasestorage.app",
   messagingSenderId:"268553428208",
   appId:"1:268553428208:web:82c01664fe2dd6e09ef635"
-});
-var auth=getAuth(app),db=getFirestore(app),unsubs=[],remotePlans=[];
+};
+/* v2.58: لكل بوابة حساب Google مستقل على نفس الجهاز (بوابة الأستاذ/الطالب على التطبيق الأساسي كي لا تضيع جلسات الزبائن الحالية) */
+var PORTALS=["pro_stu","parent","admin"],APPS={},AUTHS={},DBS={};
+PORTALS.forEach(function(p){var a=p==="pro_stu"?initializeApp(CFG):initializeApp(CFG,p);APPS[p]=a;AUTHS[p]=getAuth(a);DBS[p]=initializeFirestore(a,{experimentalAutoDetectLongPolling:true})});
+var curPortal="pro_stu",app=APPS.pro_stu,auth=AUTHS.pro_stu,db=DBS.pro_stu,unsubs=[],remotePlans=[];
 var fail=function(e){toast(e&&e.code=="permission-denied"?"لا تملك الصلاحية":"خطأ: "+((e&&e.code)||e))};
 var err=function(e){console.warn(e&&e.code?e.code:e)};
 
@@ -6750,16 +6767,23 @@ function captureDriveToken(res){
   }
 }
 
-getRedirectResult(auth).then(function(res){
-  if(res){captureDriveToken(res);if(S.driveToken)restoreFromGoogleDrive(true)}
-}).catch(err);
+function loginErrMsg(e){var c=(e&&e.code)||"";
+  if(c==="auth/unauthorized-domain")return "هذا الدومين غير مضاف في Firebase ← Authentication ← Settings ← Authorized domains";
+  if(c==="auth/network-request-failed")return "تحقق من اتصال الإنترنت ثم أعد المحاولة";
+  if(c==="auth/missing-initial-state"||c==="auth/web-storage-unsupported")return "المتصفح يمنع حفظ الجلسة. افتح التطبيق في Chrome أو Safari مباشرة وليس من داخل تطبيق آخر";
+  return "تعذر تسجيل الدخول: "+(c||e)}
+(function(){var lp="";try{lp=localStorage.getItem("misbar_login_portal")||""}catch(x){}
+  if(lp&&AUTHS[lp])getRedirectResult(AUTHS[lp]).then(function(res){if(res){captureDriveToken(res);if(S.driveToken)restoreFromGoogleDrive(true)}}).catch(function(e){toast(loginErrMsg(e))}).finally(function(){try{localStorage.removeItem("misbar_login_portal")}catch(x){}});
+})();
 
 /* تسجيل دخول نظيف ومباشر بحساب Google بدون أي شاشة تحذير للزبون */
 window.fbLogin=function(){
+  if(inAppBrowser()){toast("افتح الرابط في Chrome أو Safari — Google لا يسمح بالدخول من داخل التطبيقات");return}
   var p=makeBasicGoogleProvider();
+  try{localStorage.setItem("misbar_login_portal",curPortal)}catch(x){}
   signInWithPopup(auth,p).catch(function(e){
-    if(e.code=="auth/popup-blocked"||e.code=="auth/cancelled-popup-request")signInWithRedirect(auth,p);
-    else if(e.code!="auth/popup-closed-by-user")toast("تعذر تسجيل الدخول: "+e.code);
+    if(e.code=="auth/popup-blocked"||e.code=="auth/cancelled-popup-request"||e.code=="auth/operation-not-supported-in-this-environment")signInWithRedirect(auth,p).catch(function(e2){toast(loginErrMsg(e2))});
+    else if(e.code!="auth/popup-closed-by-user")toast(loginErrMsg(e));
   });
 };
 
@@ -6907,7 +6931,7 @@ window.fbLogout=function(){
   try{ if(RTC && RTC.callId) endCall(); }catch(e){}
   unsubs.forEach(function(f){try{f()}catch(e){}});unsubs=[];
   var oldUid=S.uid;
-  S.uid=null;S.email="";S.dispName="";S.role=null;S.isOwner=false;S.userAiKey="";
+  S.uid=null;S.email="";S.dispName="";S.role=null;S.isOwner=false;S.userAiKey="";S.sysRole=null;S.loginRole=null;try{localStorage.removeItem("misbar_portal")}catch(x){}
   S.driveToken="";S.driveFolderId="";S.driveFileId="";
   S.subv=0;S.tab=0;S.openMat=null;S.gw=null;S.pp=null;S.bk=null;
   S.subs=[];S.req=[];
@@ -6918,7 +6942,7 @@ window.fbLogout=function(){
   }).catch(function(){draw()});
 };
 
-onAuthStateChanged(auth,function(u){
+function onAuth(u){
   S.authReady=true;
   unsubs.forEach(function(f){try{f()}catch(e){}});unsubs=[];
   S.subs=[];S.req=[];
@@ -6934,6 +6958,7 @@ onAuthStateChanged(auth,function(u){
 
   loadUserDeviceData();
   restoreAppStateFromSession();
+  draw();
   getDoc(doc(db,"users",u.uid)).then(function(uSnap){
     if(uSnap.exists()){
       var ud=uSnap.data();
@@ -7165,7 +7190,26 @@ window.fbDeleteRoomMessage=function(chatId, msgId){
     },err));
   }
   draw();
-});
+}
+var _unAuth=null;
+function bindAuth(){if(_unAuth){try{_unAuth()}catch(e){}}_unAuth=onAuthStateChanged(auth,onAuth)}
+window.fbUsePortal=function(p){
+  if(!APPS[p])return;
+  if(p===curPortal&&_unAuth){if(S.authReady)draw();return}
+  unsubs.forEach(function(f){try{f()}catch(e){}});unsubs=[];
+  [typeof _wi!=="undefined"&&_wi,typeof _wr!=="undefined"&&_wr,typeof _wc!=="undefined"&&_wc].forEach(function(f){try{if(f)f()}catch(e){}});
+  curPortal=p;app=APPS[p];auth=AUTHS[p];db=DBS[p];
+  S.authReady=false;S.uid=null;S.email="";S.role=null;S.isOwner=false;S.subs=[];S.req=[];S.watchingInsts=false;S.curInstId=null;S.myInsts=[];S.cardItems=[];S.rsPub=[];S._rsW=null;S.stuClasses=[];S._swc=null;S.stuLink=undefined;S.profLoaded=false;
+  bindAuth();
+};
+S.portalUsers={};
+PORTALS.forEach(function(p){onAuthStateChanged(AUTHS[p],function(u){S.portalUsers[p]=u?(u.email||""):"";if(S.authReady&&!S.sysRole)draw()})});
+(function(){var sp="";try{sp=localStorage.getItem("misbar_portal")||""}catch(e){}
+  var go=function(){if(S.authReady)return;if(PORTALS.indexOf(sp)<0&&AUTHS.pro_stu.currentUser)sp="pro_stu";
+    if(PORTALS.indexOf(sp)>-1){S.sysRole=S.loginRole=sp;window.fbUsePortal(sp)}else{S.authReady=true;draw()}};
+  Promise.all(PORTALS.map(function(p){return AUTHS[p].authStateReady()})).then(go).catch(go);
+  setTimeout(go,4000);
+})();
 
 window.sendReq=function(){
   var p=S.plans[S.pick];if(!p){toast("اختر باقة أولاً");return}
