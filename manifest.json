@@ -1,30 +1,30 @@
 {
-  "id": "./",
-  "name": "مسبار AI - منصة الأستاذ والطالب",
+  "name": "مسبار AI - المنظومة التعليمية المتكاملة",
   "short_name": "مسبار AI",
-  "description": "منصة تعليمية ذكية للأستاذ والطالب: أوراق الأسئلة والملازم A4، الماسح الضوئي، الكلاسات، الدرجات، والذكاء الاصطناعي.",
-  "start_url": "./",
+  "description": "المنظومة التعليمية المتكاملة للأساتذة والطلاب وأولياء الأمور والإدارة",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "dir": "rtl",
   "lang": "ar",
   "background_color": "#f6f7fb",
   "theme_color": "#15803d",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "./icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "./icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-512-maskable.png",
+      "src": "./icon-512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
