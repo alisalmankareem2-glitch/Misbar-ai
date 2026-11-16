@@ -145,6 +145,35 @@ button.b:not(:disabled):active { transform: scale(0.96); }
 main { animation: fadeIn 0.4s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+/* ===== v2.60: Elegant UI Refresh ===== */
+body { background-color: #f8fafc; font-family: 'Cairo', sans-serif; }
+.card { background: rgba(255, 255, 255, 0.95); border: 1px solid #e2e8f0; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); backdrop-filter: blur(10px); margin-bottom: 16px; transition: transform 0.2s; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 12px 36px rgba(0,0,0,0.06); }
+header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); border-bottom: 1px solid #e2e8f0; padding: 14px 16px; }
+button.b { background: linear-gradient(135deg, var(--ac), #2563eb); border-radius: 14px; font-weight: 700; letter-spacing: 0.3px; box-shadow: 0 6px 16px rgba(29,78,216,0.25); text-transform: uppercase; font-size: 14px; padding: 10px 16px; border: none; color: #fff; transition: all 0.2s ease; }
+button.b:hover { background: linear-gradient(135deg, #1e40af, #1d4ed8); box-shadow: 0 8px 20px rgba(29,78,216,0.3); transform: scale(1.02); }
+button.b:active { transform: scale(0.96); }
+button.b.s { background: #eff6ff; color: #1d4ed8; box-shadow: none; border: 1px solid #bfdbfe; }
+button.b.s:hover { background: #dbeafe; }
+button.b.d { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; box-shadow: none; }
+input, select, textarea { border-radius: 14px; border: 1px solid #cbd5e1; padding: 12px 14px; font-size: 14px; background: #fff; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); transition: border-color 0.2s; }
+input:focus, select:focus, textarea:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+.portal-card { background: linear-gradient(145deg, #ffffff, #f8fafc); border-radius: 20px; border: 1px solid #e2e8f0; padding: 20px; display: flex; align-items: center; gap: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.03); transition: all 0.2s ease; cursor: pointer; }
+.portal-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.06); border-color: #bfdbfe; }
+.portal-ico { width: 56px; height: 56px; border-radius: 18px; background: linear-gradient(135deg, #eff6ff, #dbeafe); color: #2563eb; font-size: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: inset 0 2px 4px rgba(255,255,255,0.5); }
+h2 { color: #0f172a; font-weight: 800; font-size: 17px; margin-bottom: 12px; }
+.badge { border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 700; background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+@media (prefers-color-scheme: dark) {
+  body { background-color: #0f172a; }
+  .card { background: rgba(30, 41, 59, 0.85); border-color: #334155; }
+  header { background: rgba(15, 23, 42, 0.85); border-color: #334155; }
+  input, select, textarea { background: #1e293b; border-color: #475569; color: #f8fafc; }
+  .portal-card { background: linear-gradient(145deg, #1e293b, #0f172a); border-color: #334155; }
+  .portal-ico { background: linear-gradient(135deg, #334155, #1e293b); color: #60a5fa; }
+  h2 { color: #f8fafc; }
+  button.b.s { background: #1e3a8a; color: #bfdbfe; border-color: #1e40af; }
+}
+
 /* ===== v2.51 واجهة أنيقة ===== */
 body{background-image:radial-gradient(900px 420px at 90% -8%,#dbe7ff 0,transparent 60%),radial-gradient(800px 420px at -10% 8%,#d6f5e4 0,transparent 55%);background-attachment:fixed}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) body{background-image:none}}
@@ -191,7 +220,7 @@ label.b{display:inline-flex;align-items:center;justify-content:center;gap:5px;ba
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.61.0";
+var APP_VERSION = "2.60.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -5660,13 +5689,12 @@ function livePortalV(){
         return '<button type="button" class="chip" onclick="selectStudentForParent('+idx+')">👤 '+esc(g[0])+' ('+esc(g[1])+')</button>';
       }).join("") + '</div>' : '') +
       '<input id="prName" placeholder="اسم الطالب الكامل (مثال: محمد علي حسن)" value="'+esc(S.prNameVal||"")+'" oninput="S.prNameVal=this.value">' +
+
       '<label>نوع الإشعار الرسمي</label><select id="prType"><option value="grade">📝 تبليغ بدرجة امتحان + كود المتابعة</option><option value="absent">⚠️ تبليغ بغياب رسمي</option><option value="behavior">🗣️ استدعاء أو ملاحظة تربوية</option><option value="custom">💬 رسالة مخصصة</option></select>' +
       '<label>التفاصيل / الدرجة المأخوذة</label><textarea id="prNote" rows="2" placeholder="اكتب الدرجة أو الملاحظة هنا...">'+esc(S.prNoteVal||"")+'</textarea>' +
-      '<div class="grid" style="margin-top:8px">' +
-        '<button class="b" style="font-size:14px;background:#25d366" onclick="sendParentInApp()">📱 إرسال التبليغ الآن</button>' +
-      '</div>' +
-      '<div class="mu" style="font-size:11px;margin:6px 0">يصل التبليغ فوراً لمنصة مسبار. يدخل ولي الأمر بكود الطالب ويشاهده بدون الحاجة لتطبيقات المراسلة.</div>' +
-      '<button class="b" style="width:100%;background:#7e22ce;font-size:14px;margin-top:6px" onclick="sendGradesToAdmin()">🏢 إرسال درجات الجميع للإدارة والأهالي (كل طالب بكوده)</button>' +
+      '<button class="b" style="width:100%;margin-top:8px;font-size:15px;background:#1d4ed8" onclick="sendParentInApp()">📤 إرسال التبليغ المؤتمت لولي الأمر (داخل التطبيق)</button>' +
+      '<div class="mu" style="font-size:11px;margin:6px 0">يصل التبليغ فوراً لولي الأمر عند إدخاله كود الطالب في حسابه.</div>' +
+      '<button class="b" style="width:100%;background:#7e22ce;font-size:14px" onclick="sendGradesToAdmin()">🏢 إرسال درجات الجميع للإدارة والأهالي (كل طالب بكوده)</button>' +
     '</div>';
     h += absenceCardV();
   } else {
@@ -5808,20 +5836,7 @@ async function genAiQuizBank(){
   S.busy = false; draw();
 }
 
-function sendParentWhatsAppOld(){
-  var name=$("prName").value.trim(),phone=$("prPhone").value.trim(),type=$("prType").value,note=$("prNote").value.trim();
-  if(!name||!phone){toast("يرجى كتابة اسم الطالب ورقم الهاتف");return}
-  if(!requireKey())return;
-  var fullPhone="964"+phone.replace(/^0+/,""),code=stuCode(name),tName=S.dispName||"الأستاذ";
-  var msg="السلام عليكم ورحمة الله،\nإشعار رسمي مؤتمت من ("+tName+") بخصوص الطالب/ة: *"+name+"*\n🔑 كود المتابعة السحابي: *"+code+"*\n\n";
-  if(type==="grade")msg+="📊 النتيجة والتقييم: "+note+"\nيمكنكم متابعة سجل الطالب الكامل عبر بوابة أولياء الأمور في مسبار AI باستخدام الكود أعلاه.";
-  else if(type==="absent")msg+="⚠️ نود إبلاغكم بغياب الطالب هذا اليوم. "+note;
-  else if(type==="behavior")msg+="🗣️ ملاحظة تربوية / استدعاء: "+note;
-  else msg+=note;
-  msg+="\n\n(أُرسل ووثّق آلياً عبر منظومة مسبار AI 🎓)";
-  if(window.fbPutCardItem)window.fbPutCardItem(code,{student:name,teacher:tName,teacherEmail:S.email,type:type,note:note,at:Date.now()},0).catch(function(){});
-  window.open("https://wa.me/"+fullPhone+"?text="+encodeURIComponent(msg),"_blank");
-}
+
 
 function launchLiveQuiz(){
   if(!window.fbStartLiveQuiz){ toast("جاري الاتصال بالسيرفر، انتظر لحظة..."); return; }
@@ -6007,7 +6022,7 @@ function stuSubmitQuiz(mode){
   qz.finalTotal = total;
   draw();
 
-  window.fbSubmitQuizAns(qz.pin, S.stuCodeVal || S.uid || name, name, score, total, cheated, timeout).then(function(){
+  window.fbSubmitQuizAns(qz.pin, S.uid || name, name, score, total, cheated, timeout).then(function(){
      toast(cheated ? "🚫 تم إلغاء امتحانك وتصفيره لخروجك من الصفحة!" : "✅ تم تسليم إجابتك وتوثيق درجتك ("+score+"/"+total+")!");
   });
 }
@@ -6037,18 +6052,21 @@ function adminPortalV(){
   return head+keyCard+rosterAdminH(cur)+'<input placeholder="🔍 ابحث باسم الطالب أو الأستاذ..." value="'+esc(S.adminSearchQ||"")+'" oninput="S.adminSearchQ=this.value;draw()"><h2>السجلات ('+list.length+')</h2>'+reps+out;
 }
 
-
+function parentsPortalV(){
+  var codeIn=(S.parentStuCode||"").trim().toUpperCase().replace(/\s+/g,""),okFmt=/^STU-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(codeIn);
+  if(!okFmt&&codeIn.length>=3&&S._resFor!==codeIn&&window.fbResolveStd){S._resFor=codeIn;S._resMsg="";window.fbResolveStd(codeIn).then(function(d){if(d&&d.p&&(d.sec===1||/^STD-/.test(codeIn))){S.parentStuCode=d.p;S._resMsg=""}else S._resMsg=d?"easy":"nf";draw()}).catch(function(){S._resMsg="err";draw()})}
+  if(okFmt&&S.watchedCode!==codeIn&&window.fbWatchCard){S.watchedCode=codeIn;S.cardItems=[];window.fbWatchCard(codeIn)}
   var items=okFmt?(S.cardItems||[]):[];
   var body;
   if(!codeIn)body='<div class="card mu" style="text-align:center;padding:24px 10px">أدخل كود الطالب أعلاه لعرض درجاته وتبليغاته.</div>';
-  else if(!okFmt)body='<div class="card mu" style="text-align:center;padding:24px 10px;line-height:1.8">'+(S._resMsg==="easy"?'هذا <b>كود الطالب</b> وليس كود ولي الأمر. اطلب من الإدارة أو الأستاذ كود ولي الأمر (يبدأ بـ STU-).':S._resMsg==="nf"?'الكود غير موجود، تأكد من كتابته.':S._resMsg==="err"?'تعذر التحقق من الكود الآن، حاول مرة ثانية.':'اكتب كود ولي الأمر (STU-XXXX-XXXX-XXXX) أو كود الطالب كما استلمته.')+'</div>';
+  else if(!okFmt)body='<div class="card mu" style="text-align:center;padding:24px 10px;line-height:1.8">'+(S._resMsg==="easy"?'هذا <b>كود الطالب</b> وليس كود ولي الأمر. اطلب من الإدارة أو الأستاذ كود ولي الأمر (يبدأ بـ STU-).':S._resMsg==="nf"?'الكود غير موجود، تأكد من كتابته.':S._resMsg==="err"?'تعذر التحقق من الكود الآن، حاول مرة ثانية.':'اكتب كود ولي الأمر (STU-XXXX-XXXX) أو كود الطالب كما استلمته.')+'</div>';
   else if(!items.length)body='<div class="card mu" style="text-align:center;padding:24px 10px">ما كو سجلات لهذا الكود لحد الآن. تأكد من الكود المرسل لك من الأستاذ.</div>';
   else body='<h2>📊 سجل الطالب: '+esc(items[0].student||"")+'</h2>'+items.map(function(n){
-    if(n.type==="grade")return '<div class="card"><div class="row"><div class="grow"><b>🧑‍🎓 '+esc(n.student||"")+'</b><div class="mu">الأستاذ: '+esc(n.teacher)+' · '+fd(n.at)+'</div></div><span class="badge" style="font-size:15px;padding:6px 12px;background:#dcfce7;color:#15803d">الدرجة: '+esc(n.score)+'</span></div>'+parentReplyH(codeIn, n)+'</div>';
-    return '<div class="card" style="border-inline-start:4px solid '+(n.type==="absent"?"#dc2626":"#f59e0b")+'"><b>'+(n.type==="absent"?"⚠️ تبليغ غياب من ":"📩 تبليغ من ")+esc(n.teacher)+' ('+fd(n.at)+')</b><div style="margin-top:4px">'+esc(n.note)+'</div>'+parentReplyH(codeIn, n)+'</div>';
+    if(n.type==="grade")return '<div class="card row"><div class="grow"><b>🧑‍🎓 '+esc(n.student||"")+'</b><div class="mu">الأستاذ: '+esc(n.teacher)+' · '+fd(n.at)+'</div></div><span class="badge" style="font-size:15px;padding:6px 12px;background:#dcfce7;color:#15803d">الدرجة: '+esc(n.score)+'</span></div>';
+    return '<div class="card" style="border-inline-start:4px solid '+(n.type==="absent"?"#dc2626":"#f59e0b")+'"><b>'+(n.type==="absent"?"⚠️ تبليغ غياب من ":"📩 تبليغ من ")+esc(n.teacher)+' ('+fd(n.at)+')</b><div style="margin-top:4px">'+esc(n.note)+'</div></div>';
   }).join("");
   return '<div class="card" style="border-inline-start:4px solid #2563eb;background:#eff6ff"><h2>👨‍👩‍👦 بوابة أولياء الأمور</h2><div class="mu" style="line-height:1.6">أدخل كود ابنك (مثل <b>STU-AB12-CD34-EF56</b>) اللي استلمته من الأستاذ لعرض درجاته وغياباته وتبليغاته. تشوف ابنك فقط.</div></div>'+
-  '<div class="card"><label>كود الطالب:</label><div class="row"><input id="pCodeIn" dir="ltr" type="text" value="'+esc(S.parentStuCode||"")+'" placeholder="STU-XXXX-XXXX-XXXX" class="grow" style="margin:0" oninput="S.parentStuCode=this.value"><button class="b" style="background:#2563eb" onclick="S.parentStuCode=document.getElementById(\'pCodeIn\').value;draw()">🔍 متابعة</button></div></div>'+body+
+  '<div class="card"><label>كود الطالب:</label><div class="row"><input id="pCodeIn" dir="ltr" type="text" value="'+esc(S.parentStuCode||"")+'" placeholder="STU-XXXX-XXXX" class="grow" style="margin:0" oninput="S.parentStuCode=this.value"><button class="b" style="background:#2563eb" onclick="S.parentStuCode=document.getElementById(\'pCodeIn\').value;draw()">🔍 متابعة</button></div></div>'+body+
   '<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
 }
 
@@ -6122,7 +6140,7 @@ function keyParts(){var k=String(getInstKey()||"").split(".");return (k.length==
 function applyKey(k,name){S.instKey=k;try{localStorage.setItem("misbar_inst_key_"+(S.uid||"anon"),k);localStorage.setItem("misbar_inst_name_"+(S.uid||"anon"),name||"")}catch(e){}if(k&&!keyParts())toast("صيغة المفتاح غير صحيحة");else if(k)toast("✅ تم ربط المؤسسة");draw()}
 function getInstName(){try{return localStorage.getItem("misbar_inst_name_"+(S.uid||"anon"))||""}catch(e){return ""}}
 function normKey(v){return String(v||"").toUpperCase().replace(/[^A-Z0-9-]/g,"").slice(0,24)}
-function keyErr(k){if(k.length<2)return "المفتاح خانتين على الأقل (حروف أو أرقام)";return ""}
+function keyErr(k){if(!/^[A-Z0-9-]{6,24}$/.test(k))return "المفتاح 6 خانات على الأقل (حروف إنجليزية وأرقام)";if(!/[A-Z]/.test(k)||!/\d/.test(k))return "اجعله حروفاً وأرقاماً معاً، مثل ABBASIYA2026";return ""}
 var TRM={"ا":"A","أ":"A","إ":"A","آ":"A","ب":"B","ت":"T","ث":"TH","ج":"J","ح":"H","خ":"KH","د":"D","ذ":"TH","ر":"R","ز":"Z","س":"S","ش":"SH","ص":"S","ض":"D","ط":"T","ظ":"Z","ع":"A","غ":"GH","ف":"F","ق":"Q","ك":"K","ل":"L","م":"M","ن":"N","ه":"H","ة":"A","و":"W","ي":"Y","ى":"A"};
 function suggestKey(name){var s=String(name||"").replace(/(مدرسة|ثانوية|متوسطة|ابتدائية|اعدادية|إعدادية|كلية|قسم|جامعة|معهد)/g,"").replace(/ال/g,"").trim(),o="";for(var i=0;i<s.length;i++)o+=TRM[s[i]]||(/[A-Za-z0-9]/.test(s[i])?s[i].toUpperCase():"");o=o.slice(0,10)||"MISBAR";return o+String(Math.floor(100+Math.random()*900))}
 function suggestKeyUI(){var c=(S.myInsts||[]).filter(function(i){return i.id===S.curInstId})[0];S.keyDraft=suggestKey(c?c.name:"");draw()}
@@ -6150,8 +6168,8 @@ function requireKey(){if(!keyParts()){toast("أدخل مفتاح المؤسسة 
 function stuCode(name){
   var kp=keyParts();if(!kp)return "";
   var s=kp.sec+"|"+normNm(String(name).replace(/ \(معدل.*\)/g,"")),a=cyr(s,1),b=cyr(s,7),n=[a[0],a[1],b[0],b[1]],o="";
-  for(var i=0;i<12;i++)o+=B32[((n[i%4]>>>(Math.floor(i/4)*8))&255)%31];
-  return "STU-"+o.slice(0,4)+"-"+o.slice(4,8)+"-"+o.slice(8,12);
+  for(var i=0;i<8;i++)o+=B32[((n[i%4]>>>(Math.floor(i/4)*8))&255)%31];
+  return "STU-"+o.slice(0,4)+"-"+o.slice(4,8);
 }
 function instKeyCardV(){
   var kp=keyParts();
@@ -6244,7 +6262,7 @@ function sendGradesToAdmin(){
 }
 
 /* ===== v2.55: سجل الطلاب الرسمي (OCR) + أكواد + أتمتة الأساتذة والأهالي والكلاسات والامتحانات ===== */
-function stdCode(name,pre){var kp=keyParts();if(!kp)return "";var s=kp.sec+"|std|"+normNm(name),a=cyr(s,11),b=cyr(s,19),n=[a[0],a[1],b[0],b[1]],o="";for(var i=0;i<12;i++)o+=B32[((n[i%4]>>>(Math.floor(i/4)*8))&255)%31];return (pre||"STD")+"-"+o.slice(0,4)+"-"+o.slice(4,8)+"-"+o.slice(8,12)}
+function stdCode(name,pre){var kp=keyParts();if(!kp)return "";var s=kp.sec+"|std|"+normNm(name),a=cyr(s,11),b=cyr(s,19),n=[a[0],a[1],b[0],b[1]],o="";for(var i=0;i<8;i++)o+=B32[((n[i%4]>>>(Math.floor(i/4)*8))&255)%31];return (pre||"STD")+"-"+o.slice(0,4)+"-"+o.slice(4,8)}
 function rosterDocId(){var kp=keyParts();if(!kp)return "x";var a=cyr(kp.sec+"|roster",5),b=cyr(kp.sec+"|roster",9);return kp.id+"_"+a[0].toString(36)+a[1].toString(36)+b[0].toString(36)+b[1].toString(36)}
 function waNum(v){var d=String(v||"").replace(/\D/g,"");if(d.length<7)return "";d=d.replace(/^00/,"");if(d.indexOf("964")===0)return d;return "964"+d.replace(/^0+/,"")}
 function sendCodeWA(c){var x=(S.rsPub||[]).filter(function(y){return y.c===c})[0],ph=(S.rsPh||{})[c],ins=(S.myInsts||[]).filter(function(i){return i.id===S.curInstId})[0];if(!x||!ph)return;
@@ -6282,7 +6300,7 @@ function publishRoster(){
   if(rc.sort)l.sort(function(a,b){return a.n.localeCompare(b.n,"ar")});
   var mx=0;(S.rsPub||[]).forEach(function(x){var m=new RegExp("^"+rc.pre+"(\\d+)$").exec(x.c);if(m)mx=Math.max(mx,+m[1])});
   l.forEach(function(x){var o=byN[normNm(x.n)];
-    if(o){x.c=o.c;x.sec=o.sec===undefined?(/^[A-Z0-9]+-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(o.c)?1:0):o.sec}
+    if(o){x.c=o.c;x.sec=o.sec===undefined?(/^[A-Z0-9]+-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(o.c)?1:0):o.sec}
     else if(rc.mode==="seq"){x.c=rc.pre+(++mx);x.sec=0}
     else{x.c=stdCode(x.n,rc.pre);x.sec=1}
     x.p=stuCode(x.n);map[x.c]={n:x.n,g:x.g||"",c:x.c,p:x.p,sec:x.sec};if(x.ph)ph[x.c]=x.ph});
@@ -6311,8 +6329,8 @@ function rosterAdminH(cur){
     rsOptsH(rc)+chk("t","👨‍🏫 أتمتة مع الأساتذة: يستوردون القائمة الرسمية بمفتاح المؤسسة")+chk("p","👨‍👩‍👦 أتمتة مع الأهالي: تفعيل كود كل ولي أمر فوراً برسالة تسجيل")+
     '<button class="b" style="width:100%;background:#0891b2;margin-top:6px" '+(S.busy?'disabled':'')+' onclick="publishRoster()">'+(S.busy?'⏳ ...':'✅ اعتماد وتوليد الأكواد'+(n?' ('+n+')':''))+'</button>'+
     (pub.length?'<div style="max-height:200px;overflow-y:auto;background:var(--bg);border-radius:8px;padding:6px 8px;margin-top:8px;font-size:12px">'+pub.map(function(x){return '<div class="row" style="padding:3px 0;border-bottom:1px dashed var(--ln)"><span class="grow">'+esc(x.n)+(x.g?' <span class="mu">'+esc(x.g)+'</span>':'')+'</span><span class="badge" dir="ltr">'+esc(x.c)+'</span><button class="b d" style="min-height:28px;padding:2px 8px" onclick="rsDel(\''+x.c+'\')">✖</button></div>'}).join("")+'</div>'+
-      '<div class="grid" style="margin-top:8px"><button class="b s" onclick="rsExport(\'xlsx\')">⬇️ Excel</button><button class="b s" onclick="rsExport(\'doc\')">⬇️ Word</button><button class="b s" onclick="rsExport(\'pdf\')">⬇️ PDF</button><button class="b s" onclick="printRosterCards()">🖨️ البطاقات</button><button class="b s" onclick="copyAllCodes()">📋 نسخ الكل كرسالة</button></div>':'')+
-    (function(){var w=pub.filter(function(x){return (S.rsPh||{})[x.c]});return w.length?'<div style="margin-top:8px"><b>📲 إرسال أكواد الأهالي عبر واتساب ('+w.length+')</b><div class="mu" style="font-size:11px">يفتح واتساب برسالة جاهزة لكل ولي أمر، وتضغط إرسال بنفسك.</div><div style="max-height:160px;overflow-y:auto">'+w.map(function(x){return '<div class="row" style="padding:3px 0"><span class="grow">'+esc(x.n)+'</span><button class="b s" onclick="sendCodeWA(\''+x.c+'\')">📲 إرسال</button></div>'}).join("")+'</div></div>':''})()+'</div>';
+      '<div class="grid" style="margin-top:8px"><button class="b s" onclick="rsExport(\'xlsx\')">⬇️ Excel</button><button class="b s" onclick="rsExport(\'doc\')">⬇️ Word</button><button class="b s" onclick="rsExport(\'pdf\')">⬇️ PDF</button><button class="b s" onclick="printRosterCards()">🖨️ البطاقات</button></div>':'')+
+    ''+'</div>';
 }
 
 /* ===== v2.59: استيراد ملفات (PDF/Word/Excel/صور) + تصدير + خيارات الأكواد ===== */
@@ -6683,8 +6701,19 @@ function portalLoginV(p){
     '<div class="card"><div class="mu" style="line-height:1.8;margin-bottom:10px">سجّل الدخول بحساب Google الخاص ببوابة <b>'+n+'</b>. تقدر تستعمل حساباً مختلفاً لكل بوابة على نفس الجهاز.</div><button class="b" style="width:100%;min-height:50px;font-size:15px" onclick="fbLogin()">🔐 تسجيل الدخول بحساب Google</button></div>'+
     '<button class="b s" style="width:100%;margin-top:10px" onclick="leavePortal()">↩ رجوع لاختيار البوابة</button></main>';
 }
-
-
+function loginV(){
+  $("app").className="";
+  var svg=function(p){return '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>'};
+  var cards=[
+    ["pro_stu","p1","الأستاذ والطالب","الدروس والامتحانات والذكاء الاصطناعي",svg('<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>')],
+    ["parent","p2","أولياء الأمور","الدرجات والغيابات والتبليغات بكود الطالب",svg('<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.3"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><path d="M15 15c3-.6 6 1 6 4.5"/>')],
+    ["admin","p3","الإدارة / القسم","استلام الدرجات وكشوفات Excel",svg('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>')]
+  ];
+  $("app").innerHTML='<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">المنظومة التعليمية المتكاملة</p></div><main>'+
+  '<h2 style="text-align:center;margin-top:0">اختر بوابتك</h2>'+
+  cards.map(function(c){return '<div class="portal '+c[1]+'" role="button" tabindex="0" onclick="pickPortal(\''+c[0]+'\')"><div class="ic">'+c[4]+'</div><div><b>'+c[2]+'</b><span>'+c[3]+'</span>'+((S.portalUsers||{})[c[0]]?'<span dir="auto" style="display:block;font-weight:700;margin-top:4px;font-size:12px">✅ مسجّل: '+esc(S.portalUsers[c[0]])+'</span>':'')+'</div></div>'}).join("")+
+  '<div class="mu" style="text-align:center;margin-top:14px;font-size:11px">v'+APP_VERSION+' · تحديث تلقائي</div></main>';
+}
 
 
 /* حفظ واسترجاع مكان الصفحة عند التحديث (Refresh) أو السحب للتحديث */
@@ -6739,35 +6768,40 @@ function draw(){
 
   var _mt=$("mt"),_mtv=_mt?_mt.value:null,_mtf=!!_mt&&document.activeElement===_mt;
 
-  
   // Set system role from login choice if not set
   if(!S.sysRole && S.loginRole) { S.sysRole = S.loginRole; saveDeviceOnly(); }
-  if(!S.sysRole) { loginV(); return; }
+  if(!S.sysRole) S.sysRole = 'pro_stu'; // fallback
+  var _la=curAud();if(_la&&payMode(_la)==="lock"&&!hasAud(_la)){subScr(true);return}
 
   var h="",r=S.role;
   
   // 1. Admin Portal
   if(S.sysRole === 'admin') {
-     if(!S.uid) { loginV(); return; }
      h = head("الإدارة / رئيس القسم") + '<main>' + adminPortalV() + '</main>';
   }
   // 2. Parents Portal
   else if(S.sysRole === 'parent') {
      h = head("بوابة أولياء الأمور") + '<main>' + parentsPortalV() + '</main>';
   }
-  // 3. Student Portal (via Code)
-  else if(S.sysRole === 'stu') {
-     h = head("بوابة الطالب") + '<main>' + stuPortalV() + '</main>';
-  }
-  // 4. Pro Portal (Teacher)
-  else if(S.sysRole === 'pro'){
-    if(!S.uid) { loginV(); return; }
+  // 3. Pro/Stu Portal (Requires choosing role first if not set)
+  else if(S.sysRole === 'pro_stu' && !r){
+    h='<header><button class="hat" onclick="hat()">🎓</button><h1>مسبار AI</h1><button class="b s" style="min-width:38px;padding:4px 0;font-size:16px" onclick="openProfileModal()" title="حسابي">👤</button><button class="b s" title="تبديل البوابة" onclick="leavePortal()">🔀</button><button class="b d" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">خروج</button></header>'+
+    '<div class="hero" style="padding-top:22px"><div class="hat">🎓</div><h1>أهلاً بك في مسبار AI</h1><p class="mu" dir="ltr">'+esc(S.email)+'</p></div>'+
+    '<main>'+driveBannerH()+'<div class="grid">'+
+      '<button class="b" style="background:#15803d;min-height:56px;font-size:16px" onclick="setRole(\'pro\')">👨‍🏫 أنا أستاذ</button>'+
+      '<button class="b" style="min-height:56px;font-size:16px" onclick="setRole(\'stu\')">🎓 أنا طالب</button>'+
+    '</div>'+
+    '<button class="b s" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">🚪 تسجيل الخروج وتغيير الحساب</button>'+
+    '<div class="mu" style="text-align:center;margin-top:10px;font-size:11px">v'+APP_VERSION+'</div></main>';
+  }else if(r=="pro" && S.sysRole === 'pro_stu'){
     h=head("واجهة الأستاذ")+'<main>'+topBarH()+[proPortalsV,filesV,bagV,clsV,aiAndTextV,omrV][S.tab]()+'</main>'+
       navb([["🏛️","البوابات"],["📷","السكنر"],["🎒","الحقيبة"],["🏫","الكلاسات"],["🤖","الذكاء"],["💯","خدمات متقدمة"]]);
+  }else if(r=="stu"){
+    h=head("واجهة الطالب")+'<main>'+topBarH()+[stuV,filesV,revV,aiAndTextV][S.tab]()+'</main>'+
+      navb([["📚","كلاساتي"],["📷","السكنر"],["🧠","المراجعة"],["🤖","الذكاء والنص"]]);
   }else{
     h=head("لوحة المالك")+'<main>'+ownV()+'</main>';
   }
-
   $("app").className=r=="pro"?"pro":"";
   $("app").innerHTML=h;
   var _nm=$("mt");if(_nm&&_mtv!==null){_nm.value=_mtv;if(_mtf)_nm.focus();}
@@ -6800,120 +6834,6 @@ function checkIOSInstallPrompt(){
   }
 }
 window.addEventListener("load", function(){ setTimeout(checkIOSInstallPrompt, 3000); });
-
-
-function loginV(){
-  $("app").className="";
-  $("app").innerHTML = '<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">المنظومة التعليمية المتكاملة</p></div>'+
-  '<main>' +
-    '<h2 style="text-align:center;margin-top:0;margin-bottom:16px">اختر بوابتك للدخول</h2>' +
-    '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<div class="card row" onclick="S.loginRole=\'pro\';fbLogin()" style="cursor:pointer;border:2px solid var(--ac);background:var(--acs);transition:transform 0.2s;margin:0" onmousedown="this.style.transform=\'scale(0.97)\'" onmouseup="this.style.transform=\'none\'">' +
-         '<div style="font-size:38px;padding:0 10px">👨‍🏫</div>' +
-         '<div class="grow"><b style="display:block;color:var(--ac);font-size:16px">بوابة الأستاذ</b><div class="mu" style="font-size:12px;margin-top:4px">دخول بحساب Google</div></div>' +
-      '</div>' +
-      '<div class="card row" onclick="S.sysRole=\'stu\';draw()" style="cursor:pointer;border:2px solid #0891b2;background:#ecfeff;transition:transform 0.2s;margin:0" onmousedown="this.style.transform=\'scale(0.97)\'" onmouseup="this.style.transform=\'none\'">' +
-         '<div style="font-size:38px;padding:0 10px">🎓</div>' +
-         '<div class="grow"><b style="display:block;color:#0891b2;font-size:16px">بوابة الطالب</b><div class="mu" style="font-size:12px;margin-top:4px">دخول بكود الطالب (بدون حساب)</div></div>' +
-      '</div>' +
-      '<div class="card row" onclick="S.sysRole=\'parent\';draw()" style="cursor:pointer;border:2px solid #2563eb;background:#eff6ff;transition:transform 0.2s;margin:0" onmousedown="this.style.transform=\'scale(0.97)\'" onmouseup="this.style.transform=\'none\'">' +
-         '<div style="font-size:38px;padding:0 10px">👨‍👩‍👦</div>' +
-         '<div class="grow"><b style="display:block;color:#1d4ed8;font-size:16px">أولياء الأمور</b><div class="mu" style="font-size:12px;margin-top:4px">متابعة الأبناء (بدون حساب)</div></div>' +
-      '</div>' +
-      '<div class="card row" onclick="S.loginRole=\'admin\';fbLogin()" style="cursor:pointer;border:2px solid #9333ea;background:#f3e8ff;transition:transform 0.2s;margin:0" onmousedown="this.style.transform=\'scale(0.97)\'" onmouseup="this.style.transform=\'none\'">' +
-         '<div style="font-size:38px;padding:0 10px">🏢</div>' +
-         '<div class="grow"><b style="display:block;color:#7e22ce;font-size:16px">الإدارة / القسم</b><div class="mu" style="font-size:12px;margin-top:4px">لوحة التحكم والمراقبة</div></div>' +
-      '</div>' +
-    '</div>' +
-    '<div class="mu" style="text-align:center;margin-top:20px;font-size:11px">المنظومة السحابية v'+APP_VERSION+' · تحديث تلقائي</div>'+
-  '</main>';
-}
-
-function parentReplyH(code, n){
-    var itemId = n.id || ("i_" + n.at);
-    if(n.reply) return '<div class="out" style="background:#e0f2fe;color:#0369a1;margin-top:6px;font-size:12px;padding:8px"><b>ردك:</b> '+esc(n.reply)+'</div>';
-    return '<div style="margin-top:8px" class="row"><input id="rep_'+itemId+'" placeholder="اكتب رداً أو سبب الغياب..." style="margin:0;font-size:12px;padding:6px 10px" class="grow"><button class="b" style="padding:4px 10px;min-height:30px;font-size:12px;background:#1d4ed8" onclick="sendCardReply(\''+code+'\', \''+itemId+'\')">إرسال / اطلعت</button></div>';
-}
-window.sendCardReply = function(code, itemId){
-    var el = document.getElementById("rep_"+itemId);
-    var txt = (el ? el.value.trim() : "") || "اطلعت على التبليغ";
-    toast("⏳ جاري الإرسال...");
-    window.fbReplyCardItem(code, itemId, txt).then(function(){
-       toast("✅ تم الإرسال للإدارة والأستاذ");
-    }).catch(function(e){ toast("خطأ: "+e); });
-};
-
-function parentsPortalV(){
-  var codeIn=(S.parentStuCode||"").trim().toUpperCase().replace(/\s+/g,""),okFmt=/^STU-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(codeIn);
-  if(!okFmt&&codeIn.length>=3&&S._resFor!==codeIn&&window.fbResolveStd){S._resFor=codeIn;S._resMsg="";window.fbResolveStd(codeIn).then(function(d){if(d&&d.p&&(d.sec===1||/^STD-/.test(codeIn))){S.parentStuCode=d.p;S._resMsg=""}else S._resMsg=d?"easy":"nf";draw()}).catch(function(){S._resMsg="err";draw()})}
-  if(okFmt&&S.watchedCode!==codeIn&&window.fbWatchCard){S.watchedCode=codeIn;S.cardItems=[];window.fbWatchCard(codeIn)}
-  var items=okFmt?(S.cardItems||[]):[];
-  var body;
-  if(!codeIn)body='<div class="card mu" style="text-align:center;padding:24px 10px">أدخل كود الطالب أعلاه لعرض درجاته وتبليغاته.</div>';
-  else if(!okFmt)body='<div class="card mu" style="text-align:center;padding:24px 10px;line-height:1.8">'+(S._resMsg==="easy"?'هذا <b>كود الطالب</b> وليس كود ولي الأمر. اطلب من الإدارة أو الأستاذ كود ولي الأمر (يبدأ بـ STU-).':S._resMsg==="nf"?'الكود غير موجود، تأكد من كتابته.':S._resMsg==="err"?'تعذر التحقق من الكود الآن، حاول مرة ثانية.':'اكتب كود ولي الأمر (STU-XXXX-XXXX-XXXX) أو كود الطالب كما استلمته.')+'</div>';
-  else if(!items.length)body='<div class="card mu" style="text-align:center;padding:24px 10px">ما كو سجلات لهذا الكود لحد الآن. تأكد من الكود المرسل لك من الأستاذ.</div>';
-  else body='<h2>📊 سجل الطالب: '+esc(items[0].student||"")+'</h2>'+items.map(function(n){
-    if(n.type==="grade")return '<div class="card"><div class="row"><div class="grow"><b>🧑‍🎓 '+esc(n.student||"")+'</b><div class="mu">الأستاذ: '+esc(n.teacher)+' · '+fd(n.at)+'</div></div><span class="badge" style="font-size:15px;padding:6px 12px;background:#dcfce7;color:#15803d">الدرجة: '+esc(n.score)+'</span></div>'+parentReplyH(codeIn, n)+'</div>';
-    return '<div class="card" style="border-inline-start:4px solid '+(n.type==="absent"?"#dc2626":"#f59e0b")+'"><b>'+(n.type==="absent"?"⚠️ تبليغ غياب من ":"📩 تبليغ من ")+esc(n.teacher)+' ('+fd(n.at)+')</b><div style="margin-top:4px">'+esc(n.note)+'</div>'+parentReplyH(codeIn, n)+'</div>';
-  }).join("");
-  return '<div class="card" style="border-inline-start:4px solid #2563eb;background:#eff6ff"><h2>👨‍👩‍👦 بوابة أولياء الأمور</h2><div class="mu" style="line-height:1.6">أدخل كود ابنك (مثل <b>STU-AB12-CD34-EF56</b>) اللي استلمته من الأستاذ لعرض درجاته وغياباته وتبليغاته. تشوف ابنك فقط.</div></div>'+
-  '<div class="card"><label>كود الطالب:</label><div class="row"><input id="pCodeIn" dir="ltr" type="text" value="'+esc(S.parentStuCode||"")+'" placeholder="STU-XXXX-XXXX-XXXX" class="grow" style="margin:0" oninput="S.parentStuCode=this.value"><button class="b" style="background:#2563eb" onclick="S.parentStuCode=document.getElementById(\'pCodeIn\').value;draw()">🔍 متابعة</button></div></div>'+body+
-  '<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
-}
-
-
-function stuPortalV(){
-  var codeIn=(S.stuCodeVal||"").trim().toUpperCase().replace(/\s+/g,""),okFmt=/^STD-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(codeIn);
-  if(!okFmt&&codeIn.length>=3&&S._resFor!==codeIn&&window.fbResolveStd){S._resFor=codeIn;S._resMsg="";window.fbResolveStd(codeIn).then(function(d){if(d&&d.c&&d.sec===1){S.stuCodeVal=d.c;S._resMsg=""}else S._resMsg=d?"easy":"nf";draw()}).catch(function(){S._resMsg="err";draw()})}
-  if(okFmt&&S.watchedCode!==codeIn&&window.fbWatchCard){
-     S.watchedCode=codeIn;
-     window.fbResolveStd(codeIn).then(function(d){
-         if(d && d.p) {
-             S.watchedParentCode = d.p;
-             S.stuDispName = d.n;
-             window.fbWatchCard(d.p);
-         }
-     });
-  }
-  var items=okFmt?(S.cardItems||[]):[];
-  var body;
-  if(!codeIn)body='<div class="card mu" style="text-align:center;padding:24px 10px">أدخل كود الطالب أعلاه لعرض ملفك الأكاديمي والامتحانات المباشرة.</div>';
-  else if(!okFmt)body='<div class="card mu" style="text-align:center;padding:24px 10px;line-height:1.8">'+(S._resMsg==="easy"?'هذا الكود غير كامل، تأكد من كتابته صحيحاً (STD-XXXX).':S._resMsg==="nf"?'الكود غير موجود.':S._resMsg==="err"?'تعذر التحقق.':'اكتب كود الطالب.')+'</div>';
-  else {
-    body='<h2>👨‍🎓 ملف الطالب: '+esc(S.stuDispName||"")+'</h2>'+
-    '<div class="card" style="border-inline-start:4px solid var(--ac); background:var(--acs)">' +
-      '<div class="row"><div class="portal-ico" style="background:var(--ac);color:#fff">📡</div><div class="grow"><b>الامتحان المباشر</b><div class="mu">هل أعطاك الأستاذ رمزاً للكويز؟</div></div></div>' +
-      '<div class="row" style="margin-top:10px"><input id="stuPinIn" type="number" placeholder="رمز الكويز (PIN)" class="grow" style="margin:0"><button class="b" style="background:#15803d" onclick="stuJoinQuiz()">🚀 دخول للامتحان</button></div>' +
-    '</div>' +
-    (S.stuActiveQuiz ? 
-      '<div class="card" style="border:2.5px solid var(--ac)">' +
-        '<div class="row" style="margin-bottom:10px"><b class="grow" style="color:var(--tx)">📝 امتحان مشدد ('+(S.stuActiveQuiz.pkg?S.stuActiveQuiz.pkg.length:1)+' أسئلة عشوائية خاصة بك)</b>'+(S.stuActiveQuiz.duration > 0 && !S.stuActiveQuiz.answered ? '<span class="badge" style="background:#ef4444;color:#fff;font-size:13px" id="stuQuizTimer">⏳ '+S.stuActiveQuiz.duration+':00</span>' : '') +'</div>' +
-        (S.stuActiveQuiz.strict && !S.stuActiveQuiz.answered ? '<div style="background:#fee2e2;color:#b91c1c;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:700;margin-bottom:10px">🔒 تحذير صارم: ممنوع الخروج من هذه الصفحة أو فتح أي تطبيق آخر أثناء الامتحان. أي خروج ينهي الامتحان فوراً ويعطيك صفر!</div>' : '') +
-        (S.stuActiveQuiz.answered ? 
-           '<div class="out" style="text-align:center;font-weight:bold;color:'+(S.stuActiveQuiz.cheated?'#b91c1c':'var(--ac)')+'">' +
-             (S.stuActiveQuiz.cheated ? '🚫 تم إنهاء الامتحان وتصفير درجتك (0) بسبب الخروج من شاشة الامتحان! (يمكن للأستاذ إعادة التوليد لك إذا كان بالخطأ)' : '✅ تم تسليم إجاباتك بنجاح! درجتك الفورية: '+S.stuActiveQuiz.finalScore+' من '+S.stuActiveQuiz.finalTotal) +
-           '</div><button class="b s" style="width:100%;margin-top:8px" onclick="S.stuActiveQuiz=null;draw()">إغلاق</button>'
-         : (S.stuActiveQuiz.pkg || []).map(function(item, qIdx){
-             return '<div style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--ln)"><b style="display:block;margin-bottom:6px;color:var(--ac)">س'+(qIdx+1)+': '+esc(item.q)+'</b>' +
-               item.opts.map(function(opt, oIdx){
-                 var isSel = item.chosen === oIdx;
-                 return '<button type="button" class="quiz-opt '+(isSel?'sel':'')+'" onclick="stuPickPkgOption('+qIdx+','+oIdx+')">'+esc(opt)+'</button>';
-               }).join("") + '</div>';
-           }).join("") +
-           '<button class="b" style="width:100%;background:#15803d;font-size:15px;min-height:46px" onclick="stuSubmitQuiz(1)">✅ تسليم الإجابات النهائية الآن</button>'
-        ) +
-      '</div>' : '') +
-    '<h2>سجلي الأكاديمي</h2>' +
-    (items.length ? items.map(function(n){
-      if(n.type==="grade")return '<div class="card row"><div class="grow"><b>📝 '+esc(n.teacher)+'</b><div class="mu">'+fd(n.at)+'</div></div><span class="badge" style="font-size:15px;padding:6px 12px;background:#dcfce7;color:#15803d">الدرجة: '+esc(n.score)+'</span></div>';
-      return '<div class="card" style="border-inline-start:4px solid '+(n.type==="absent"?"#dc2626":"#f59e0b")+'"><b>'+(n.type==="absent"?"⚠️ تبليغ غياب من ":"📩 تبليغ من ")+esc(n.teacher)+' ('+fd(n.at)+')</b><div style="margin-top:4px">'+esc(n.note)+'</div>'+parentReplyH(S.watchedParentCode, n)+'</div>';
-    }).join("") : '<div class="card mu" style="text-align:center">لا توجد تبليغات أو درجات مسجلة لك حتى الآن.</div>');
-  }
-
-  return '<div class="card" style="border-inline-start:4px solid #0891b2;background:#ecfeff"><h2>🎓 بوابة الطالب</h2><div class="mu" style="line-height:1.6">أدخل كود الطالب (مثل <b>STD-AB12-CD34-EF56</b>) لعرض درجاتك والدخول للامتحانات التفاعلية.</div></div>'+
-  '<div class="card"><label>كود الطالب:</label><div class="row"><input id="sCodeIn" dir="ltr" type="text" value="'+esc(S.stuCodeVal||"")+'" placeholder="STD-XXXX-XXXX-XXXX" class="grow" style="margin:0" oninput="S.stuCodeVal=this.value"><button class="b" style="background:#0891b2" onclick="S.stuCodeVal=document.getElementById(\'sCodeIn\').value;draw()">🔍 متابعة</button></div></div>'+body+
-  '<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
-}
 
 </script>
 
@@ -7087,73 +7007,7 @@ window.fbClaimUsername=function(handle,name,cb){
 };
 
 
-
   window.fbGetDocRef = function(col, id) { return doc(db, col, id); };
-  window.fbGetColRef = function(parentRef, subCol) { return collection(parentRef, subCol); };
-  window.fbSetDoc = function(ref, data) { return setDoc(ref, data); };
-  window.fbUpdateDoc = function(ref, data) { return updateDoc(ref, data); };
-  window.fbAddDoc = function(colRef, data) { return setDoc(doc(colRef, "cand_" + Date.now() + "_" + Math.random().toString(36).slice(2,6)), data); };
-  window.fbGetDoc = function(ref) { return getDoc(ref); };
-  window.fbOnSnapshot = function(ref, cb, eb) { return onSnapshot(ref, cb, eb || function(e){ console.log('snapshot error', e && e.code); }); };
-  window.fbSaveTurnConfig = function(obj) { return setDoc(doc(db, "config", "turn"), obj); };
-  window.fbLoadTurnConfig = function() { return getDoc(doc(db, "config", "turn")).then(function(s){ return s.exists() ? s.data() : null; }); };
-  window.fbSaveAppConfig = function(obj) { return setDoc(doc(db, "config", "app"), obj, {merge:true}); };
-
-  window.fbCreateInst = function(id, data){ return setDoc(doc(db, "inst", id), data); };
-  window.fbSetKey = function(instId, key, secret, oldKey){
-     var p = setDoc(doc(db, "inst_keys", key), {inst: instId, secret: secret, at: Date.now()});
-     if (oldKey && oldKey !== key) deleteDoc(doc(db, "inst_keys", oldKey)).catch(function(){});
-     return p.then(function(){ return updateDoc(doc(db, "inst", instId), {keyName: key}); });
-  };
-  window.fbResolveKey = function(key){ return getDoc(doc(db, "inst_keys", key)).then(function(s){ return s.exists() ? s.data() : null; }); };
-  window.fbPubRoster = function(instId, list, autoCfg, phones){
-      return setDoc(doc(db, "rosters", instId), {list: list, auto: autoCfg, phones: phones, updatedAt: Date.now()});
-  };
-  window.fbDelStd = function(c){ return deleteDoc(doc(db, "student_codes", c)); };
-  window.fbResolveStd = function(code){ return getDoc(doc(db, "student_codes", code)).then(function(s){ return s.exists() ? s.data() : null; }); };
-  window.fbWatchCard = function(code){
-      onSnapshot(collection(db, "parent_cards", code, "items"), function(s){
-         var arr = []; s.forEach(function(d){ var x=d.data(); x.id=d.id; arr.push(x); });
-         arr.sort(function(a,b){ return b.at - a.at; });
-         S.cardItems = arr; draw();
-      });
-  };
-  window.fbPutCardItem = function(code, item, delay){
-      return new Promise(function(resolve){
-         setTimeout(function(){
-            setDoc(doc(db, "parent_cards", code, "items", "i_"+item.at), item).then(resolve).catch(resolve);
-         }, delay || 0);
-      });
-  };
-  window.fbReplyCardItem = function(code, itemId, replyText){
-      return updateDoc(doc(db, "parent_cards", code, "items", itemId), {
-          reply: replyText, repliedAt: Date.now()
-      });
-  };
-  window.fbSendReport = function(instId, report){
-      return setDoc(doc(db, "inst", instId, "reports", "r_"+Date.now()+"_"+(S.uid||"x")), report);
-  };
-  window.fbWatchInstReports = function(instId){
-      onSnapshot(collection(db, "inst", instId, "reports"), function(s){
-         var arr = []; s.forEach(function(d){ arr.push(d.data()); });
-         arr.sort(function(a,b){ return b.at - a.at; });
-         S.adminReports = arr; draw();
-      });
-  };
-  window.fbWatchMyInsts = function(){
-      if(!S.uid) return;
-      onSnapshot(query(collection(db, "inst"), where("adminUid", "==", S.uid)), function(s){
-         var arr = []; s.forEach(function(d){ var x=d.data(); x.id=d.id; arr.push(x); });
-         S.myInsts = arr; draw();
-      });
-  };
-  window.fbWatchRoster = function(instId, cb){
-      onSnapshot(doc(db, "rosters", instId), function(s){ cb(s.exists() ? s.data().list : []); });
-  };
-  window.fbWatchPhones = function(instId, cb){
-      onSnapshot(doc(db, "rosters", instId), function(s){ cb(s.exists() ? s.data().phones : {}); });
-  };
-
   window.fbGetColRef = function(parentRef, subCol) { return collection(parentRef, subCol); };
   window.fbSetDoc = function(ref, data) { return setDoc(ref, data); };
   window.fbUpdateDoc = function(ref, data) { return updateDoc(ref, data); };
