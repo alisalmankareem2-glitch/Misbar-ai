@@ -187,7 +187,7 @@ header{background:color-mix(in srgb,var(--sf) 80%,transparent);backdrop-filter:b
 .portal:active{transform:scale(.97)}
 .portal .ic{width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.22);display:grid;place-items:center;flex:none}
 .portal b{display:block;font-size:17px}.portal span{font-size:12px;opacity:.92}
-.portal.p1{background:linear-gradient(135deg,#15803d,#0ea5a4)}.portal.p2{background:linear-gradient(135deg,#1d4ed8,#6366f1)}.portal.p3{background:linear-gradient(135deg,#7e22ce,#c026d3)}
+.portal.p1{background:linear-gradient(135deg,#15803d,#0ea5a4)}.portal.p2{background:linear-gradient(135deg,#1d4ed8,#6366f1)}.portal.p3{background:linear-gradient(135deg,#7e22ce,#c026d3)}.portal.p4{background:linear-gradient(135deg,#ea580c,#f59e0b)}
 
 /* ===== v2.55: توحيد الألوان (فاتح/داكن) وعرض أنيق ===== */
 :root{--ac2:var(--ac);--card:rgba(255,255,255,.92);--bd:rgba(255,255,255,.55)}
@@ -265,7 +265,7 @@ window.misbarHardReset=function(){
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.61.3";
+var APP_VERSION = "2.63.1";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -4153,11 +4153,12 @@ async function genQuickQ(){
   var topic=$("qt").value.trim(),kind=$("qk").value,num=Math.min(parseInt($("qn").value)||5,20);
   if(!topic){toast("اكتب الموضوع أولاً");return}
   if(!getUserKey()){
-    var qs=[];
+    var qs=[],T="«"+topic+"»";
+    var stems=["عرّف "+T+" وبيّن أهميته.","اذكر أهم خصائص "+T+" مع مثال توضيحي.","وضّح العلاقة بين "+T+" وما يرتبط به، معلّلاً إجابتك.","قارن بين "+T+" وما يشابهه من مفاهيم.","علّل: لماذا يُعدّ "+T+" مهماً في هذه المادة؟"];
     for(var i=1;i<=num;i++){
-      if(kind=="اختيار من متعدد") qs.push("س"+i+": ما المقصود بـ «"+topic+"» في الفقرة ("+i+")؟\nأ) الخيار الأول   ب) الخيار الثاني   ج) الخيار الثالث   د) الخيار الرابع");
-      else if(kind=="صح وخطأ") qs.push("س"+i+": (   ) يرتبط مفهوم «"+topic+"» بشكل مباشر بالعامل رقم ("+i+").");
-      else qs.push("س"+i+": وضّح باختصار الجوانب الأساسية لموضوع «"+topic+"» ("+i+").");
+      if(kind=="اختيار من متعدد") qs.push(i+"- اختر الإجابة الصحيحة فيما يخص "+T+":\n   أ) ..........     ب) ..........\n   ج) ..........     د) ..........");
+      else if(kind=="صح وخطأ") qs.push(i+"- (     ) ضع علامة (✓) أو (✗) أمام العبارة: ........................................ (عبارة عن "+T+")");
+      else qs.push(i+"- "+stems[(i-1)%stems.length]);
     }
     S.out="أسئلة «"+topic+"» ("+kind+" · "+num+" أسئلة):\n\n"+qs.join("\n\n");
     draw();return;
@@ -6671,7 +6672,7 @@ function subScr(lock){
   var sel=S.plans[S.pick],mine=S.req.filter(function(r){return r.e==S.email});
   var pl=S.plans.map(function(p,i){return p.hide||(aud&&!planFor(p,aud))?'':'<div class="card" onclick="S.pick='+i+';draw()" style="cursor:pointer;border:2px solid '+(S.pick===i?'var(--ac)':'var(--ln)')+'"><div class="row"><b class="grow">'+esc(p.n)+'</b><span>'+(S.pick===i?'✅':'⚪')+'</span></div><div>'+Number(p.p).toLocaleString("ar-IQ")+' د.ع · '+p.v+' '+p.u+'</div>'+(p.f?'<div class="mu">'+esc(p.f)+'</div>':'')+'</div>'}).join("");
   $("app").className=S.role=="pro"?"pro":"";
-  $("app").innerHTML='<header><h1>'+(lock?'🔒 يتطلب اشتراكاً':'الاشتراكات')+'</h1>'+(lock?(S.sysRole==="pro_stu"?'<button class="b s" onclick="setRole(null)">🔄 تبديل</button>':'')+'<button class="b d" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">خروج</button>':'<button class="b s" onclick="S.subv=0;draw()">رجوع</button>')+'</header><main>'+(lock?'<div class="card" style="border-inline-start:4px solid #f59e0b;line-height:1.8">واجهة <b>'+esc(AUDN(aud))+'</b> متاحة بالاشتراك فقط. اختر باقتك وأرسل الطلب، وبعد تفعيل المالك تفتح لك مباشرة.</div>':'')+
+  $("app").innerHTML='<header><h1>'+(lock?'🔒 يتطلب اشتراكاً':'الاشتراكات')+'</h1>'+(lock?(false?'<button class="b s" onclick="setRole(null)">🔄 تبديل</button>':'')+'<button class="b d" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">خروج</button>':'<button class="b s" onclick="S.subv=0;draw()">رجوع</button>')+'</header><main>'+(lock?'<div class="card" style="border-inline-start:4px solid #f59e0b;line-height:1.8">واجهة <b>'+esc(AUDN(aud))+'</b> متاحة بالاشتراك فقط. اختر باقتك وأرسل الطلب، وبعد تفعيل المالك تفتح لك مباشرة.</div>':'')+
     '<div class="card">'+(cur?'✅ اشتراكك: '+esc(cur.n)+' · ينتهي '+fd(cur.end):'حسابك مجاني حالياً')+'</div>'+
     '<h2>اختر باقة وأرسل طلباً</h2>'+(pl||'<div class="card mu">لا توجد باقات متاحة</div>')+
     (sel&&!sel.hide?'<div class="card"><b>تفاصيل: '+esc(sel.n)+'</b><div>السعر: '+Number(sel.p).toLocaleString("ar-IQ")+' د.ع</div><div>المدة: '+dd(sel)+' يوماً من تاريخ التفعيل</div><div class="mu">بعد إرسال الطلب يتواصل معك المالك لتأكيد الدفع ثم يفعّل اشتراكك.</div></div>':'')+
@@ -6740,23 +6741,26 @@ function pickPortal(p){S.sysRole=p;S.loginRole=p;try{localStorage.setItem("misba
 function leavePortal(){S.sysRole=null;S.loginRole=null;S.role=null;try{localStorage.removeItem("misbar_portal")}catch(e){}draw()}
 function portalLoginV(p){
   $("app").className="";
-  var n={pro_stu:"الأستاذ والطالب",parent:"أولياء الأمور",admin:"الإدارة / القسم"}[p]||"";
+  var n={pro:"الأستاذ",stu:"الطالب",parent:"أولياء الأمور",admin:"المدير / رئيس القسم"}[p]||"";
   $("app").innerHTML='<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">بوابة '+n+'</p></div><main>'+
     (inAppBrowser()?'<div class="card" style="border-inline-start:4px solid #f59e0b;line-height:1.8"><b>⚠️ افتح الرابط في المتصفح</b><br>Google لا يسمح بتسجيل الدخول من داخل تلغرام أو واتساب أو إنستغرام. انسخ الرابط وافتحه في Chrome أو Safari.<button class="b s" style="width:100%;margin-top:8px" onclick="copyAppLink()">📋 نسخ رابط التطبيق</button></div>':'')+
-    '<div class="card"><div class="mu" style="line-height:1.8;margin-bottom:10px">سجّل الدخول بحساب Google الخاص ببوابة <b>'+n+'</b>. تقدر تستعمل حساباً مختلفاً لكل بوابة على نفس الجهاز.</div><button class="b" style="width:100%;min-height:50px;font-size:15px" onclick="fbLogin()">🔐 تسجيل الدخول بحساب Google</button></div>'+
+    '<div class="card"><div class="mu" style="line-height:1.8;margin-bottom:10px">'+((p==="pro"||p==="stu")?'سجّل الدخول بحساب <b>Gmail</b> (…@gmail.com). ستُحفظ ملفاتك في <b>Google Drive الخاص بك</b>، وسيطلب منك Google السماح بذلك مرة واحدة فقط. حسابات الجامعة غير مدعومة حالياً.':'سجّل الدخول بحساب Google الخاص ببوابة <b>'+n+'</b>. تقدر تستعمل حساباً مختلفاً لكل بوابة على نفس الجهاز.')+'</div><button class="b" style="width:100%;min-height:50px;font-size:15px" onclick="fbLogin()">🔐 تسجيل الدخول بحساب Google</button></div>'+
     '<button class="b s" style="width:100%;margin-top:10px" onclick="leavePortal()">↩ رجوع لاختيار البوابة</button></main>';
 }
+function gmailOk(e){return /@(gmail|googlemail)\.com$/i.test(String(e||"").trim())}
+var PORTAL_APP={pro:"pro_stu",stu:"pro_stu",parent:"parent",admin:"admin"};
 function svg(p){return '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>'}
 function loginV(){
   $("app").className="";
   var cards=[
-    ["pro_stu","p1","الأستاذ والطالب","الدروس والامتحانات والذكاء الاصطناعي",svg('<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>')],
-    ["parent","p2","أولياء الأمور","الدرجات والغيابات والتبليغات بكود الطالب",svg('<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.3"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><path d="M15 15c3-.6 6 1 6 4.5"/>')],
-    ["admin","p3","الإدارة / القسم","استلام الدرجات وكشوفات Excel",svg('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>')]
+    ["admin","p3","المدير / رئيس القسم","استلام الدرجات والتقارير وكشوفات Excel",svg('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>')],
+    ["pro","p1","الأستاذ","الدروس والامتحانات والذكاء الاصطناعي",svg('<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>')],
+    ["stu","p4","الطالب","الكلاسات والاختبارات والمراجعة",svg('<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M19 17v4H6"/>')],
+    ["parent","p2","أولياء الأمور","الدرجات والغيابات والتبليغات بكود الطالب",svg('<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.3"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><path d="M15 15c3-.6 6 1 6 4.5"/>')]
   ];
   $("app").innerHTML='<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">المنظومة التعليمية المتكاملة</p></div><main>'+
   '<h2 style="text-align:center;margin-top:0">اختر بوابتك</h2>'+
-  cards.map(function(c){return '<div class="portal '+c[1]+'" role="button" tabindex="0" onclick="pickPortal(\''+c[0]+'\')"><div class="ic">'+c[4]+'</div><div><b>'+c[2]+'</b><span>'+c[3]+'</span>'+((S.portalUsers||{})[c[0]]?'<span dir="auto" style="display:block;font-weight:700;margin-top:4px;font-size:12px">✅ مسجّل: '+esc(S.portalUsers[c[0]])+'</span>':'')+'</div></div>'}).join("")+
+  cards.map(function(c){return '<div class="portal '+c[1]+'" role="button" tabindex="0" onclick="pickPortal(\''+c[0]+'\')"><div class="ic">'+c[4]+'</div><div><b>'+c[2]+'</b><span>'+c[3]+'</span>'+((S.portalUsers||{})[PORTAL_APP[c[0]]]?'<span dir="auto" style="display:block;font-weight:700;margin-top:4px;font-size:12px">✅ مسجّل: '+esc(S.portalUsers[PORTAL_APP[c[0]]])+'</span>':'')+'</div></div>'}).join("")+
   '<div class="mu" style="text-align:center;margin-top:14px;font-size:11px">v'+APP_VERSION+' · تحديث تلقائي</div></main>';
 }
 
@@ -6800,6 +6804,7 @@ function draw(){
   if(!S.authReady)return;
   if(!S.sysRole){loginV();return}
   if(!S.uid){portalLoginV(S.sysRole);return}
+  if((S.sysRole==="pro"||S.sysRole==="stu")&&S.email&&!gmailOk(S.email)&&!S.isOwner){toast("هذه البوابة تدعم حسابات Gmail فقط. حسابات الجامعة غير مدعومة حالياً.");if(window.fbLogout)window.fbLogout();return}
   if(S.profileOpen){profileScr();return}
   if(S.subv&&(S.role=="pro"||S.role=="stu")){subScr();return}
   if(S.scnPrintDoc){scnPrintScr();return}
@@ -6817,12 +6822,17 @@ function draw(){
   if(!S.sysRole && S.loginRole) { S.sysRole = S.loginRole; saveDeviceOnly(); }
   
   // Direct mapping to avoid the middle screen
-  if(S.sysRole === 'pro' && S.role !== 'pro') { S.role = 'pro'; saveDeviceOnly(); }
-  if(S.sysRole === 'stu' && S.role !== 'stu') { S.role = 'stu'; saveDeviceOnly(); }
+  if(S.role !== 'own'){
+    if(S.sysRole === 'pro' && S.role !== 'pro') { S.role = 'pro'; saveDeviceOnly(); }
+    if(S.sysRole === 'stu' && S.role !== 'stu') { S.role = 'stu'; saveDeviceOnly(); }
+  }
 
   var h="",r=S.role;
   
-  if(S.sysRole === 'admin') {
+  if(r === "own"){
+     h = head("لوحة المالك") + '<main>' + ownV() + '</main>';
+  }
+  else if(S.sysRole === 'admin') {
      h = head("الإدارة / رئيس القسم") + '<main>' + adminPortalV() + '</main>';
   }
   else if(S.sysRole === 'parent') {
@@ -6840,7 +6850,7 @@ function draw(){
     h=head("لوحة المالك")+'<main>'+ownV()+'</main>';
   }
   else {
-    S.sysRole = null; S.loginRole = null; fbLogout(); return;
+    S.sysRole = null; S.loginRole = null; try{localStorage.removeItem("misbar_portal")}catch(e){} loginV(); return;
   }
   $("app").className=r=="pro"?"pro":"";
   $("app").innerHTML=h;
@@ -6937,8 +6947,14 @@ function loginErrMsg(e){var c=(e&&e.code)||"";
 window.fbLogin=function(){
   if(inAppBrowser()){toast("افتح الرابط في Chrome أو Safari — Google لا يسمح بالدخول من داخل التطبيقات");return}
   var p=makeBasicGoogleProvider();
+  var _wantDrive=(S.sysRole==="pro"||S.sysRole==="stu");
+  if(_wantDrive)p.addScope("https://www.googleapis.com/auth/drive.file");
   try{localStorage.setItem("misbar_login_portal",curPortal)}catch(x){}
-  signInWithPopup(auth,p).catch(function(e){
+  signInWithPopup(auth,p).then(function(res){
+    if(!_wantDrive||!res||!gmailOk(res.user&&res.user.email))return;
+    captureDriveToken(res);
+    if(S.driveToken)setTimeout(function(){if(S.uid&&S.driveToken)restoreFromGoogleDrive(true)},700);
+  }).catch(function(e){
     if(e.code=="auth/popup-blocked"||e.code=="auth/cancelled-popup-request"||e.code=="auth/operation-not-supported-in-this-environment")signInWithRedirect(auth,p).catch(function(e2){toast(loginErrMsg(e2))});
     else if(e.code!="auth/popup-closed-by-user")toast(loginErrMsg(e));
   });
@@ -7031,7 +7047,7 @@ window.fbSyncUserProfile=function(){
   payload.userAiKey="";
   try{
     var docsJson=JSON.stringify(S.docs||[]);
-    if(docsJson.length<450000)payload.docsJson=docsJson;
+    if(!S.driveToken&&docsJson.length<450000)payload.docsJson=docsJson; /* عند ربط Drive تُحفظ المستندات هناك وليس بـ Firestore */
     payload.grJson=JSON.stringify(S.gr||[]);
     payload.joinedJson=JSON.stringify(S.joined||[]);
     payload.classesJson=JSON.stringify(S.classes||[]);
@@ -7111,6 +7127,12 @@ function onAuth(u){
     S.subv=0;S.tab=0;S.openMat=null;S.uid=null;S.email="";S.role=null;S.isOwner=false;S.userAiKey="";
     S.driveToken="";S.driveFolderId="";S.driveFileId="";
     S.gw=null;S.pp=null;S.bk=null;
+    draw();return;
+  }
+  if((S.sysRole==="pro"||S.sysRole==="stu")&&!gmailOk(u.email)&&(u.email||"").toLowerCase()!==OWNER.toLowerCase()){
+    toast("هذه البوابة تدعم حسابات Gmail فقط (…@gmail.com). حسابات الجامعة غير مدعومة حالياً.");
+    S.driveToken="";S.uid=null;S.email="";
+    signOut(auth).catch(function(){});
     draw();return;
   }
   S.uid=u.uid;S.email=(u.email||"").toLowerCase();S.dispName=u.displayName||"";
@@ -7354,19 +7376,21 @@ window.fbDeleteRoomMessage=function(chatId, msgId){
 var _unAuth=null;
 function bindAuth(){if(_unAuth){try{_unAuth()}catch(e){}}_unAuth=onAuthStateChanged(auth,onAuth)}
 window.fbUsePortal=function(p){
-  if(!APPS[p])return;
-  if(p===curPortal&&_unAuth){if(S.authReady)draw();return}
+  var k=PORTAL_APP[p]||p;
+  if(!APPS[k])return;
+  if(k===curPortal&&_unAuth){if(S.authReady)draw();return}
   unsubs.forEach(function(f){try{f()}catch(e){}});unsubs=[];
   [typeof _wi!=="undefined"&&_wi,typeof _wr!=="undefined"&&_wr,typeof _wc!=="undefined"&&_wc].forEach(function(f){try{if(f)f()}catch(e){}});
-  curPortal=p;app=APPS[p];auth=AUTHS[p];db=DBS[p];
+  curPortal=k;app=APPS[k];auth=AUTHS[k];db=DBS[k];
   S.authReady=false;S.uid=null;S.email="";S.role=null;S.isOwner=false;S.subs=[];S.req=[];S.watchingInsts=false;S.curInstId=null;S.myInsts=[];S.cardItems=[];S.rsPub=[];S._rsW=null;S.stuClasses=[];S._swc=null;S.stuLink=undefined;S.profLoaded=false;
   bindAuth();
 };
 S.portalUsers={};
 PORTALS.forEach(function(p){onAuthStateChanged(AUTHS[p],function(u){S.portalUsers[p]=u?(u.email||""):"";if(S.authReady&&!S.sysRole)draw()})});
 (function(){var sp="";try{sp=localStorage.getItem("misbar_portal")||""}catch(e){}
-  var go=function(){if(S.authReady)return;if(PORTALS.indexOf(sp)<0&&AUTHS.pro_stu.currentUser)sp="pro_stu";
-    if(PORTALS.indexOf(sp)>-1){S.sysRole=S.loginRole=sp;window.fbUsePortal(sp)}else{S.authReady=true;draw()}};
+  var PK=["admin","pro","stu","parent"];
+  var go=function(){if(S.authReady)return;
+    if(PK.indexOf(sp)>-1){S.sysRole=S.loginRole=sp;window.fbUsePortal(sp)}else{S.authReady=true;draw()}};
   Promise.all(PORTALS.map(function(p){return AUTHS[p].authStateReady()})).then(go).catch(go);
   setTimeout(go,4000);
 })();
