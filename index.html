@@ -188,10 +188,295 @@ label.b{display:inline-flex;align-items:center;justify-content:center;gap:5px;ba
 <div id="toast"></div>
 
 <script>
+
+function draw(){
+  saveAppStateToSession();
+
+  if(localStorage.getItem("misbar_v250_reset") !== "done"){
+    localStorage.setItem("misbar_v250_reset", "done");
+    S.sysRole = null; S.loginRole = null; S.uid = null;
+    saveDeviceOnly();
+  }
+
+  syncHistoryState();
+  var oldFab=document.getElementById("fab");if(oldFab)oldFab.remove();
+  
+  if(!S.authReady)return;
+  
+  if(S.profileOpen){profileScr();return}
+  if(S.subv&&(S.role=="pro"||S.role=="stu")){subScr();return}
+  if(S.scnPrintDoc){scnPrintScr();return}
+  if(S.scnCam){scnLiveCameraScr();return}
+  if(S.scnEd){scnEditorScr();return}
+  if(S.role=="pro"&&S.gw){
+    if(S.gw.view=="ed_q"&&S.pp){ppEdScr();return}
+    if(S.gw.view=="ed_b"&&S.bk){bkEdScr();return}
+    gwStepsScr();return;
+  }
+
+  var _mt=document.getElementById("mt"),_mtv=_mt?_mt.value:null,_mtf=!!_mt&&document.activeElement===_mt;
+
+  if(!S.sysRole && S.loginRole) { S.sysRole = S.loginRole; saveDeviceOnly(); }
+  if(!S.sysRole) { loginV(); return; }
+
+  var h="",r=S.role;
+  
+  if(S.sysRole === 'admin') {
+     if(!S.uid) { loginV(); return; }
+     h = head("الإدارة / رئيس القسم") + '<main>' + adminPortalV() + '</main>';
+  }
+  else if(S.sysRole === 'parent') {
+     h = head("بوابة أولياء الأمور") + '<main>' + parentsPortalV() + '</main>';
+  }
+  else if(S.sysRole === 'stu') {
+     h = head("بوابة الطالب") + '<main>' + stuPortalV() + '</main>';
+  }
+  else if(S.sysRole === 'pro'){
+    if(!S.uid) { loginV(); return; }
+    h=head("واجهة الأستاذ")+'<main>'+topBarH()+[proPortalsV,filesV,bagV,clsV,aiAndTextV,omrV][S.tab]()+'</main>'+
+      navb([["🏛️","البوابات"],["📷","السكنر"],["🎒","الحقيبة"],["🏫","الكلاسات"],["🤖","الذكاء"],["💯","خدمات متقدمة"]]);
+  }else{
+    h=head("لوحة المالك")+'<main>'+ownV()+'</main>';
+  }
+
+  document.getElementById("app").className=r=="pro"?"pro":"";
+  document.getElementById("app").innerHTML=h;
+  
+  var _nm=document.getElementById("mt");if(_nm&&_mtv!==null){_nm.value=_mtv;if(_mtf)_nm.focus();}
+  if(S.curChatId!==null){var _wb=document.getElementById("waBody");if(_wb)_wb.scrollTop=_wb.scrollHeight;}
+  else { if(typeof cancelVoiceRecord === "function" && (S.isRecording || S.hasRecBlob)) cancelVoiceRecord(); }
+}
+
+function loginV(){
+  $("app").className="";
+  $("app").innerHTML = '<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">المنظومة التعليمية المتكاملة</p></div>'+
+  '<main>' +
+    '<h2 style="text-align:center;margin-top:0;margin-bottom:16px">اختر بوابتك للدخول</h2>' +
+    '<div style="display:flex;flex-direction:column;gap:12px">' +
+      '<div class="card row" onclick="S.loginRole=\'pro\';fbLogin()" style="cursor:pointer;border:2px solid var(--ac);background:var(--acs);transition:transform 0.2s;margin:0" onmousedown="this.style.transform=\'scale(0.97)\'" onmouseup="this.style.transform=\'none\'">' +
+         '<div style="font-size:38px;padding:0 10px">👨‍🏫</div>' +
+         '<div class="grow"><b style="display:block;color:var(--ac);font-size:16px">بوابة الأستاذ</b><div class="mu" style="font-size:12px;margin-top:4px">دخول بحساب Google</div></div>' +
+      '</div>' +
+      '<div class="card row" onclick="S.sysRole=\'stu\';draw()" style="cursor:pointer;border:2px solid #0891b2;background:#ecfeff;transition:transform 0.2s;margin:0" onmousedown="this.style.transform=\'scale(0.97)\'" onmouseup="this.style.transform=\'none\'">' +
+         '<div style="font-size:38px;padding:0 10px">🎓</div>' +
+         '<div class="grow"><b style="display:block;color:#0891b2;font-size:16px">بوابة الطالب</b><div class="mu" style="font-size:12px;margin-top:4px">دخول بكود الطالب (بدون حساب)</div></div>' +
+      '</div>' +
+      '<div class="card row" onclick="S.sysRole=\'parent\';draw()" style="cursor:pointer;border:2px solid #2563eb;background:#eff6ff;transition:transform 0.2s;margin:0" onmousedown="this.style.transform=\'scale(0.97)\'" onmouseup="this.style.transform=\'none\'">' +
+         '<div style="font-size:38px;padding:0 10px">👨‍👩‍👦</div>' +
+         '<div class="grow"><b style="display:block;color:#1d4ed8;font-size:16px">أولياء الأمور</b><div class="mu" style="font-size:12px;margin-top:4px">متابعة الأبناء (بدون حساب)</div></div>' +
+      '</div>' +
+      '<div class="card row" onclick="S.loginRole=\'admin\';fbLogin()" style="cursor:pointer;border:2px solid #9333ea;background:#f3e8ff;transition:transform 0.2s;margin:0" onmousedown="this.style.transform=\'scale(0.97)\'" onmouseup="this.style.transform=\'none\'">' +
+         '<div style="font-size:38px;padding:0 10px">🏢</div>' +
+         '<div class="grow"><b style="display:block;color:#7e22ce;font-size:16px">الإدارة / القسم</b><div class="mu" style="font-size:12px;margin-top:4px">لوحة التحكم والمراقبة</div></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="mu" style="text-align:center;margin-top:20px;font-size:11px">المنظومة السحابية v'+APP_VERSION+' · تحديث تلقائي</div>'+
+  '</main>';
+}
+
+function parentReplyH(code, n){
+    var itemId = n.id || ("i_" + n.at);
+    if(n.reply) return '<div class="out" style="background:#e0f2fe;color:#0369a1;margin-top:6px;font-size:12px;padding:8px"><b>ردك:</b> '+esc(n.reply)+'</div>';
+    return '<div style="margin-top:8px" class="row"><input id="rep_'+itemId+'" placeholder="اكتب رداً أو سبب الغياب..." style="margin:0;font-size:12px;padding:6px 10px" class="grow"><button class="b" style="padding:4px 10px;min-height:30px;font-size:12px;background:#1d4ed8" onclick="sendCardReply(\''+code+'\', \''+itemId+'\')">إرسال / اطلعت</button></div>';
+}
+window.sendCardReply = function(code, itemId){
+    var el = document.getElementById("rep_"+itemId);
+    var txt = (el ? el.value.trim() : "") || "اطلعت على التبليغ";
+    toast("⏳ جاري الإرسال...");
+    window.fbReplyCardItem(code, itemId, txt).then(function(){
+       toast("✅ تم الإرسال للإدارة والأستاذ");
+    }).catch(function(e){ toast("خطأ: "+e); });
+};
+
+function parentsPortalV(){
+  var codeIn=(S.parentStuCode||"").trim().toUpperCase().replace(/\s+/g,""),okFmt=/^STU-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(codeIn);
+  if(!okFmt&&codeIn.length>=3&&S._resFor!==codeIn&&window.fbResolveStd){S._resFor=codeIn;S._resMsg="";window.fbResolveStd(codeIn).then(function(d){if(d&&d.p&&(d.sec===1||/^STD-/.test(codeIn))){S.parentStuCode=d.p;S._resMsg=""}else S._resMsg=d?"easy":"nf";draw()}).catch(function(){S._resMsg="err";draw()})}
+  if(okFmt&&S.watchedCode!==codeIn&&window.fbWatchCard){S.watchedCode=codeIn;S.cardItems=[];window.fbWatchCard(codeIn)}
+  var items=okFmt?(S.cardItems||[]):[];
+  var body;
+  if(!codeIn)body='<div class="card mu" style="text-align:center;padding:24px 10px">أدخل كود الطالب أعلاه لعرض درجاته وتبليغاته.</div>';
+  else if(!okFmt)body='<div class="card mu" style="text-align:center;padding:24px 10px;line-height:1.8">'+(S._resMsg==="easy"?'هذا <b>كود الطالب</b> وليس كود ولي الأمر. اطلب من الإدارة أو الأستاذ كود ولي الأمر (يبدأ بـ STU-).':S._resMsg==="nf"?'الكود غير موجود، تأكد من كتابته.':S._resMsg==="err"?'تعذر التحقق من الكود الآن، حاول مرة ثانية.':'اكتب كود ولي الأمر (STU-XXXX-XXXX) أو كود الطالب كما استلمته.')+'</div>';
+  else if(!items.length)body='<div class="card mu" style="text-align:center;padding:24px 10px">ما كو سجلات لهذا الكود لحد الآن. تأكد من الكود المرسل لك من الأستاذ.</div>';
+  else body='<h2>📊 سجل الطالب: '+esc(items[0].student||"")+'</h2>'+items.map(function(n){
+    if(n.type==="grade")return '<div class="card"><div class="row"><div class="grow"><b>🧑‍🎓 '+esc(n.student||"")+'</b><div class="mu">الأستاذ: '+esc(n.teacher)+' · '+fd(n.at)+'</div></div><span class="badge" style="font-size:15px;padding:6px 12px;background:#dcfce7;color:#15803d">الدرجة: '+esc(n.score)+'</span></div>'+parentReplyH(codeIn, n)+'</div>';
+    return '<div class="card" style="border-inline-start:4px solid '+(n.type==="absent"?"#dc2626":"#f59e0b")+'"><b>'+(n.type==="absent"?"⚠️ تبليغ غياب من ":"📩 تبليغ من ")+esc(n.teacher)+' ('+fd(n.at)+')</b><div style="margin-top:4px">'+esc(n.note)+'</div>'+parentReplyH(codeIn, n)+'</div>';
+  }).join("");
+  return '<div class="card" style="border-inline-start:4px solid #2563eb;background:#eff6ff"><h2>👨‍👩‍👦 بوابة أولياء الأمور</h2><div class="mu" style="line-height:1.6">أدخل كود ابنك (مثل <b>STU-AB12-CD34</b>) اللي استلمته من الأستاذ لعرض درجاته وغياباته وتبليغاته. تشوف ابنك فقط.</div></div>'+
+  '<div class="card"><label>كود الطالب:</label><div class="row"><input id="pCodeIn" dir="ltr" type="text" value="'+esc(S.parentStuCode||"")+'" placeholder="STU-XXXX-XXXX" class="grow" style="margin:0" oninput="S.parentStuCode=this.value"><button class="b" style="background:#2563eb" onclick="S.parentStuCode=document.getElementById(\'pCodeIn\').value;draw()">🔍 متابعة</button></div></div>'+body+
+  '<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
+}
+
+function stuPortalV(){
+  var codeIn=(S.stuCodeVal||"").trim().toUpperCase().replace(/\s+/g,""),okFmt=/^STD-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(codeIn);
+  if(!okFmt&&codeIn.length>=3&&S._resFor!==codeIn&&window.fbResolveStd){S._resFor=codeIn;S._resMsg="";window.fbResolveStd(codeIn).then(function(d){if(d&&d.c&&d.sec===1){S.stuCodeVal=d.c;S._resMsg=""}else S._resMsg=d?"easy":"nf";draw()}).catch(function(){S._resMsg="err";draw()})}
+  if(okFmt&&S.watchedCode!==codeIn&&window.fbWatchCard){
+     S.watchedCode=codeIn;
+     window.fbResolveStd(codeIn).then(function(d){
+         if(d && d.p) {
+             S.watchedParentCode = d.p;
+             S.stuDispName = d.n;
+             window.fbWatchCard(d.p);
+         }
+     });
+  }
+  var items=okFmt?(S.cardItems||[]):[];
+  var body;
+  if(!codeIn)body='<div class="card mu" style="text-align:center;padding:24px 10px">أدخل كود الطالب أعلاه لعرض ملفك الأكاديمي والامتحانات المباشرة.</div>';
+  else if(!okFmt)body='<div class="card mu" style="text-align:center;padding:24px 10px;line-height:1.8">'+(S._resMsg==="easy"?'هذا الكود غير كامل، تأكد من كتابته صحيحاً (STD-XXXX).':S._resMsg==="nf"?'الكود غير موجود.':S._resMsg==="err"?'تعذر التحقق.':'اكتب كود الطالب.')+'</div>';
+  else {
+    body='<h2>👨‍🎓 ملف الطالب: '+esc(S.stuDispName||"")+'</h2>'+
+    '<div class="card" style="border-inline-start:4px solid var(--ac); background:var(--acs)">' +
+      '<div class="row"><div class="portal-ico" style="background:var(--ac);color:#fff">📡</div><div class="grow"><b>الامتحان المباشر</b><div class="mu">هل أعطاك الأستاذ رمزاً للكويز؟</div></div></div>' +
+      '<div class="row" style="margin-top:10px"><input id="stuPinIn" type="number" placeholder="رمز الكويز (PIN)" class="grow" style="margin:0"><button class="b" style="background:#15803d" onclick="stuJoinQuiz()">🚀 دخول للامتحان</button></div>' +
+    '</div>' +
+    (S.stuActiveQuiz ? 
+      '<div class="card" style="border:2.5px solid var(--ac)">' +
+        '<div class="row" style="margin-bottom:10px"><b class="grow" style="color:var(--tx)">📝 امتحان مشدد ('+(S.stuActiveQuiz.pkg?S.stuActiveQuiz.pkg.length:1)+' أسئلة عشوائية خاصة بك)</b>'+(S.stuActiveQuiz.duration > 0 && !S.stuActiveQuiz.answered ? '<span class="badge" style="background:#ef4444;color:#fff;font-size:13px" id="stuQuizTimer">⏳ '+S.stuActiveQuiz.duration+':00</span>' : '') +'</div>' +
+        (S.stuActiveQuiz.strict && !S.stuActiveQuiz.answered ? '<div style="background:#fee2e2;color:#b91c1c;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:700;margin-bottom:10px">🔒 تحذير صارم: ممنوع الخروج من هذه الصفحة أو فتح أي تطبيق آخر أثناء الامتحان. أي خروج ينهي الامتحان فوراً ويعطيك صفر!</div>' : '') +
+        (S.stuActiveQuiz.answered ? 
+           '<div class="out" style="text-align:center;font-weight:bold;color:'+(S.stuActiveQuiz.cheated?'#b91c1c':'var(--ac)')+'">' +
+             (S.stuActiveQuiz.cheated ? '🚫 تم إنهاء الامتحان وتصفير درجتك (0) بسبب الخروج من شاشة الامتحان! (يمكن للأستاذ إعادة التوليد لك إذا كان بالخطأ)' : '✅ تم تسليم إجاباتك بنجاح! درجتك الفورية: '+S.stuActiveQuiz.finalScore+' من '+S.stuActiveQuiz.finalTotal) +
+           '</div><button class="b s" style="width:100%;margin-top:8px" onclick="S.stuActiveQuiz=null;draw()">إغلاق</button>'
+         : (S.stuActiveQuiz.pkg || []).map(function(item, qIdx){
+             return '<div style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--ln)"><b style="display:block;margin-bottom:6px;color:var(--ac)">س'+(qIdx+1)+': '+esc(item.q)+'</b>' +
+               item.opts.map(function(opt, oIdx){
+                 var isSel = item.chosen === oIdx;
+                 return '<button type="button" class="quiz-opt '+(isSel?'sel':'')+'" onclick="stuPickPkgOption('+qIdx+','+oIdx+')">'+esc(opt)+'</button>';
+               }).join("") + '</div>';
+           }).join("") +
+           '<button class="b" style="width:100%;background:#15803d;font-size:15px;min-height:46px" onclick="stuSubmitQuiz(1)">✅ تسليم الإجابات النهائية الآن</button>'
+        ) +
+      '</div>' : '') +
+    '<h2>سجلي الأكاديمي</h2>' +
+    (items.length ? items.map(function(n){
+      if(n.type==="grade")return '<div class="card row"><div class="grow"><b>📝 '+esc(n.teacher)+'</b><div class="mu">'+fd(n.at)+'</div></div><span class="badge" style="font-size:15px;padding:6px 12px;background:#dcfce7;color:#15803d">الدرجة: '+esc(n.score)+'</span></div>';
+      return '<div class="card" style="border-inline-start:4px solid '+(n.type==="absent"?"#dc2626":"#f59e0b")+'"><b>'+(n.type==="absent"?"⚠️ تبليغ غياب من ":"📩 تبليغ من ")+esc(n.teacher)+' ('+fd(n.at)+')</b><div style="margin-top:4px">'+esc(n.note)+'</div>'+parentReplyH(S.watchedParentCode, n)+'</div>';
+    }).join("") : '<div class="card mu" style="text-align:center">لا توجد تبليغات أو درجات مسجلة لك حتى الآن.</div>');
+  }
+
+  return '<div class="card" style="border-inline-start:4px solid #0891b2;background:#ecfeff"><h2>🎓 بوابة الطالب</h2><div class="mu" style="line-height:1.6">أدخل كود الطالب (مثل <b>STD-AB12-CD34</b>) لعرض درجاتك والدخول للامتحانات التفاعلية.</div></div>'+
+  '<div class="card"><label>كود الطالب:</label><div class="row"><input id="sCodeIn" dir="ltr" type="text" value="'+esc(S.stuCodeVal||"")+'" placeholder="STD-XXXX-XXXX" class="grow" style="margin:0" oninput="S.stuCodeVal=this.value"><button class="b" style="background:#0891b2" onclick="S.stuCodeVal=document.getElementById(\'sCodeIn\').value;draw()">🔍 متابعة</button></div></div>'+body+
+  '<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
+}
+
+function livePortalV(){
+  var tab = S.liveQuizTab || "quiz";
+  var h = '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">بوابة الامتحانات الصارمة والمتابعة</b></div>' +
+    '<div class="grid" style="margin-bottom:10px">' +
+      '<button class="b '+(tab==="quiz"?"":"s")+'" onclick="S.liveQuizTab=\'quiz\';draw()">📡 الامتحان العشوائي المشدد</button>' +
+      '<button class="b '+(tab==="parents"?"":"s")+'" onclick="S.liveQuizTab=\'parents\';draw()">👨‍👩‍👦 أتمتة أولياء الأمور</button>' +
+    '</div>';
+
+  if(tab === "parents"){
+    h += instKeyCardV();
+    h += '<div class="card" style="border-inline-start:4px solid #25d366">' +
+      '<h2>📲 أتمتة الربط مع أولياء الأمور والإدارة</h2>' +
+      '<div class="mu" style="margin-bottom:12px;line-height:1.6">أرسل تقارير رسمية موثوقة (درجة امتحان، غياب، سلوك، أو كود ربط الطالب السحابي) إلى ولي الأمر والإدارة في نفس اللحظة بدون أي ضياع للمعلومات.</div>' +
+      '<label>اختر طالباً من دفتر الدرجات أو اكتب اسمه:</label>' +
+      (S.gr && S.gr.length ? '<div class="row" style="flex-wrap:wrap;margin-bottom:6px">' + S.gr.slice(0,8).map(function(g, idx){
+        return '<button type="button" class="chip" onclick="selectStudentForParent('+idx+')">👤 '+esc(g[0])+' ('+esc(g[1])+')</button>';
+      }).join("") + '</div>' : '') +
+      '<input id="prName" placeholder="اسم الطالب الكامل (مثال: محمد علي حسن)" value="'+esc(S.prNameVal||"")+'" oninput="S.prNameVal=this.value">' +
+      '<label>نوع الإشعار الرسمي</label><select id="prType"><option value="grade">📝 تبليغ بدرجة امتحان + كود المتابعة</option><option value="absent">⚠️ تبليغ بغياب رسمي</option><option value="behavior">🗣️ استدعاء أو ملاحظة تربوية</option><option value="custom">💬 رسالة مخصصة</option></select>' +
+      '<label>التفاصيل / الدرجة المأخوذة</label><textarea id="prNote" rows="2" placeholder="اكتب الدرجة أو الملاحظة هنا...">'+esc(S.prNoteVal||"")+'</textarea>' +
+      '<div class="grid" style="margin-top:8px">' +
+        '<button class="b" style="font-size:14px;background:#25d366" onclick="sendParentInApp()">📱 إرسال التبليغ الآن</button>' +
+      '</div>' +
+      '<div class="mu" style="font-size:11px;margin:6px 0">يصل التبليغ فوراً لمنصة مسبار. يدخل ولي الأمر بكود الطالب ويشاهده بدون الحاجة لتطبيقات المراسلة.</div>' +
+      '<button class="b" style="width:100%;background:#7e22ce;font-size:14px;margin-top:6px" onclick="sendGradesToAdmin()">🏢 إرسال درجات الجميع للإدارة والأهالي (كل طالب بكوده)</button>' +
+    '</div>';
+    h += absenceCardV();
+  } else {
+    if(S.liveQuiz){
+       var ansKeys = Object.keys(S.liveQuizAnswers || {});
+       var totalAnswers = ansKeys.length;
+       var bankLen = (S.liveQuiz.bank && S.liveQuiz.bank.length) ? S.liveQuiz.bank.length : 1;
+       var perStu = S.liveQuiz.perStu || bankLen;
+       
+       h += '<div class="card" style="text-align:center;border:2px solid var(--ac)">' +
+         '<div class="mu">رمز دخول الطلاب للامتحان المشدد (PIN):</div>' +
+         '<div style="font-size:44px;font-weight:900;letter-spacing:8px;color:var(--ac);margin:6px 0">'+esc(S.liveQuizPin)+'</div>' +
+         '<div class="badge" style="margin-bottom:10px">بنك الأسئلة: '+bankLen+' أسئلة · حزمة كل طالب: '+perStu+' أسئلة عشوائية · المدة: '+(S.liveQuiz.duration||"مفتوح")+' د</div>' +
+         '<div style="text-align:start;margin-top:10px;border-top:1px solid var(--ln);padding-top:10px">' +
+           '<b>👥 الطلاب الممتحنون حالياً ('+totalAnswers+'):</b>' +
+           (totalAnswers ? ansKeys.map(function(uid){
+              var a = S.liveQuizAnswers[uid];
+              var statusBadge = a.cheated
+                ? '<span class="badge" style="background:#fee2e2;color:#b91c1c">🚫 غش / خرج من الصفحة (0)</span>'
+                : (a.timeout ? '<span class="badge" style="background:#fef3c7;color:#92400e">⏳ انتهى الوقت ('+a.score+'/'+a.total+')</span>'
+                : '<span class="badge" style="background:#dcfce7;color:#15803d">✅ سلّم الإجابة ('+a.score+'/'+a.total+')</span>');
+              return '<div class="row" style="padding:8px 0;border-bottom:1px solid var(--ln)">' +
+                '<div class="grow"><b>'+esc(a.name || "طالب")+'</b><div>'+statusBadge+'</div></div>' +
+                '<button class="b s" style="min-height:32px;padding:4px 10px;font-size:12px" onclick="resetStudentQuiz(\''+esc(uid)+'\',\''+esc(a.name||"طالب")+'\')">🔄 إعادة توليد السؤال للطالب</button>' +
+              '</div>';
+           }).join("") : '<div class="mu" style="padding:12px 0;text-align:center">بانتظار دخول الطلاب وإرسال إجاباتهم...</div>') +
+         '</div>' +
+         '<button class="b d" style="width:100%;margin-top:12px" onclick="stopLiveQuizAndGrade()">⏹️ إنهاء الامتحان وترحيل جميع الدرجات للدفتر والإدارة</button>' +
+       '</div>';
+    } else {
+       var bank = S.lqBank || [];
+       h += '<div class="card" style="border-inline-start:4px solid var(--ac)">' +
+         '<h2>🤖 ١. توليد بنك الأسئلة العشوائية (بالذكاء أو يدوياً)</h2>' +
+         '<div class="mu" style="margin-bottom:10px;line-height:1.6">أعطِ المادة للبرنامج ليولّد لك بنك أسئلة (مثلاً 10 أسئلة)، ثم حدد كم سؤالاً يُعطى لكل طالب (مثلاً 2 أو 3 أو 4 أو 5 أسئلة) بترتيب وخيارات عشوائية تماماً لمنع الغش!</div>' +
+         '<label>موضوع الامتحان أو نص المادة الدراسية:</label>' +
+         '<textarea id="lqMat" rows="3" placeholder="اكتب اسم الموضوع أو الصق نص الدرس هنا ليولّد الذكاء الاصطناعي الأسئلة منه...">'+esc(S.lqMatVal||"")+'</textarea>' +
+         '<div class="grid">' +
+           '<div><label>إجمالي أسئلة البنك (مثلاً 10):</label><input type="number" id="lqTotalGen" value="'+(S.lqTotalGenVal||10)+'" min="2" max="30"></div>' +
+           '<div><label>عدد الأسئلة لكل طالب (حزمة الطالب):</label><input type="number" id="lqPerStu" value="'+(S.lqPerStuVal||3)+'" min="1" max="20"></div>' +
+         '</div>' +
+         '<button class="b s" style="width:100%;margin-bottom:10px" '+(S.busy?'disabled':'')+' onclick="genAiQuizBank()">'+(S.busy?'⏳ جاري توليد حزم الأسئلة بالذكاء...':'🤖 توليد بنك الأسئلة بالذكاء الاصطناعي ('+(bank.length)+' أسئلة جاهزة)')+'</button>' +
+         (bank.length ? '<div style="max-height:180px;overflow-y:auto;background:var(--bg);padding:8px;border-radius:10px;margin-bottom:10px;border:1px solid var(--ln)">' +
+           bank.map(function(item, idx){
+             return '<div style="font-size:12px;padding:4px 0;border-bottom:1px dashed var(--ln)"><b>س'+(idx+1)+':</b> '+esc(item.q)+' <span style="color:#15803d">(الجواب: '+esc(item.opts[item.ans||0])+')</span> <button class="b d" style="min-height:22px;padding:1px 6px;font-size:10px;float:left" onclick="S.lqBank.splice('+idx+',1);draw()">×</button></div>';
+           }).join("") +
+         '</div>' : '') +
+         '<details style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:700;font-size:13px;color:var(--ac)">➕ أو أضف سؤالاً يدوياً إلى البنك</summary>' +
+           '<div style="padding-top:8px">' +
+             '<label>نص السؤال</label><textarea id="lqQ" rows="2" placeholder="اكتب السؤال هنا..."></textarea>' +
+             '<div class="grid">' +
+               '<div><label>الخيار ١ (الجواب الصحيح ✓)</label><input id="lq1" placeholder="الجواب الصحيح"></div>' +
+               '<div><label>الخيار ٢ (خاطئ)</label><input id="lq2" placeholder="خيار خاطئ"></div>' +
+               '<div><label>الخيار ٣ (خاطئ)</label><input id="lq3" placeholder="خيار خاطئ"></div>' +
+               '<div><label>الخيار ٤ (خاطئ)</label><input id="lq4" placeholder="خيار خاطئ"></div>' +
+             '</div>' +
+             '<button class="b s" style="width:100%" onclick="addManualQuestionToBank()">+ إضافة السؤال للبنك</button>' +
+           '</div>' +
+         '</details>' +
+         '<div style="background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:10px;margin-top:8px">' +
+            '<b style="display:block;margin-bottom:6px;font-size:13px">⚙️ إعدادات الحماية الصارمة والأتمتة:</b>' +
+            '<label class="row" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" id="lqStrict" style="width:auto;margin:0" checked> 🔒 منع الخروج من الصفحة (ينتهي الامتحان ويتصفر فوراً إذا خرج الطالب)</label>' +
+            '<label class="row" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" id="lqShuffle" style="width:auto;margin:0" checked> 🔀 توزيع حزم أسئلة عشوائية + خلط ترتيب الأسئلة والخيارات لكل طالب</label>' +
+            '<div class="row" style="gap:10px">' +
+               '<label class="grow" style="margin:0">⏱️ وقت الامتحان بالدقائق (ينتهي الامتحان بانتهاء الوقت):</label>' +
+               '<input type="number" id="lqTime" value="5" min="1" style="width:70px;margin:0">' +
+            '</div>' +
+         '</div>' +
+         '<button class="b" style="width:100%;margin-top:10px;font-size:15px;background:#15803d" onclick="launchLiveQuiz()">🚀 إطلاق الامتحان العشوائي المشدد الآن</button>' +
+       '</div>';
+    }
+  }
+  return h;
+}
+
+function stuCode(name){
+  var kp=keyParts();if(!kp)return "";
+  var s=kp.sec+"|"+normNm(String(name).replace(/ \(معدل.*\)/g,"")),a=cyr(s,1),b=cyr(s,7),n=[a[0],a[1],b[0],b[1]],o="";
+  for(var i=0;i<8;i++)o+=B32[((n[i%4]>>>(Math.floor(i/4)*8))&255)%31];
+  return "STU-"+o.slice(0,4)+"-"+o.slice(4,8);
+}
+
+function stdCode(name,pre){
+  var kp=keyParts();if(!kp)return "";
+  var s=kp.sec+"|std|"+normNm(name),a=cyr(s,11),b=cyr(s,19),n=[a[0],a[1],b[0],b[1]],o="";
+  for(var i=0;i<8;i++)o+=B32[((n[i%4]>>>(Math.floor(i/4)*8))&255)%31];
+  return (pre||"STD")+"-"+o.slice(0,4)+"-"+o.slice(4,8);
+}
+
+
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.61.0";
+var APP_VERSION = "2.62.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -5642,104 +5927,7 @@ async function genSlides(){
 }
 
 
-function livePortalV(){
-  var tab = S.liveQuizTab || "quiz";
-  var h = '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">بوابة الامتحانات الصارمة والمتابعة</b></div>' +
-    '<div class="grid" style="margin-bottom:10px">' +
-      '<button class="b '+(tab==="quiz"?"":"s")+'" onclick="S.liveQuizTab=\'quiz\';draw()">📡 الامتحان العشوائي المشدد</button>' +
-      '<button class="b '+(tab==="parents"?"":"s")+'" onclick="S.liveQuizTab=\'parents\';draw()">👨‍👩‍👦 أتمتة أولياء الأمور</button>' +
-    '</div>';
 
-  if(tab === "parents"){
-    h += instKeyCardV();
-    h += '<div class="card" style="border-inline-start:4px solid #25d366">' +
-      '<h2>📲 أتمتة الربط مع أولياء الأمور والإدارة</h2>' +
-      '<div class="mu" style="margin-bottom:12px;line-height:1.6">أرسل تقارير رسمية موثوقة (درجة امتحان، غياب، سلوك، أو كود ربط الطالب السحابي) إلى ولي الأمر والإدارة في نفس اللحظة بدون أي ضياع للمعلومات.</div>' +
-      '<label>اختر طالباً من دفتر الدرجات أو اكتب اسمه:</label>' +
-      (S.gr && S.gr.length ? '<div class="row" style="flex-wrap:wrap;margin-bottom:6px">' + S.gr.slice(0,8).map(function(g, idx){
-        return '<button type="button" class="chip" onclick="selectStudentForParent('+idx+')">👤 '+esc(g[0])+' ('+esc(g[1])+')</button>';
-      }).join("") + '</div>' : '') +
-      '<input id="prName" placeholder="اسم الطالب الكامل (مثال: محمد علي حسن)" value="'+esc(S.prNameVal||"")+'" oninput="S.prNameVal=this.value">' +
-      '<label>نوع الإشعار الرسمي</label><select id="prType"><option value="grade">📝 تبليغ بدرجة امتحان + كود المتابعة</option><option value="absent">⚠️ تبليغ بغياب رسمي</option><option value="behavior">🗣️ استدعاء أو ملاحظة تربوية</option><option value="custom">💬 رسالة مخصصة</option></select>' +
-      '<label>التفاصيل / الدرجة المأخوذة</label><textarea id="prNote" rows="2" placeholder="اكتب الدرجة أو الملاحظة هنا...">'+esc(S.prNoteVal||"")+'</textarea>' +
-      '<div class="grid" style="margin-top:8px">' +
-        '<button class="b" style="font-size:14px;background:#25d366" onclick="sendParentInApp()">📱 إرسال التبليغ الآن</button>' +
-      '</div>' +
-      '<div class="mu" style="font-size:11px;margin:6px 0">يصل التبليغ فوراً لمنصة مسبار. يدخل ولي الأمر بكود الطالب ويشاهده بدون الحاجة لتطبيقات المراسلة.</div>' +
-      '<button class="b" style="width:100%;background:#7e22ce;font-size:14px;margin-top:6px" onclick="sendGradesToAdmin()">🏢 إرسال درجات الجميع للإدارة والأهالي (كل طالب بكوده)</button>' +
-    '</div>';
-    h += absenceCardV();
-  } else {
-    if(S.liveQuiz){
-       var ansKeys = Object.keys(S.liveQuizAnswers || {});
-       var totalAnswers = ansKeys.length;
-       var bankLen = (S.liveQuiz.bank && S.liveQuiz.bank.length) ? S.liveQuiz.bank.length : 1;
-       var perStu = S.liveQuiz.perStu || bankLen;
-       
-       h += '<div class="card" style="text-align:center;border:2px solid var(--ac)">' +
-         '<div class="mu">رمز دخول الطلاب للامتحان المشدد (PIN):</div>' +
-         '<div style="font-size:44px;font-weight:900;letter-spacing:8px;color:var(--ac);margin:6px 0">'+esc(S.liveQuizPin)+'</div>' +
-         '<div class="badge" style="margin-bottom:10px">بنك الأسئلة: '+bankLen+' أسئلة · حزمة كل طالب: '+perStu+' أسئلة عشوائية · المدة: '+(S.liveQuiz.duration||"مفتوح")+' د</div>' +
-         '<div style="text-align:start;margin-top:10px;border-top:1px solid var(--ln);padding-top:10px">' +
-           '<b>👥 الطلاب الممتحنون حالياً ('+totalAnswers+'):</b>' +
-           (totalAnswers ? ansKeys.map(function(uid){
-              var a = S.liveQuizAnswers[uid];
-              var statusBadge = a.cheated
-                ? '<span class="badge" style="background:#fee2e2;color:#b91c1c">🚫 غش / خرج من الصفحة (0)</span>'
-                : (a.timeout ? '<span class="badge" style="background:#fef3c7;color:#92400e">⏳ انتهى الوقت ('+a.score+'/'+a.total+')</span>'
-                : '<span class="badge" style="background:#dcfce7;color:#15803d">✅ سلّم الإجابة ('+a.score+'/'+a.total+')</span>');
-              return '<div class="row" style="padding:8px 0;border-bottom:1px solid var(--ln)">' +
-                '<div class="grow"><b>'+esc(a.name || "طالب")+'</b><div>'+statusBadge+'</div></div>' +
-                '<button class="b s" style="min-height:32px;padding:4px 10px;font-size:12px" onclick="resetStudentQuiz(\''+esc(uid)+'\',\''+esc(a.name||"طالب")+'\')">🔄 إعادة توليد السؤال للطالب</button>' +
-              '</div>';
-           }).join("") : '<div class="mu" style="padding:12px 0;text-align:center">بانتظار دخول الطلاب وإرسال إجاباتهم...</div>') +
-         '</div>' +
-         '<button class="b d" style="width:100%;margin-top:12px" onclick="stopLiveQuizAndGrade()">⏹️ إنهاء الامتحان وترحيل جميع الدرجات للدفتر والإدارة</button>' +
-       '</div>';
-    } else {
-       var bank = S.lqBank || [];
-       h += '<div class="card" style="border-inline-start:4px solid var(--ac)">' +
-         '<h2>🤖 ١. توليد بنك الأسئلة العشوائية (بالذكاء أو يدوياً)</h2>' +
-         '<div class="mu" style="margin-bottom:10px;line-height:1.6">أعطِ المادة للبرنامج ليولّد لك بنك أسئلة (مثلاً 10 أسئلة)، ثم حدد كم سؤالاً يُعطى لكل طالب (مثلاً 2 أو 3 أو 4 أو 5 أسئلة) بترتيب وخيارات عشوائية تماماً لمنع الغش!</div>' +
-         '<label>موضوع الامتحان أو نص المادة الدراسية:</label>' +
-         '<textarea id="lqMat" rows="3" placeholder="اكتب اسم الموضوع أو الصق نص الدرس هنا ليولّد الذكاء الاصطناعي الأسئلة منه...">'+esc(S.lqMatVal||"")+'</textarea>' +
-         '<div class="grid">' +
-           '<div><label>إجمالي أسئلة البنك (مثلاً 10):</label><input type="number" id="lqTotalGen" value="'+(S.lqTotalGenVal||10)+'" min="2" max="30"></div>' +
-           '<div><label>عدد الأسئلة لكل طالب (حزمة الطالب):</label><input type="number" id="lqPerStu" value="'+(S.lqPerStuVal||3)+'" min="1" max="20"></div>' +
-         '</div>' +
-         '<button class="b s" style="width:100%;margin-bottom:10px" '+(S.busy?'disabled':'')+' onclick="genAiQuizBank()">'+(S.busy?'⏳ جاري توليد حزم الأسئلة بالذكاء...':'🤖 توليد بنك الأسئلة بالذكاء الاصطناعي ('+(bank.length)+' أسئلة جاهزة)')+'</button>' +
-         (bank.length ? '<div style="max-height:180px;overflow-y:auto;background:var(--bg);padding:8px;border-radius:10px;margin-bottom:10px;border:1px solid var(--ln)">' +
-           bank.map(function(item, idx){
-             return '<div style="font-size:12px;padding:4px 0;border-bottom:1px dashed var(--ln)"><b>س'+(idx+1)+':</b> '+esc(item.q)+' <span style="color:#15803d">(الجواب: '+esc(item.opts[item.ans||0])+')</span> <button class="b d" style="min-height:22px;padding:1px 6px;font-size:10px;float:left" onclick="S.lqBank.splice('+idx+',1);draw()">×</button></div>';
-           }).join("") +
-         '</div>' : '') +
-         '<details style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:700;font-size:13px;color:var(--ac)">➕ أو أضف سؤالاً يدوياً إلى البنك</summary>' +
-           '<div style="padding-top:8px">' +
-             '<label>نص السؤال</label><textarea id="lqQ" rows="2" placeholder="اكتب السؤال هنا..."></textarea>' +
-             '<div class="grid">' +
-               '<div><label>الخيار ١ (الجواب الصحيح ✓)</label><input id="lq1" placeholder="الجواب الصحيح"></div>' +
-               '<div><label>الخيار ٢ (خاطئ)</label><input id="lq2" placeholder="خيار خاطئ"></div>' +
-               '<div><label>الخيار ٣ (خاطئ)</label><input id="lq3" placeholder="خيار خاطئ"></div>' +
-               '<div><label>الخيار ٤ (خاطئ)</label><input id="lq4" placeholder="خيار خاطئ"></div>' +
-             '</div>' +
-             '<button class="b s" style="width:100%" onclick="addManualQuestionToBank()">+ إضافة السؤال للبنك</button>' +
-           '</div>' +
-         '</details>' +
-         '<div style="background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:10px;margin-top:8px">' +
-            '<b style="display:block;margin-bottom:6px;font-size:13px">⚙️ إعدادات الحماية الصارمة والأتمتة:</b>' +
-            '<label class="row" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" id="lqStrict" style="width:auto;margin:0" checked> 🔒 منع الخروج من الصفحة (ينتهي الامتحان ويتصفر فوراً إذا خرج الطالب)</label>' +
-            '<label class="row" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" id="lqShuffle" style="width:auto;margin:0" checked> 🔀 توزيع حزم أسئلة عشوائية + خلط ترتيب الأسئلة والخيارات لكل طالب</label>' +
-            '<div class="row" style="gap:10px">' +
-               '<label class="grow" style="margin:0">⏱️ وقت الامتحان بالدقائق (ينتهي الامتحان بانتهاء الوقت):</label>' +
-               '<input type="number" id="lqTime" value="5" min="1" style="width:70px;margin:0">' +
-            '</div>' +
-         '</div>' +
-         '<button class="b" style="width:100%;margin-top:10px;font-size:15px;background:#15803d" onclick="launchLiveQuiz()">🚀 إطلاق الامتحان العشوائي المشدد الآن</button>' +
-       '</div>';
-    }
-  }
-  return h;
-}
 
 function selectStudentForParent(idx){
   var g = S.gr[idx]; if(!g) return;
@@ -6147,12 +6335,7 @@ function setInstKey(v){
 }
 
 function requireKey(){if(!keyParts()){toast("أدخل مفتاح المؤسسة أولاً (أعلى هذه الصفحة)");return false}return true}
-function stuCode(name){
-  var kp=keyParts();if(!kp)return "";
-  var s=kp.sec+"|"+normNm(String(name).replace(/ \(معدل.*\)/g,"")),a=cyr(s,1),b=cyr(s,7),n=[a[0],a[1],b[0],b[1]],o="";
-  for(var i=0;i<12;i++)o+=B32[((n[i%4]>>>(Math.floor(i/4)*8))&255)%31];
-  return "STU-"+o.slice(0,4)+"-"+o.slice(4,8)+"-"+o.slice(8,12);
-}
+
 function instKeyCardV(){
   var kp=keyParts();
   return '<div class="card" style="border-inline-start:4px solid #7e22ce"><b>🏫 مفتاح المؤسسة</b>'+
@@ -6244,7 +6427,7 @@ function sendGradesToAdmin(){
 }
 
 /* ===== v2.55: سجل الطلاب الرسمي (OCR) + أكواد + أتمتة الأساتذة والأهالي والكلاسات والامتحانات ===== */
-function stdCode(name,pre){var kp=keyParts();if(!kp)return "";var s=kp.sec+"|std|"+normNm(name),a=cyr(s,11),b=cyr(s,19),n=[a[0],a[1],b[0],b[1]],o="";for(var i=0;i<12;i++)o+=B32[((n[i%4]>>>(Math.floor(i/4)*8))&255)%31];return (pre||"STD")+"-"+o.slice(0,4)+"-"+o.slice(4,8)+"-"+o.slice(8,12)}
+
 function rosterDocId(){var kp=keyParts();if(!kp)return "x";var a=cyr(kp.sec+"|roster",5),b=cyr(kp.sec+"|roster",9);return kp.id+"_"+a[0].toString(36)+a[1].toString(36)+b[0].toString(36)+b[1].toString(36)}
 function waNum(v){var d=String(v||"").replace(/\D/g,"");if(d.length<7)return "";d=d.replace(/^00/,"");if(d.indexOf("964")===0)return d;return "964"+d.replace(/^0+/,"")}
 function sendCodeWA(c){var x=(S.rsPub||[]).filter(function(y){return y.c===c})[0],ph=(S.rsPh||{})[c],ins=(S.myInsts||[]).filter(function(i){return i.id===S.curInstId})[0];if(!x||!ph)return;
@@ -6710,70 +6893,7 @@ function restoreAppStateFromSession(){
   }catch(e){}
 }
 
-function draw(){
-  saveAppStateToSession();
 
-  // Force reset to show 3 portals on this major architectural update
-  if(localStorage.getItem("misbar_v250_reset") !== "done"){
-    localStorage.setItem("misbar_v250_reset", "done");
-    S.sysRole = null; S.loginRole = null; S.uid = null;
-    saveDeviceOnly();
-  }
-
-  syncHistoryState();
-  /* تم إزالة الدائرة العائمة بالكامل بناءً على طلبك ليبقى التطبيق نظيفاً وسلساً */
-  var oldFab=$("fab");if(oldFab)oldFab.remove();
-  if(!S.authReady)return;
-  if(!S.sysRole){loginV();return}
-  if(!S.uid){portalLoginV(S.sysRole);return}
-  if(S.profileOpen){profileScr();return}
-  if(S.subv&&(S.role=="pro"||S.role=="stu")){subScr();return}
-  if(S.scnPrintDoc){scnPrintScr();return}
-  if(S.scnCam){scnLiveCameraScr();return}
-  if(S.scnEd){scnEditorScr();return}
-  if(S.role=="pro"&&S.gw){
-    if(S.gw.view=="ed_q"&&S.pp){ppEdScr();return}
-    if(S.gw.view=="ed_b"&&S.bk){bkEdScr();return}
-    gwStepsScr();return;
-  }
-
-  var _mt=$("mt"),_mtv=_mt?_mt.value:null,_mtf=!!_mt&&document.activeElement===_mt;
-
-  
-  // Set system role from login choice if not set
-  if(!S.sysRole && S.loginRole) { S.sysRole = S.loginRole; saveDeviceOnly(); }
-  if(!S.sysRole) { loginV(); return; }
-
-  var h="",r=S.role;
-  
-  // 1. Admin Portal
-  if(S.sysRole === 'admin') {
-     if(!S.uid) { loginV(); return; }
-     h = head("الإدارة / رئيس القسم") + '<main>' + adminPortalV() + '</main>';
-  }
-  // 2. Parents Portal
-  else if(S.sysRole === 'parent') {
-     h = head("بوابة أولياء الأمور") + '<main>' + parentsPortalV() + '</main>';
-  }
-  // 3. Student Portal (via Code)
-  else if(S.sysRole === 'stu') {
-     h = head("بوابة الطالب") + '<main>' + stuPortalV() + '</main>';
-  }
-  // 4. Pro Portal (Teacher)
-  else if(S.sysRole === 'pro'){
-    if(!S.uid) { loginV(); return; }
-    h=head("واجهة الأستاذ")+'<main>'+topBarH()+[proPortalsV,filesV,bagV,clsV,aiAndTextV,omrV][S.tab]()+'</main>'+
-      navb([["🏛️","البوابات"],["📷","السكنر"],["🎒","الحقيبة"],["🏫","الكلاسات"],["🤖","الذكاء"],["💯","خدمات متقدمة"]]);
-  }else{
-    h=head("لوحة المالك")+'<main>'+ownV()+'</main>';
-  }
-
-  $("app").className=r=="pro"?"pro":"";
-  $("app").innerHTML=h;
-  var _nm=$("mt");if(_nm&&_mtv!==null){_nm.value=_mtv;if(_mtf)_nm.focus();}
-  if(S.curChatId!==null){var _wb=$("waBody");if(_wb)_wb.scrollTop=_wb.scrollHeight;}
-  else { if(typeof cancelVoiceRecord === "function" && (S.isRecording || S.hasRecBlob)) cancelVoiceRecord(); }
-}
 
 
 /* ==================== الدليل البصري الذكي لمستخدمي الآيفون (iOS PWA Prompt) ==================== */
@@ -6802,118 +6922,8 @@ function checkIOSInstallPrompt(){
 window.addEventListener("load", function(){ setTimeout(checkIOSInstallPrompt, 3000); });
 
 
-function loginV(){
-  $("app").className="";
-  $("app").innerHTML = '<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">المنظومة التعليمية المتكاملة</p></div>'+
-  '<main>' +
-    '<h2 style="text-align:center;margin-top:0;margin-bottom:16px">اختر بوابتك للدخول</h2>' +
-    '<div style="display:flex;flex-direction:column;gap:12px">' +
-      '<div class="card row" onclick="S.loginRole=\'pro\';fbLogin()" style="cursor:pointer;border:2px solid var(--ac);background:var(--acs);transition:transform 0.2s;margin:0" onmousedown="this.style.transform=\'scale(0.97)\'" onmouseup="this.style.transform=\'none\'">' +
-         '<div style="font-size:38px;padding:0 10px">👨‍🏫</div>' +
-         '<div class="grow"><b style="display:block;color:var(--ac);font-size:16px">بوابة الأستاذ</b><div class="mu" style="font-size:12px;margin-top:4px">دخول بحساب Google</div></div>' +
-      '</div>' +
-      '<div class="card row" onclick="S.sysRole=\'stu\';draw()" style="cursor:pointer;border:2px solid #0891b2;background:#ecfeff;transition:transform 0.2s;margin:0" onmousedown="this.style.transform=\'scale(0.97)\'" onmouseup="this.style.transform=\'none\'">' +
-         '<div style="font-size:38px;padding:0 10px">🎓</div>' +
-         '<div class="grow"><b style="display:block;color:#0891b2;font-size:16px">بوابة الطالب</b><div class="mu" style="font-size:12px;margin-top:4px">دخول بكود الطالب (بدون حساب)</div></div>' +
-      '</div>' +
-      '<div class="card row" onclick="S.sysRole=\'parent\';draw()" style="cursor:pointer;border:2px solid #2563eb;background:#eff6ff;transition:transform 0.2s;margin:0" onmousedown="this.style.transform=\'scale(0.97)\'" onmouseup="this.style.transform=\'none\'">' +
-         '<div style="font-size:38px;padding:0 10px">👨‍👩‍👦</div>' +
-         '<div class="grow"><b style="display:block;color:#1d4ed8;font-size:16px">أولياء الأمور</b><div class="mu" style="font-size:12px;margin-top:4px">متابعة الأبناء (بدون حساب)</div></div>' +
-      '</div>' +
-      '<div class="card row" onclick="S.loginRole=\'admin\';fbLogin()" style="cursor:pointer;border:2px solid #9333ea;background:#f3e8ff;transition:transform 0.2s;margin:0" onmousedown="this.style.transform=\'scale(0.97)\'" onmouseup="this.style.transform=\'none\'">' +
-         '<div style="font-size:38px;padding:0 10px">🏢</div>' +
-         '<div class="grow"><b style="display:block;color:#7e22ce;font-size:16px">الإدارة / القسم</b><div class="mu" style="font-size:12px;margin-top:4px">لوحة التحكم والمراقبة</div></div>' +
-      '</div>' +
-    '</div>' +
-    '<div class="mu" style="text-align:center;margin-top:20px;font-size:11px">المنظومة السحابية v'+APP_VERSION+' · تحديث تلقائي</div>'+
-  '</main>';
-}
-
-function parentReplyH(code, n){
-    var itemId = n.id || ("i_" + n.at);
-    if(n.reply) return '<div class="out" style="background:#e0f2fe;color:#0369a1;margin-top:6px;font-size:12px;padding:8px"><b>ردك:</b> '+esc(n.reply)+'</div>';
-    return '<div style="margin-top:8px" class="row"><input id="rep_'+itemId+'" placeholder="اكتب رداً أو سبب الغياب..." style="margin:0;font-size:12px;padding:6px 10px" class="grow"><button class="b" style="padding:4px 10px;min-height:30px;font-size:12px;background:#1d4ed8" onclick="sendCardReply(\''+code+'\', \''+itemId+'\')">إرسال / اطلعت</button></div>';
-}
-window.sendCardReply = function(code, itemId){
-    var el = document.getElementById("rep_"+itemId);
-    var txt = (el ? el.value.trim() : "") || "اطلعت على التبليغ";
-    toast("⏳ جاري الإرسال...");
-    window.fbReplyCardItem(code, itemId, txt).then(function(){
-       toast("✅ تم الإرسال للإدارة والأستاذ");
-    }).catch(function(e){ toast("خطأ: "+e); });
-};
-
-function parentsPortalV(){
-  var codeIn=(S.parentStuCode||"").trim().toUpperCase().replace(/\s+/g,""),okFmt=/^STU-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(codeIn);
-  if(!okFmt&&codeIn.length>=3&&S._resFor!==codeIn&&window.fbResolveStd){S._resFor=codeIn;S._resMsg="";window.fbResolveStd(codeIn).then(function(d){if(d&&d.p&&(d.sec===1||/^STD-/.test(codeIn))){S.parentStuCode=d.p;S._resMsg=""}else S._resMsg=d?"easy":"nf";draw()}).catch(function(){S._resMsg="err";draw()})}
-  if(okFmt&&S.watchedCode!==codeIn&&window.fbWatchCard){S.watchedCode=codeIn;S.cardItems=[];window.fbWatchCard(codeIn)}
-  var items=okFmt?(S.cardItems||[]):[];
-  var body;
-  if(!codeIn)body='<div class="card mu" style="text-align:center;padding:24px 10px">أدخل كود الطالب أعلاه لعرض درجاته وتبليغاته.</div>';
-  else if(!okFmt)body='<div class="card mu" style="text-align:center;padding:24px 10px;line-height:1.8">'+(S._resMsg==="easy"?'هذا <b>كود الطالب</b> وليس كود ولي الأمر. اطلب من الإدارة أو الأستاذ كود ولي الأمر (يبدأ بـ STU-).':S._resMsg==="nf"?'الكود غير موجود، تأكد من كتابته.':S._resMsg==="err"?'تعذر التحقق من الكود الآن، حاول مرة ثانية.':'اكتب كود ولي الأمر (STU-XXXX-XXXX-XXXX) أو كود الطالب كما استلمته.')+'</div>';
-  else if(!items.length)body='<div class="card mu" style="text-align:center;padding:24px 10px">ما كو سجلات لهذا الكود لحد الآن. تأكد من الكود المرسل لك من الأستاذ.</div>';
-  else body='<h2>📊 سجل الطالب: '+esc(items[0].student||"")+'</h2>'+items.map(function(n){
-    if(n.type==="grade")return '<div class="card"><div class="row"><div class="grow"><b>🧑‍🎓 '+esc(n.student||"")+'</b><div class="mu">الأستاذ: '+esc(n.teacher)+' · '+fd(n.at)+'</div></div><span class="badge" style="font-size:15px;padding:6px 12px;background:#dcfce7;color:#15803d">الدرجة: '+esc(n.score)+'</span></div>'+parentReplyH(codeIn, n)+'</div>';
-    return '<div class="card" style="border-inline-start:4px solid '+(n.type==="absent"?"#dc2626":"#f59e0b")+'"><b>'+(n.type==="absent"?"⚠️ تبليغ غياب من ":"📩 تبليغ من ")+esc(n.teacher)+' ('+fd(n.at)+')</b><div style="margin-top:4px">'+esc(n.note)+'</div>'+parentReplyH(codeIn, n)+'</div>';
-  }).join("");
-  return '<div class="card" style="border-inline-start:4px solid #2563eb;background:#eff6ff"><h2>👨‍👩‍👦 بوابة أولياء الأمور</h2><div class="mu" style="line-height:1.6">أدخل كود ابنك (مثل <b>STU-AB12-CD34-EF56</b>) اللي استلمته من الأستاذ لعرض درجاته وغياباته وتبليغاته. تشوف ابنك فقط.</div></div>'+
-  '<div class="card"><label>كود الطالب:</label><div class="row"><input id="pCodeIn" dir="ltr" type="text" value="'+esc(S.parentStuCode||"")+'" placeholder="STU-XXXX-XXXX-XXXX" class="grow" style="margin:0" oninput="S.parentStuCode=this.value"><button class="b" style="background:#2563eb" onclick="S.parentStuCode=document.getElementById(\'pCodeIn\').value;draw()">🔍 متابعة</button></div></div>'+body+
-  '<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
-}
 
 
-function stuPortalV(){
-  var codeIn=(S.stuCodeVal||"").trim().toUpperCase().replace(/\s+/g,""),okFmt=/^STD-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(codeIn);
-  if(!okFmt&&codeIn.length>=3&&S._resFor!==codeIn&&window.fbResolveStd){S._resFor=codeIn;S._resMsg="";window.fbResolveStd(codeIn).then(function(d){if(d&&d.c&&d.sec===1){S.stuCodeVal=d.c;S._resMsg=""}else S._resMsg=d?"easy":"nf";draw()}).catch(function(){S._resMsg="err";draw()})}
-  if(okFmt&&S.watchedCode!==codeIn&&window.fbWatchCard){
-     S.watchedCode=codeIn;
-     window.fbResolveStd(codeIn).then(function(d){
-         if(d && d.p) {
-             S.watchedParentCode = d.p;
-             S.stuDispName = d.n;
-             window.fbWatchCard(d.p);
-         }
-     });
-  }
-  var items=okFmt?(S.cardItems||[]):[];
-  var body;
-  if(!codeIn)body='<div class="card mu" style="text-align:center;padding:24px 10px">أدخل كود الطالب أعلاه لعرض ملفك الأكاديمي والامتحانات المباشرة.</div>';
-  else if(!okFmt)body='<div class="card mu" style="text-align:center;padding:24px 10px;line-height:1.8">'+(S._resMsg==="easy"?'هذا الكود غير كامل، تأكد من كتابته صحيحاً (STD-XXXX).':S._resMsg==="nf"?'الكود غير موجود.':S._resMsg==="err"?'تعذر التحقق.':'اكتب كود الطالب.')+'</div>';
-  else {
-    body='<h2>👨‍🎓 ملف الطالب: '+esc(S.stuDispName||"")+'</h2>'+
-    '<div class="card" style="border-inline-start:4px solid var(--ac); background:var(--acs)">' +
-      '<div class="row"><div class="portal-ico" style="background:var(--ac);color:#fff">📡</div><div class="grow"><b>الامتحان المباشر</b><div class="mu">هل أعطاك الأستاذ رمزاً للكويز؟</div></div></div>' +
-      '<div class="row" style="margin-top:10px"><input id="stuPinIn" type="number" placeholder="رمز الكويز (PIN)" class="grow" style="margin:0"><button class="b" style="background:#15803d" onclick="stuJoinQuiz()">🚀 دخول للامتحان</button></div>' +
-    '</div>' +
-    (S.stuActiveQuiz ? 
-      '<div class="card" style="border:2.5px solid var(--ac)">' +
-        '<div class="row" style="margin-bottom:10px"><b class="grow" style="color:var(--tx)">📝 امتحان مشدد ('+(S.stuActiveQuiz.pkg?S.stuActiveQuiz.pkg.length:1)+' أسئلة عشوائية خاصة بك)</b>'+(S.stuActiveQuiz.duration > 0 && !S.stuActiveQuiz.answered ? '<span class="badge" style="background:#ef4444;color:#fff;font-size:13px" id="stuQuizTimer">⏳ '+S.stuActiveQuiz.duration+':00</span>' : '') +'</div>' +
-        (S.stuActiveQuiz.strict && !S.stuActiveQuiz.answered ? '<div style="background:#fee2e2;color:#b91c1c;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:700;margin-bottom:10px">🔒 تحذير صارم: ممنوع الخروج من هذه الصفحة أو فتح أي تطبيق آخر أثناء الامتحان. أي خروج ينهي الامتحان فوراً ويعطيك صفر!</div>' : '') +
-        (S.stuActiveQuiz.answered ? 
-           '<div class="out" style="text-align:center;font-weight:bold;color:'+(S.stuActiveQuiz.cheated?'#b91c1c':'var(--ac)')+'">' +
-             (S.stuActiveQuiz.cheated ? '🚫 تم إنهاء الامتحان وتصفير درجتك (0) بسبب الخروج من شاشة الامتحان! (يمكن للأستاذ إعادة التوليد لك إذا كان بالخطأ)' : '✅ تم تسليم إجاباتك بنجاح! درجتك الفورية: '+S.stuActiveQuiz.finalScore+' من '+S.stuActiveQuiz.finalTotal) +
-           '</div><button class="b s" style="width:100%;margin-top:8px" onclick="S.stuActiveQuiz=null;draw()">إغلاق</button>'
-         : (S.stuActiveQuiz.pkg || []).map(function(item, qIdx){
-             return '<div style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--ln)"><b style="display:block;margin-bottom:6px;color:var(--ac)">س'+(qIdx+1)+': '+esc(item.q)+'</b>' +
-               item.opts.map(function(opt, oIdx){
-                 var isSel = item.chosen === oIdx;
-                 return '<button type="button" class="quiz-opt '+(isSel?'sel':'')+'" onclick="stuPickPkgOption('+qIdx+','+oIdx+')">'+esc(opt)+'</button>';
-               }).join("") + '</div>';
-           }).join("") +
-           '<button class="b" style="width:100%;background:#15803d;font-size:15px;min-height:46px" onclick="stuSubmitQuiz(1)">✅ تسليم الإجابات النهائية الآن</button>'
-        ) +
-      '</div>' : '') +
-    '<h2>سجلي الأكاديمي</h2>' +
-    (items.length ? items.map(function(n){
-      if(n.type==="grade")return '<div class="card row"><div class="grow"><b>📝 '+esc(n.teacher)+'</b><div class="mu">'+fd(n.at)+'</div></div><span class="badge" style="font-size:15px;padding:6px 12px;background:#dcfce7;color:#15803d">الدرجة: '+esc(n.score)+'</span></div>';
-      return '<div class="card" style="border-inline-start:4px solid '+(n.type==="absent"?"#dc2626":"#f59e0b")+'"><b>'+(n.type==="absent"?"⚠️ تبليغ غياب من ":"📩 تبليغ من ")+esc(n.teacher)+' ('+fd(n.at)+')</b><div style="margin-top:4px">'+esc(n.note)+'</div>'+parentReplyH(S.watchedParentCode, n)+'</div>';
-    }).join("") : '<div class="card mu" style="text-align:center">لا توجد تبليغات أو درجات مسجلة لك حتى الآن.</div>');
-  }
-
-  return '<div class="card" style="border-inline-start:4px solid #0891b2;background:#ecfeff"><h2>🎓 بوابة الطالب</h2><div class="mu" style="line-height:1.6">أدخل كود الطالب (مثل <b>STD-AB12-CD34-EF56</b>) لعرض درجاتك والدخول للامتحانات التفاعلية.</div></div>'+
-  '<div class="card"><label>كود الطالب:</label><div class="row"><input id="sCodeIn" dir="ltr" type="text" value="'+esc(S.stuCodeVal||"")+'" placeholder="STD-XXXX-XXXX-XXXX" class="grow" style="margin:0" oninput="S.stuCodeVal=this.value"><button class="b" style="background:#0891b2" onclick="S.stuCodeVal=document.getElementById(\'sCodeIn\').value;draw()">🔍 متابعة</button></div></div>'+body+
-  '<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
-}
 
 </script>
 
