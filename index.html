@@ -265,7 +265,7 @@ window.misbarHardReset=function(){
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.61.2";
+var APP_VERSION = "2.61.3";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -6746,36 +6746,9 @@ function portalLoginV(p){
     '<div class="card"><div class="mu" style="line-height:1.8;margin-bottom:10px">سجّل الدخول بحساب Google الخاص ببوابة <b>'+n+'</b>. تقدر تستعمل حساباً مختلفاً لكل بوابة على نفس الجهاز.</div><button class="b" style="width:100%;min-height:50px;font-size:15px" onclick="fbLogin()">🔐 تسجيل الدخول بحساب Google</button></div>'+
     '<button class="b s" style="width:100%;margin-top:10px" onclick="leavePortal()">↩ رجوع لاختيار البوابة</button></main>';
 }
+function svg(p){return '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>'}
 function loginV(){
   $("app").className="";
-  $("app").innerHTML = '<div class="hero"><div class="hat" style="font-size:54px;margin-bottom:10px">🎓</div><h1 style="font-size:32px;background:linear-gradient(135deg,#059669,#1e3a8a);-webkit-background-clip:text;color:transparent;font-weight:800">مسبار AI</h1><p class="mu" style="font-size:14px;margin-top:4px">المنظومة التعليمية المتكاملة</p></div>'+
-  '<main>' +
-    '<h2 style="text-align:center;margin-top:0;margin-bottom:16px">اختر بوابتك للدخول</h2>' +
-    '<div class="grid" style="margin-bottom:12px;gap:12px">' +
-      '<div class="card" onclick="S.loginRole=\'admin\';fbLogin()" style="cursor:pointer;text-align:center;border:2px solid #9333ea;background:linear-gradient(145deg,#f3e8ff,#ffffff);transition:all 0.2s;padding:20px 10px">' +
-         '<div style="font-size:38px;margin-bottom:10px">🏢</div>' +
-         '<b style="display:block;color:#7e22ce;font-size:15px">الإدارة والقسم</b>' +
-         '<div class="mu" style="font-size:11px;margin-top:6px;line-height:1.5">استلام الدرجات والتقارير</div>' +
-      '</div>' +
-      '<div class="card" onclick="S.loginRole=\'pro\';fbLogin()" style="cursor:pointer;text-align:center;border:2px solid #15803d;background:linear-gradient(145deg,#dcfce7,#ffffff);transition:all 0.2s;padding:20px 10px">' +
-         '<div style="font-size:38px;margin-bottom:10px">👨‍🏫</div>' +
-         '<b style="display:block;color:#15803d;font-size:15px">بوابة الأستاذ</b>' +
-         '<div class="mu" style="font-size:11px;margin-top:6px;line-height:1.5">إدارة الدروس والامتحانات</div>' +
-      '</div>' +
-      '<div class="card" onclick="S.loginRole=\'stu\';fbLogin()" style="cursor:pointer;text-align:center;border:2px solid #ea580c;background:linear-gradient(145deg,#ffedd5,#ffffff);transition:all 0.2s;padding:20px 10px">' +
-         '<div style="font-size:38px;margin-bottom:10px">🎓</div>' +
-         '<b style="display:block;color:#ea580c;font-size:15px">بوابة الطالب</b>' +
-         '<div class="mu" style="font-size:11px;margin-top:6px;line-height:1.5">دخول الكلاس والاختبارات</div>' +
-      '</div>' +
-      '<div class="card" onclick="S.loginRole=\'parent\';fbLogin()" style="cursor:pointer;text-align:center;border:2px solid #2563eb;background:linear-gradient(145deg,#eff6ff,#ffffff);transition:all 0.2s;padding:20px 10px">' +
-         '<div style="font-size:38px;margin-bottom:10px">👨‍👩‍👦</div>' +
-         '<b style="display:block;color:#1d4ed8;font-size:15px">أولياء الأمور</b>' +
-         '<div class="mu" style="font-size:11px;margin-top:6px;line-height:1.5">متابعة الأبناء والدرجات</div>' +
-      '</div>' +
-    '</div>' +
-    '<div class="mu" style="text-align:center;margin-top:20px;font-size:11px">المنظومة السحابية v'+APP_VERSION+' · تحديث تلقائي</div>'+
-  '</main>';
-};
   var cards=[
     ["pro_stu","p1","الأستاذ والطالب","الدروس والامتحانات والذكاء الاصطناعي",svg('<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>')],
     ["parent","p2","أولياء الأمور","الدرجات والغيابات والتبليغات بكود الطالب",svg('<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.3"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><path d="M15 15c3-.6 6 1 6 4.5"/>')],
