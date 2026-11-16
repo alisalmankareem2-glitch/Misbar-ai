@@ -191,7 +191,7 @@ label.b{display:inline-flex;align-items:center;justify-content:center;gap:5px;ba
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.58.0";
+var APP_VERSION = "2.59.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -6020,9 +6020,9 @@ function adminPortalV(){
   if(cur&&S.curInstId!==cur.id){S.curInstId=cur.id;S.instKey=cur.id+"."+cur.secret;S.adminReports=[];if(window.fbWatchInstReports)window.fbWatchInstReports(cur.id)}
   var out='<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;S.watchingInsts=false;S.curInstId=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
   var head='<div class="card" style="border-inline-start:4px solid #9333ea;background:#f3e8ff"><h2>🏢 لوحة الإدارة / القسم</h2><div class="mu" style="line-height:1.6">تستلم هنا درجات وغيابات الأساتذة المرتبطين بمؤسستك فقط.</div></div>';
-  var create='<div class="card"><b>➕ إنشاء مؤسسة جديدة</b><input id="instName" placeholder="اسم المدرسة / القسم" style="margin-top:6px"><button class="b" style="width:100%;background:#9333ea" onclick="createInst()">إنشاء وتوليد المفتاح</button></div>';
+  var create='<div class="card"><b>➕ إنشاء مؤسسة جديدة</b><input id="instName" placeholder="اسم المدرسة / القسم" style="margin-top:6px"><input id="instKeyNew" dir="ltr" placeholder="مفتاح سهل (اختياري) مثل ABBASIYA2026"><button class="b" style="width:100%;background:#9333ea" onclick="createInst()">إنشاء المؤسسة</button></div>';
   if(!cur)return head+'<div class="card mu" style="text-align:center">ما عندك مؤسسة بعد. أنشئ واحدة وسلّم مفتاحها للأساتذة.</div>'+create+out;
-  var keyCard='<div class="card"><b>🔑 مفتاح «'+esc(cur.name)+'» (للأساتذة فقط، لا تنشره)</b><div dir="ltr" style="user-select:all;font-family:monospace;background:var(--bg);padding:8px;border-radius:8px;margin:6px 0;word-break:break-all">'+esc(cur.id+"."+cur.secret)+'</div><button class="b s" style="width:100%" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+esc(cur.id+"."+cur.secret)+'\');toast(\'تم النسخ\')">📋 نسخ المفتاح</button></div>';
+  var keyCard=keyCardAdm(cur);
   var q=(S.adminSearchQ||"").trim().toLowerCase();
   var list=(S.adminReports||[]).filter(function(r){
     if(!q)return true;
@@ -6041,11 +6041,12 @@ function adminPortalV(){
 
 function parentsPortalV(){
   var codeIn=(S.parentStuCode||"").trim().toUpperCase().replace(/\s+/g,""),okFmt=/^STU-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(codeIn);
+  if(!okFmt&&codeIn.length>=3&&S._resFor!==codeIn&&window.fbResolveStd){S._resFor=codeIn;S._resMsg="";window.fbResolveStd(codeIn).then(function(d){if(d&&d.p&&(d.sec===1||/^STD-/.test(codeIn))){S.parentStuCode=d.p;S._resMsg=""}else S._resMsg=d?"easy":"nf";draw()}).catch(function(){S._resMsg="err";draw()})}
   if(okFmt&&S.watchedCode!==codeIn&&window.fbWatchCard){S.watchedCode=codeIn;S.cardItems=[];window.fbWatchCard(codeIn)}
   var items=okFmt?(S.cardItems||[]):[];
   var body;
   if(!codeIn)body='<div class="card mu" style="text-align:center;padding:24px 10px">أدخل كود الطالب أعلاه لعرض درجاته وتبليغاته.</div>';
-  else if(!okFmt)body='<div class="card mu" style="text-align:center;padding:24px 10px">الكود يكون بهذا الشكل: STU-XXXX-XXXX-XXXX</div>';
+  else if(!okFmt)body='<div class="card mu" style="text-align:center;padding:24px 10px;line-height:1.8">'+(S._resMsg==="easy"?'هذا <b>كود الطالب</b> وليس كود ولي الأمر. اطلب من الإدارة أو الأستاذ كود ولي الأمر (يبدأ بـ STU-).':S._resMsg==="nf"?'الكود غير موجود، تأكد من كتابته.':S._resMsg==="err"?'تعذر التحقق من الكود الآن، حاول مرة ثانية.':'اكتب كود ولي الأمر (STU-XXXX-XXXX-XXXX) أو كود الطالب كما استلمته.')+'</div>';
   else if(!items.length)body='<div class="card mu" style="text-align:center;padding:24px 10px">ما كو سجلات لهذا الكود لحد الآن. تأكد من الكود المرسل لك من الأستاذ.</div>';
   else body='<h2>📊 سجل الطالب: '+esc(items[0].student||"")+'</h2>'+items.map(function(n){
     if(n.type==="grade")return '<div class="card row"><div class="grow"><b>🧑‍🎓 '+esc(n.student||"")+'</b><div class="mu">الأستاذ: '+esc(n.teacher)+' · '+fd(n.at)+'</div></div><span class="badge" style="font-size:15px;padding:6px 12px;background:#dcfce7;color:#15803d">الدرجة: '+esc(n.score)+'</span></div>';
@@ -6123,7 +6124,33 @@ function cyr(s,seed){var h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(var i=0;i<s.l
 function randStr(n){var a=new Uint8Array(n),o="";crypto.getRandomValues(a);for(var i=0;i<n;i++)o+=B32[a[i]%31];return o}
 function getInstKey(){if(S.instKey===undefined){try{S.instKey=localStorage.getItem("misbar_inst_key_"+(S.uid||"anon"))||""}catch(e){S.instKey=""}}return S.instKey}
 function keyParts(){var k=String(getInstKey()||"").split(".");return (k.length==2&&k[0]&&k[1])?{id:k[0],sec:k[1]}:null}
-function setInstKey(v){v=(v||"").trim().toUpperCase();S.instKey=v;try{localStorage.setItem("misbar_inst_key_"+(S.uid||"anon"),v)}catch(e){}if(v&&!keyParts())toast("صيغة المفتاح غير صحيحة");draw()}
+function applyKey(k,name){S.instKey=k;try{localStorage.setItem("misbar_inst_key_"+(S.uid||"anon"),k);localStorage.setItem("misbar_inst_name_"+(S.uid||"anon"),name||"")}catch(e){}if(k&&!keyParts())toast("صيغة المفتاح غير صحيحة");else if(k)toast("✅ تم ربط المؤسسة");draw()}
+function getInstName(){try{return localStorage.getItem("misbar_inst_name_"+(S.uid||"anon"))||""}catch(e){return ""}}
+function normKey(v){return String(v||"").toUpperCase().replace(/[^A-Z0-9-]/g,"").slice(0,24)}
+function keyErr(k){if(!/^[A-Z0-9-]{6,24}$/.test(k))return "المفتاح 6 خانات على الأقل (حروف إنجليزية وأرقام)";if(!/[A-Z]/.test(k)||!/\d/.test(k))return "اجعله حروفاً وأرقاماً معاً، مثل ABBASIYA2026";return ""}
+var TRM={"ا":"A","أ":"A","إ":"A","آ":"A","ب":"B","ت":"T","ث":"TH","ج":"J","ح":"H","خ":"KH","د":"D","ذ":"TH","ر":"R","ز":"Z","س":"S","ش":"SH","ص":"S","ض":"D","ط":"T","ظ":"Z","ع":"A","غ":"GH","ف":"F","ق":"Q","ك":"K","ل":"L","م":"M","ن":"N","ه":"H","ة":"A","و":"W","ي":"Y","ى":"A"};
+function suggestKey(name){var s=String(name||"").replace(/(مدرسة|ثانوية|متوسطة|ابتدائية|اعدادية|إعدادية|كلية|قسم|جامعة|معهد)/g,"").replace(/ال/g,"").trim(),o="";for(var i=0;i<s.length;i++)o+=TRM[s[i]]||(/[A-Za-z0-9]/.test(s[i])?s[i].toUpperCase():"");o=o.slice(0,10)||"MISBAR";return o+String(Math.floor(100+Math.random()*900))}
+function suggestKeyUI(){var c=(S.myInsts||[]).filter(function(i){return i.id===S.curInstId})[0];S.keyDraft=suggestKey(c?c.name:"");draw()}
+function admSetKey(){
+  var c=(S.myInsts||[]).filter(function(i){return i.id===S.curInstId})[0];if(!c)return;
+  var k=normKey(S.keyDraft),e=keyErr(k);if(e){toast(e);return}
+  if(k===c.keyName){toast("هذا هو المفتاح الحالي");return}
+  var go=function(){window.fbSetKey(c.id,k,c.secret,c.keyName||"").then(function(){S.keyDraft="";toast("✅ المفتاح الجديد: "+k)}).catch(function(x){toast("تعذر الحفظ: "+((x&&x.message)||(x&&x.code)||x))})};
+  if(c.keyName)confirmModal("تغيير المفتاح إلى "+k+"؟ الأساتذة المرتبطون حالياً يبقون مرتبطين، والجدد يستعملون المفتاح الجديد، وأكواد الطلاب لا تتغير.",go);else go();
+}
+function keyCardAdm(c){
+  return '<div class="card"><b>🔑 مفتاح «'+esc(c.name)+'»</b><div class="mu" style="line-height:1.7;margin:4px 0">تعطيه للأساتذة ليربطوا حساباتهم بمؤسستك. أنت فقط (المدير/رئيس القسم) تقدر تغيّره، وأكواد الطلاب ما تتأثر.</div>'+
+  (c.keyName?'<div dir="ltr" style="user-select:all;font-family:monospace;font-size:20px;font-weight:700;background:var(--bg);padding:10px;border-radius:8px;text-align:center">'+esc(c.keyName)+'</div><button class="b s" style="width:100%;margin-top:6px" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+esc(c.keyName)+'\');toast(\'تم النسخ\')">📋 نسخ المفتاح</button>':'<div class="mu">لم تضع مفتاحاً سهلاً بعد — اكتب واحداً بالأسفل.</div>')+
+  '<div class="row" style="margin-top:8px"><input id="keyNew" dir="ltr" class="grow" style="margin:0" placeholder="مثال: ABBASIYA2026" value="'+esc(S.keyDraft||"")+'" oninput="S.keyDraft=this.value"><button class="b s" onclick="suggestKeyUI()">🎲 اقتراح</button></div>'+
+  '<button class="b" style="width:100%;margin-top:6px;background:#7e22ce" onclick="admSetKey()">'+(c.keyName?'✏️ تغيير المفتاح':'💾 حفظ المفتاح')+'</button></div>';
+}
+function setInstKey(v){
+  v=(v||"").trim().toUpperCase();if(!v){applyKey("","");return}
+  if(v.indexOf(".")>-1){applyKey(v,"");return}
+  var k=normKey(v);if(!window.fbResolveKey){toast("قاعدة البيانات غير جاهزة");return}
+  window.fbResolveKey(k).then(function(d){if(!d||!d.secret){toast("المفتاح غير صحيح أو غير موجود");return}applyKey(d.inst+"."+d.secret,k)}).catch(function(e){toast("تعذر التحقق: "+((e&&e.code)||e))});
+}
+
 function requireKey(){if(!keyParts()){toast("أدخل مفتاح المؤسسة أولاً (أعلى هذه الصفحة)");return false}return true}
 function stuCode(name){
   var kp=keyParts();if(!kp)return "";
@@ -6135,13 +6162,15 @@ function instKeyCardV(){
   var kp=keyParts();
   return '<div class="card" style="border-inline-start:4px solid #7e22ce"><b>🏫 مفتاح المؤسسة</b>'+
     '<div class="mu" style="line-height:1.7;margin:4px 0">'+(kp?'مربوط ✅ — أكواد الطلاب والتبليغات وتقارير الإدارة كلها ترتبط بهذا المفتاح.':'خذ المفتاح من إدارة مدرستك/قسمك (من بوابة الإدارة). بدونه ما تكدر ترسل للأهالي أو الإدارة.')+'</div>'+
-    '<input id="instKeyIn" dir="ltr" placeholder="XXXXXXXX.XXXXXXXXXXXXXXXX" value="'+esc(getInstKey())+'" onchange="setInstKey(this.value)" style="margin-bottom:0"></div>';
+    '<input id="instKeyIn" dir="ltr" placeholder="مثال: ABBASIYA2026" value="'+esc(getInstName()||getInstKey())+'" onchange="setInstKey(this.value)" style="margin-bottom:0"></div>';
 }
 function createInst(){
-  var n=($("instName")?$("instName").value:"").trim();
+  var n=($("instName")?$("instName").value:"").trim(),k=normKey($("instKeyNew")?$("instKeyNew").value:"")||suggestKey(n),e=keyErr(k);
   if(!n){toast("اكتب اسم المؤسسة");return}
+  if(e){toast(e);return}
   if(!S.uid||!window.fbCreateInst){toast("سجّل الدخول أولاً");return}
-  window.fbCreateInst(randStr(8),{name:n,secret:randStr(16),adminUid:S.uid,adminEmail:S.email,at:Date.now()}).then(function(){toast("✅ تم إنشاء المؤسسة")}).catch(function(e){toast("تعذر الإنشاء: "+(e&&e.message||e))});
+  var id=randStr(8),sec=randStr(16);
+  window.fbCreateInst(id,{name:n,secret:sec,adminUid:S.uid,adminEmail:S.email,at:Date.now()}).then(function(){return window.fbSetKey(id,k,sec,"")}).then(function(){toast("✅ تم إنشاء المؤسسة — مفتاحها: "+k)}).catch(function(x){toast("تعذر الإنشاء: "+((x&&x.message)||(x&&x.code)||x))});
 }
 
 /* ===== v2.52: التبليغ داخل التطبيق + أتمتة الغياب ===== */
@@ -6220,7 +6249,7 @@ function sendGradesToAdmin(){
 }
 
 /* ===== v2.55: سجل الطلاب الرسمي (OCR) + أكواد + أتمتة الأساتذة والأهالي والكلاسات والامتحانات ===== */
-function stdCode(name){var kp=keyParts();if(!kp)return "";var s=kp.sec+"|std|"+normNm(name),a=cyr(s,11),b=cyr(s,19),n=[a[0],a[1],b[0],b[1]],o="";for(var i=0;i<12;i++)o+=B32[((n[i%4]>>>(Math.floor(i/4)*8))&255)%31];return "STD-"+o.slice(0,4)+"-"+o.slice(4,8)+"-"+o.slice(8,12)}
+function stdCode(name,pre){var kp=keyParts();if(!kp)return "";var s=kp.sec+"|std|"+normNm(name),a=cyr(s,11),b=cyr(s,19),n=[a[0],a[1],b[0],b[1]],o="";for(var i=0;i<12;i++)o+=B32[((n[i%4]>>>(Math.floor(i/4)*8))&255)%31];return (pre||"STD")+"-"+o.slice(0,4)+"-"+o.slice(4,8)+"-"+o.slice(8,12)}
 function rosterDocId(){var kp=keyParts();if(!kp)return "x";var a=cyr(kp.sec+"|roster",5),b=cyr(kp.sec+"|roster",9);return kp.id+"_"+a[0].toString(36)+a[1].toString(36)+b[0].toString(36)+b[1].toString(36)}
 function waNum(v){var d=String(v||"").replace(/\D/g,"");if(d.length<7)return "";d=d.replace(/^00/,"");if(d.indexOf("964")===0)return d;return "964"+d.replace(/^0+/,"")}
 function sendCodeWA(c){var x=(S.rsPub||[]).filter(function(y){return y.c===c})[0],ph=(S.rsPh||{})[c],ins=(S.myInsts||[]).filter(function(i){return i.id===S.curInstId})[0];if(!x||!ph)return;
@@ -6253,7 +6282,15 @@ function publishRoster(){
   var l=rsParse(S.rsDraft);if(!l.length){toast("لا توجد أسماء للاعتماد");return}
   var raw=String(S.rsDraft||"").split("\n").filter(function(x){return x.trim()}).length,au=S.rsAuto||{t:1,p:1},have={};(S.rsPub||[]).forEach(function(x){have[x.c]=1});
   var map={},ph={};(S.rsPub||[]).forEach(function(x){map[x.c]=x});
-  l.forEach(function(x){x.c=stdCode(x.n);x.p=stuCode(x.n);map[x.c]={n:x.n,g:x.g||"",c:x.c,p:x.p};if(x.ph)ph[x.c]=x.ph});
+  var rc=S.rsCode||{mode:"sec",pre:"",sort:1},byN={};(S.rsPub||[]).forEach(function(x){byN[normNm(x.n)]=x});
+  if(rc.mode==="seq"&&!rc.pre){toast("اكتب بادئة الكود (مثل MA)");return}
+  if(rc.sort)l.sort(function(a,b){return a.n.localeCompare(b.n,"ar")});
+  var mx=0;(S.rsPub||[]).forEach(function(x){var m=new RegExp("^"+rc.pre+"(\\d+)$").exec(x.c);if(m)mx=Math.max(mx,+m[1])});
+  l.forEach(function(x){var o=byN[normNm(x.n)];
+    if(o){x.c=o.c;x.sec=o.sec===undefined?(/^[A-Z0-9]+-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(o.c)?1:0):o.sec}
+    else if(rc.mode==="seq"){x.c=rc.pre+(++mx);x.sec=0}
+    else{x.c=stdCode(x.n,rc.pre);x.sec=1}
+    x.p=stuCode(x.n);map[x.c]={n:x.n,g:x.g||"",c:x.c,p:x.p,sec:x.sec};if(x.ph)ph[x.c]=x.ph});
   var all=Object.keys(map).map(function(k){return map[k]});S.busy=true;draw();
   window.fbPubRoster(ins.id,all,au,ph).then(function(){
     return au.p?Promise.all(l.filter(function(x){return !have[x.c]}).map(function(x,i){return window.fbPutCardItem(x.p,{student:x.n,teacher:"الإدارة",type:"note",note:"تم تسجيل الطالب رسمياً في «"+ins.name+"»"+(x.g?" — "+x.g:"")+". ستصلكم هنا الدرجات والغيابات تلقائياً.",at:Date.now()+i},i)})):0;
@@ -6269,23 +6306,81 @@ function printRosterCards(){
 }
 function rosterAdminH(cur){
   if(window.fbWatchRoster&&S._rsW!==cur.id){S._rsW=cur.id;S.rsPub=[];S.rsPh={};if(window.fbWatchPhones)window.fbWatchPhones(cur.id,function(m){S.rsPh=m;draw()});window.fbWatchRoster(cur.id,function(a){S.rsPub=(a||[]).sort(function(x,y){return String(x.n).localeCompare(String(y.n),"ar")});draw()})}
-  var pub=S.rsPub||[],au=S.rsAuto=S.rsAuto||{t:1,p:1},n=rsParse(S.rsDraft).length;
+  var pub=S.rsPub||[],au=S.rsAuto=S.rsAuto||{t:1,p:1},n=rsParse(S.rsDraft).length,rc=S.rsCode=S.rsCode||{mode:"sec",pre:"",sort:1};
   var chk=function(k,t){return '<label class="opt"><input type="checkbox" '+(au[k]?'checked':'')+' onchange="S.rsAuto.'+k+'=this.checked?1:0"><span>'+t+'</span></label>'};
   return '<div class="card" style="border-inline-start:4px solid #0891b2"><h2>👥 سجل الطلاب الرسمي ('+pub.length+')</h2>'+
     '<div class="mu" style="line-height:1.7">صوّر قائمة الأسماء الرسمية أو الصقها؛ يستخرجها الذكاء، وتراجعها أنت، ثم يولّد مسبار لكل طالب كود دخول وكود ولي أمر.</div>'+
-    '<div class="grid" style="margin:8px 0"><label class="b" style="text-align:center;cursor:pointer;margin:0">📸 تصوير / رفع قائمة<input type="file" accept="image/*" multiple style="display:none" onchange="rsOcr(this)"></label>'+
+    '<div class="grid" style="margin:8px 0"><label class="b" style="text-align:center;cursor:pointer;margin:0">📎 رفع ملفات أو تصوير<input type="file" accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,image/*" multiple style="display:none" onchange="rsImport(this)"></label>'+
     (getUserKey()?'':'<button class="b s" onclick="openProvKeyDialog(\'Gemini\')">🔑 ربط الذكاء للقراءة</button>')+'</div>'+
     '<textarea rows="7" placeholder="الاسم | الصف | رقم ولي الأمر (اختياري) — سطر لكل طالب" oninput="S.rsDraft=this.value">'+esc(S.rsDraft||"")+'</textarea>'+
-    chk("t","👨‍🏫 أتمتة مع الأساتذة: يستوردون القائمة الرسمية بمفتاح المؤسسة")+chk("p","👨‍👩‍👦 أتمتة مع الأهالي: تفعيل كود كل ولي أمر فوراً برسالة تسجيل")+
+    rsOptsH(rc)+chk("t","👨‍🏫 أتمتة مع الأساتذة: يستوردون القائمة الرسمية بمفتاح المؤسسة")+chk("p","👨‍👩‍👦 أتمتة مع الأهالي: تفعيل كود كل ولي أمر فوراً برسالة تسجيل")+
     '<button class="b" style="width:100%;background:#0891b2;margin-top:6px" '+(S.busy?'disabled':'')+' onclick="publishRoster()">'+(S.busy?'⏳ ...':'✅ اعتماد وتوليد الأكواد'+(n?' ('+n+')':''))+'</button>'+
     (pub.length?'<div style="max-height:200px;overflow-y:auto;background:var(--bg);border-radius:8px;padding:6px 8px;margin-top:8px;font-size:12px">'+pub.map(function(x){return '<div class="row" style="padding:3px 0;border-bottom:1px dashed var(--ln)"><span class="grow">'+esc(x.n)+(x.g?' <span class="mu">'+esc(x.g)+'</span>':'')+'</span><span class="badge" dir="ltr">'+esc(x.c)+'</span><button class="b d" style="min-height:28px;padding:2px 8px" onclick="rsDel(\''+x.c+'\')">✖</button></div>'}).join("")+'</div>'+
-      '<div class="grid" style="margin-top:8px"><a href="'+rsCsv()+'" download="سجل_الطلاب_والأكواد.csv" class="b s" style="text-align:center;text-decoration:none">⬇️ Excel</a><button class="b s" onclick="printRosterCards()">🖨️ طباعة البطاقات</button></div>':'')+
+      '<div class="grid" style="margin-top:8px"><button class="b s" onclick="rsExport(\'xlsx\')">⬇️ Excel</button><button class="b s" onclick="rsExport(\'doc\')">⬇️ Word</button><button class="b s" onclick="rsExport(\'pdf\')">⬇️ PDF</button><button class="b s" onclick="printRosterCards()">🖨️ البطاقات</button></div>':'')+
     (function(){var w=pub.filter(function(x){return (S.rsPh||{})[x.c]});return w.length?'<div style="margin-top:8px"><b>📲 إرسال أكواد الأهالي عبر واتساب ('+w.length+')</b><div class="mu" style="font-size:11px">يفتح واتساب برسالة جاهزة لكل ولي أمر، وتضغط إرسال بنفسك.</div><div style="max-height:160px;overflow-y:auto">'+w.map(function(x){return '<div class="row" style="padding:3px 0"><span class="grow">'+esc(x.n)+'</span><button class="b s" onclick="sendCodeWA(\''+x.c+'\')">📲 إرسال</button></div>'}).join("")+'</div></div>':''})()+'</div>';
 }
+
+/* ===== v2.59: استيراد ملفات (PDF/Word/Excel/صور) + تصدير + خيارات الأكواد ===== */
+var LIBS={xlsx:"https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",mammoth:"https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js",pdf:"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",pdfw:"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"};
+function loadLib(u){window._libs=window._libs||{};return window._libs[u]||(window._libs[u]=new Promise(function(ok,no){var s=document.createElement("script");s.src=u;s.onload=ok;s.onerror=function(){delete window._libs[u];no(new Error("تعذر تحميل مكتبة القراءة (تحتاج إنترنت)"))};document.head.appendChild(s)}))}
+var RS_BAD=/^(اسم|الاسم|الصف|الشعبة|الشعبه|التسلسل|الملاحظات|ملاحظات|المدرسة|قائمة|كشف|اسماء|أسماء|الطلاب|طلاب|الطالب|الطالبة|الدرجة|التوقيع|الجنس|ذكر|انثى|أنثى|رقم|المرحلة|العام|الدراسي|الفصل|المادة|مدرسة|ثانوية|متوسطة|ابتدائية|اعدادية|إعدادية|مديرية|وزارة|التربية|الهاتف|الموبايل|الحضور|الغياب|المجموع|المعدل|النتيجة)$/;
+function rsIsName(s){s=String(s||"").trim();var w=s.split(/\s+/);return w.length>=2&&w.length<=7&&s.length>=6&&/^[\u0621-\u064A\u0671-\u06D3\u064B-\u0652\s.\-]+$/.test(s)&&!w.some(function(x){return RS_BAD.test(x)})}
+function rsTextNames(txt){var out=[],seen={};String(txt||"").split(/\r?\n/).forEach(function(l){var r=l.match(/[\u0621-\u064A\u0671-\u06D3][\u0621-\u064A\u0671-\u06D3\u064B-\u0652\s]*/g);if(!r)return;var b=r.map(function(x){return x.trim()}).sort(function(a,c){return c.length-a.length})[0];if(b&&rsIsName(b)&&!seen[normNm(b)]){seen[normNm(b)]=1;out.push(b)}});return out}
+async function rsOcrData(du){
+  if(!getUserKey())throw new Error("اربط Gemini (زر 🔑) لقراءة الصور");
+  var P='استخرج أسماء الطلاب من هذه الصورة (قائمة رسمية). أعد JSON فقط: [{"n":"الاسم الكامل كما هو مكتوب","g":"الصف أو الشعبة إن ظهرت وإلا فارغ"}]. تجاهل الأرقام التسلسلية والعناوين والتواقيع. لا تصحّح الأسماء ولا تخترع اسماً غير موجود.';
+  var raw=await callUserGemini(P,"أنت نظام OCR دقيق لقوائم أسماء الطلاب العربية.",du,true),out=[];
+  JSON.parse(String(raw||"[]").replace(/```json|```/g,"").trim()).forEach(function(x){if(x&&x.n)out.push(x.n+(x.g?" | "+x.g:""));else if(typeof x==="string")out.push(x)});return out}
+async function rsFromSheet(f){
+  await loadLib(LIBS.xlsx);var wb=XLSX.read(await f.arrayBuffer(),{type:"array"}),out=[];
+  wb.SheetNames.forEach(function(sn){var rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:""});if(!rows.length)return;
+    var hi=-1,ni=-1,gi=-1,pi=-1;
+    for(var r=0;r<Math.min(rows.length,10)&&ni<0;r++)rows[r].forEach(function(c,j){if(ni<0&&/^\s*(اسم|الاسم|اسم الطالب|اسم الطالبة|name)\s*$/i.test(String(c))){ni=j;hi=r}});
+    if(hi>=0)rows[hi].forEach(function(c,j){var s=String(c);if(/صف|شعب|class|section/i.test(s))gi=j;if(/هاتف|موبايل|جوال|phone|mobile|ولي/i.test(s))pi=j});
+    else{var w=Math.max.apply(null,rows.map(function(r){return r.length})),bc=0;for(var j=0;j<w;j++){var c=rows.filter(function(r){return rsIsName(String(r[j]||""))}).length;if(c>bc){bc=c;ni=j}}}
+    if(ni<0)return;
+    rows.slice(hi+1).forEach(function(r){var n=String(r[ni]||"").replace(/\s+/g," ").trim();if(!rsIsName(n))return;var g=gi>-1?String(r[gi]||"").trim():"",ph=pi>-1?String(r[pi]||"").trim():"";out.push(n+((g||ph)?" | "+g:"")+(ph?" | "+ph:""))})});
+  return out}
+async function rsFromPdf(f){
+  await loadLib(LIBS.pdf);pdfjsLib.GlobalWorkerOptions.workerSrc=LIBS.pdfw;
+  var pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise,txt="";
+  for(var p=1;p<=pdf.numPages;p++){var pg=await pdf.getPage(p),tc=await pg.getTextContent(),rows={};tc.items.forEach(function(it){var y=Math.round(it.transform[5]/4);(rows[y]=rows[y]||[]).push(it.str)});Object.keys(rows).sort(function(a,b){return b-a}).forEach(function(y){txt+=rows[y].join(" ")+"\n"})}
+  var out=rsTextNames(txt);
+  if(out.length<3){for(var q=1;q<=Math.min(pdf.numPages,15);q++){var pg2=await pdf.getPage(q),vp=pg2.getViewport({scale:1.6}),cv=document.createElement("canvas");cv.width=vp.width;cv.height=vp.height;await pg2.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise;out=out.concat(await rsOcrData(cv.toDataURL("image/jpeg",0.85)))}}
+  return out}
+async function rsImport(inp){
+  var fs=Array.prototype.slice.call(inp.files||[]);inp.value="";if(!fs.length)return;
+  S.busy=true;draw();var add=[],bad=[];
+  for(var i=0;i<fs.length;i++){var f=fs[i],ext=(f.name.split(".").pop()||"").toLowerCase();toast("⏳ قراءة "+(i+1)+"/"+fs.length+": "+f.name);
+    try{
+      if(/^image\//.test(f.type)||/^(jpg|jpeg|png|webp)$/.test(ext)){var du=await new Promise(function(res){shrinkImg(f,res)});if(!du)throw new Error("صورة غير صالحة");add=add.concat(await rsOcrData(du))}
+      else if(/^(xlsx|xls|csv)$/.test(ext))add=add.concat(await rsFromSheet(f));
+      else if(ext==="docx"){await loadLib(LIBS.mammoth);var r=await mammoth.extractRawText({arrayBuffer:await f.arrayBuffer()});add=add.concat(rsTextNames(r.value))}
+      else if(ext==="pdf")add=add.concat(await rsFromPdf(f));
+      else if(ext==="txt")add=add.concat(rsTextNames(await f.text()));
+      else bad.push(f.name+" (نوع غير مدعوم، احفظ ملف doc بصيغة docx)");
+    }catch(e){bad.push(f.name+" ("+((e&&e.message)||e)+")")}}
+  S.rsDraft=((S.rsDraft||"").trim()+"\n"+add.join("\n")).trim();S.busy=false;draw();
+  toast("✅ استُخرج "+add.length+" اسم — راجعها قبل الاعتماد"+(bad.length?" · تعذر: "+bad.join("، "):""));
+}
+function dlBlob(b,n){var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=n;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500)}
+function exportList(kind,title,head,rows){
+  if(!rows.length){toast("القائمة فارغة");return}
+  if(kind==="xlsx"){loadLib(LIBS.xlsx).then(function(){var ws=XLSX.utils.aoa_to_sheet([head].concat(rows)),wb=XLSX.utils.book_new();ws["!cols"]=head.map(function(){return {wch:24}});wb.Workbook={Views:[{RTL:true}]};XLSX.utils.book_append_sheet(wb,ws,"القائمة");XLSX.writeFile(wb,title+".xlsx")}).catch(function(e){toast(e.message)});return}
+  var tbl='<table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;width:100%"><tr>'+head.map(function(h){return '<th style="background:#eee">'+esc(h)+'</th>'}).join("")+'</tr>'+rows.map(function(r){return '<tr>'+r.map(function(c){return '<td>'+esc(c)+'</td>'}).join("")+'</tr>'}).join("")+'</table>';
+  var html='<html dir="rtl"><head><meta charset="utf-8"><title>'+esc(title)+'</title></head><body style="font-family:Tahoma,Arial"><h2>'+esc(title)+'</h2>'+tbl+'</body></html>';
+  if(kind==="doc"){dlBlob(new Blob(["\ufeff"+html],{type:"application/msword"}),title+".doc");return}
+  var w=window.open("","_blank");if(!w){toast("اسمح بالنوافذ المنبثقة");return}w.document.write(html);w.document.close();setTimeout(function(){w.print()},400)}
+function rsExport(kind){var ins=(S.myInsts||[]).filter(function(i){return i.id===S.curInstId})[0];exportList(kind,"سجل طلاب "+(ins?ins.name:"المؤسسة"),["#","الاسم","الصف","كود الطالب","كود ولي الأمر"],(S.rsPub||[]).map(function(x,i){return [i+1,x.n,x.g||"",x.c,x.p||""]}))}
+function clsExport(ci,kind){var c=S.classes[ci];exportList(kind,"طلاب "+c.n,["#","الاسم","كود الطالب"],(c.roster||[]).map(function(x,i){return [i+1,x.n,x.c]}))}
+function rsOptsH(rc){var P='onchange="S.rsCode.pre=this.value.toUpperCase().replace(/[^A-Z0-9]/g,\'\');" oninput="S.rsCode.pre=this.value.toUpperCase().replace(/[^A-Z0-9]/g,\'\')"';
+  return '<div class="grid" style="margin:8px 0"><select onchange="S.rsCode.mode=this.value;draw()"><option value="sec"'+(rc.mode==="sec"?" selected":"")+'>🔐 كود آمن عشوائي</option><option value="seq"'+(rc.mode==="seq"?" selected":"")+'>🔢 بادئة + رقم تسلسلي</option></select><input dir="ltr" placeholder="'+(rc.mode==="seq"?"البادئة مثل MA":"بادئة (اختياري)")+'" value="'+esc(rc.pre)+'" '+P+' style="margin:0"></div>'+
+  (rc.mode==="seq"?'<div class="mu" style="font-size:11px;margin-bottom:6px">الأكواد: '+esc(rc.pre||"MA")+'1، '+esc(rc.pre||"MA")+'2… سهلة للطلاب. كود ولي الأمر يبقى منفصلاً وسرياً (STU-…).</div>':'')+
+  '<label class="opt"><input type="checkbox" '+(rc.sort?"checked":"")+' onchange="S.rsCode.sort=this.checked?1:0"><span>🔤 ترتيب القائمة أبجدياً قبل توليد الأكواد</span></label>'}
 /* ---- جهة الأستاذ ---- */
 function clsAutoH(ci,c){var n=(c.roster||[]).length;return '<div class="mu" style="font-size:12px;margin:4px 0">👥 '+n+' طالب مرتبط'+(n?' · يظهر لهم الكلاس تلقائياً':'')+'</div>'+
   '<label class="opt"><input type="checkbox" '+(c.autoExam?'checked':'')+' onchange="S.classes['+ci+'].autoExam=this.checked;saveAllUserStorage()"><span>📝 أتمتة الامتحانات: أي امتحان مباشر أطلقه يصل لطلاب هذا الكلاس</span></label>'+
-  '<div class="grid"><button class="b s" onclick="importRoster('+ci+')">👥 استيراد طلاب الإدارة</button><button class="b s" onclick="pubClass('+ci+')">☁️ تحديث للطلاب</button></div>'}
+  '<div class="grid"><button class="b s" onclick="importRoster('+ci+')">👥 استيراد طلاب الإدارة</button><button class="b s" onclick="pubClass('+ci+')">☁️ تحديث للطلاب</button></div>'+(n?'<div class="grid"><button class="b s" onclick="clsExport('+ci+',\'xlsx\')">⬇️ Excel</button><button class="b s" onclick="clsExport('+ci+',\'doc\')">⬇️ Word</button><button class="b s" onclick="clsExport('+ci+',\'pdf\')">🖨️ PDF</button></div>':'')}
 function importRoster(ci){
   var kp=keyParts();if(!requireKey())return;
   ask("الصف/الشعبة المطلوبة (اكتب - لكل الطلاب)",function(g){
@@ -6327,7 +6422,7 @@ function clearExamPin(pin){var c=(S.examClasses||{})[pin];if(c&&window.fbClassPi
 function getStuLink(){if(S.stuLink===undefined){try{S.stuLink=JSON.parse(localStorage.getItem("misbar_stulink_"+(S.uid||"anon"))||"null")}catch(e){S.stuLink=null}}return S.stuLink}
 function redeemStd(){
   var v=($("stdIn")?$("stdIn").value:"").trim().toUpperCase().replace(/\s+/g,"");
-  if(!/^STD-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(v)){toast("الكود بصيغة STD-XXXX-XXXX-XXXX");return}
+  if(!/^[A-Z0-9][A-Z0-9-]{2,24}$/.test(v)){toast("اكتب كود الطالب كما استلمته (مثل MA12 أو STD-XXXX-XXXX-XXXX)");return}
   if(!S.uid||!window.fbClaimStd){toast("سجّل الدخول أولاً");return}
   window.fbClaimStd(v,S.uid).then(function(d){
     var l={c:v,n:d.n,g:d.g||"",inst:d.inst};try{localStorage.setItem("misbar_stulink_"+S.uid,JSON.stringify(l))}catch(e){}
@@ -6337,7 +6432,7 @@ function redeemStd(){
 function stuEnterClassExam(pin){var a=$("stuPinIn"),b=$("stuNameIn");if(a)a.value=pin;if(b&&S.stuLink)b.value=S.stuLink.n;stuJoinQuiz()}
 function stuIdentH(){
   var l=getStuLink();
-  if(!l)return '<div class="card" style="border-inline-start:4px solid #0891b2"><b>🎓 هويتي الرسمية</b><div class="mu" style="margin:4px 0;line-height:1.7">أدخل كود الطالب (STD-...) المسلَّم لك من الإدارة ليظهر اسمك الرسمي وكلاساتك وامتحاناتك تلقائياً.</div><div class="row"><input id="stdIn" dir="ltr" placeholder="STD-XXXX-XXXX-XXXX" class="grow" style="margin:0"><button class="b" onclick="redeemStd()">ربط</button></div></div>';
+  if(!l)return '<div class="card" style="border-inline-start:4px solid #0891b2"><b>🎓 هويتي الرسمية</b><div class="mu" style="margin:4px 0;line-height:1.7">أدخل كود الطالب المسلَّم لك من الإدارة ليظهر اسمك الرسمي وكلاساتك وامتحاناتك تلقائياً.</div><div class="row"><input id="stdIn" dir="ltr" placeholder="كود الطالب (مثل MA12)" class="grow" style="margin:0"><button class="b" onclick="redeemStd()">ربط</button></div></div>';
   if(window.fbWatchMyClasses&&S._swc!==l.c){S._swc=l.c;S.stuClasses=[];window.fbWatchMyClasses(l.c,function(a){S.stuClasses=a||[];draw()})}
   var cl=S.stuClasses||[];
   return '<div class="idcard"><div class="ic">🎓</div><div><b>'+esc(l.n)+'</b><span>'+esc(l.g||"طالب")+' · هويتك الرسمية ✓</span></div></div>'+
@@ -6856,11 +6951,14 @@ window.fbWatchMyInsts=function(){if(_wi)_wi();_wi=onSnapshot(query(collection(db
 window.fbWatchInstReports=function(id){if(_wr)_wr();_wr=onSnapshot(collection(db,"inst",id,"reports"),function(s){var r=[];s.forEach(function(d){r.push(d.data())});S.adminReports=r.sort(function(a,b){return (b.at||0)-(a.at||0)});if(S.sysRole==="admin")draw()},function(e){toast("تعذر قراءة التقارير: "+e.message)})};
 window.fbWatchCard=function(code){if(_wc)_wc();_wc=onSnapshot(collection(db,"parent_cards",code,"items"),function(s){var r=[];s.forEach(function(d){r.push(d.data())});S.cardItems=r.sort(function(a,b){return (b.at||0)-(a.at||0)});if(S.sysRole==="parent")draw()},function(e){S.cardItems=[];toast("تعذر القراءة: "+e.message)})};
 
-window.fbPubRoster=function(inst,list,auto,phones){var t=Date.now(),rid=window.rosterDocId();return Promise.all(list.map(function(x){return setDoc(doc(db,"student_codes",x.c),{inst:inst,n:x.n,g:x.g||"",at:t},{merge:true})})).then(function(){return setDoc(doc(db,"rosters",rid),{inst:inst,list:list,auto:auto,at:t})}).then(function(){return updateDoc(doc(db,"inst",inst),{auto:auto,rosterN:list.length,rosterAt:t})}).then(function(){return Object.keys(phones||{}).length?setDoc(doc(db,"inst",inst,"private","phones"),{m:phones},{merge:true}):0})};
+window.fbPubRoster=function(inst,list,auto,phones){var t=Date.now(),rid=window.rosterDocId();return Promise.all(list.map(function(x){return setDoc(doc(db,"student_codes",x.c),{inst:inst,n:x.n,g:x.g||"",p:x.p||"",sec:x.sec?1:0,at:t},{merge:true})})).then(function(){return setDoc(doc(db,"rosters",rid),{inst:inst,list:list,auto:auto,at:t})}).then(function(){return updateDoc(doc(db,"inst",inst),{auto:auto,rosterN:list.length,rosterAt:t})}).then(function(){return Object.keys(phones||{}).length?setDoc(doc(db,"inst",inst,"private","phones"),{m:phones},{merge:true}):0})};
 window.fbWatchRoster=function(inst,cb){var u=onSnapshot(doc(db,"rosters",window.rosterDocId()),function(s){cb(s.exists()?(s.data().list||[]):[],null,s.exists()?s.data():{})},function(e){cb(null,e)});unsubs.push(u);return u};
 window.fbWatchPhones=function(inst,cb){var u=onSnapshot(doc(db,"inst",inst,"private","phones"),function(s){cb(s.exists()?(s.data().m||{}):{})},function(){});unsubs.push(u);return u};
 window.fbDelStd=function(c){return deleteDoc(doc(db,"student_codes",c))};
 window.fbClaimStd=function(code,uid){var ref=doc(db,"student_codes",code);return runTransaction(db,async function(tx){var s=await tx.get(ref);if(!s.exists())throw {code:"nf"};var d=s.data();if(d.uid&&d.uid!==uid)throw {code:"taken"};tx.update(ref,{uid:uid,claimedAt:Date.now()});return d})};
+window.fbResolveStd=function(c){return getDoc(doc(db,"student_codes",c)).then(function(s){return s.exists()?s.data():null})};
+window.fbResolveKey=function(k){return getDoc(doc(db,"inst_keys",k)).then(function(s){return s.exists()?s.data():null})};
+window.fbSetKey=function(inst,k,sec,old){var ref=doc(db,"inst_keys",k);return getDoc(ref).then(function(s){if(s.exists()&&s.data().inst!==inst)throw {code:"taken",message:"هذا المفتاح مستخدم من مؤسسة أخرى، اختر غيره"};return setDoc(ref,{inst:inst,secret:sec,at:Date.now()})}).then(function(){return updateDoc(doc(db,"inst",inst),{keyName:k})}).then(function(){return old&&old!==k?deleteDoc(doc(db,"inst_keys",old)).catch(function(){}):0})};
 window.fbPubClass=function(code,d){return setDoc(doc(db,"classes_pub",code),d,{merge:true})};
 window.fbClassPin=function(codes,pin){return Promise.all(codes.map(function(c){return updateDoc(doc(db,"classes_pub",c),{livePin:pin,liveAt:Date.now()}).catch(err)}))};
 window.fbWatchMyClasses=function(code,cb){var u=onSnapshot(query(collection(db,"classes_pub"),where("rc","array-contains",code)),function(s){var a=[];s.forEach(function(d){a.push(d.data())});cb(a)},function(e){console.warn(e&&e.code)});unsubs.push(u);return u};
