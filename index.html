@@ -266,7 +266,7 @@ window.misbarHardReset=function(){
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.65.1";
+var APP_VERSION = "2.66.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -4066,7 +4066,7 @@ function clsV(){
   S.classes.map(function(c,ci){
     var mats=c.mats||[];
     return '<div class="card"><div class="row"><b class="grow">'+esc(c.n)+'</b><span class="badge" dir="ltr">رمز: '+esc(c.c)+'</span></div>'+
-      '<div class="mu" style="margin:4px 0">'+mats.length+' ملازم منشورة للطلاب</div>'+clsAutoH(ci,c)+
+      '<div class="mu" style="margin:4px 0">'+mats.length+' ملازم منشورة للطلاب</div>'+clsAutoH(ci,c)+clsGrpPickH(ci,c)+
       mats.map(function(m,mi){
         return '<div class="row" style="padding:5px 0;border-top:1px solid var(--ln)"><span class="grow">📄 '+esc(m.title)+'</span><button class="b d" onclick="S.classes['+ci+'].mats.splice('+mi+',1);saveAllUserStorage();draw()">حذف</button></div>';
       }).join("")+
@@ -4103,9 +4103,11 @@ function proPortalsV(){
   }
   if(S.proPortal === "qbank"){
     return '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">بوابة الأسئلة وبنك الفصل</b></div>' +
-      '<h2>مولّد الأسئلة السريع</h2><div class="card"><label>الموضوع أو نص الدرس</label><input id="qt" value="التمثيل الضوئي"><div class="grid"><div><label>النوع</label><select id="qk"><option>اختيار من متعدد</option><option>مقالي</option><option>صح وخطأ</option></select></div><div><label>العدد</label><input id="qn" type="number" value="5" min="1" max="20"></div></div><button class="b" '+(S.busy?'disabled':'')+' onclick="genQuickQ()">'+(S.busy?'⏳ جاري التوليد...':'🤖 توليد الأسئلة')+'</button></div>'+
-      (S.out?'<div class="out" style="margin-top:8px">'+esc(S.out)+'</div><div class="grid" style="margin-top:8px"><button class="b s" onclick="window.print()">🖨️ PDF</button><button class="b s" onclick="downloadWordFile(\'أسئلة_مسبار\',\'<pre style=font-family:Tahoma;white-space:pre-wrap>\'+esc(S.out)+\'</pre>\',true)">📄 Word</button></div>':'') +
+      qgH() +
       bankV();
+  }
+  if(S.proPortal === "hb"){
+    return '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">بوابة صناعة الملزمة</b></div>' + hbH();
   }
   if(S.proPortal === "plans"){
     return '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">بوابة الخطط الدراسية</b></div>' +
@@ -4127,9 +4129,14 @@ function proPortalsV(){
       '<div class="grow"><b>بوابة الأوراق والملازم + مستنداتي</b><div class="mu">تصميم ورقة أسئلة A4، تأليف ملزمة مع غلاف، وإدارة مستنداتك ('+docsCount+')</div></div>' +
       '<span style="font-size:20px;color:var(--mu)">‹</span>' +
     '</div>' +
+    '<div class="portal-card" onclick="S.proPortal=\'hb\';draw()">' +
+      '<div class="portal-ico">📘</div>' +
+      '<div class="grow"><b>بوابة صناعة الملزمة بالذكاء</b><div class="mu">اكتب المادة والمنهج والموضوع وارفع مصادرك، ومسبار يألف الملزمة وتنشرها لكلاسك</div></div>' +
+      '<span style="font-size:20px;color:var(--mu)">‹</span>' +
+    '</div>' +
     '<div class="portal-card" onclick="S.proPortal=\'qbank\';draw()">' +
       '<div class="portal-ico">❓</div>' +
-      '<div class="grow"><b>بوابة مولّد الأسئلة وبنك الفصل</b><div class="mu">توليد أسئلة امتحانية متنوعة وبناء بنك أسئلة من نص الفصل</div></div>' +
+      '<div class="grow"><b>بوابة مولّد الأسئلة وبنك الفصل</b><div class="mu">مولّد أسئلة لأي مادة: MCQ، صح وخطأ، مقالي وغيرها بالعربي أو الإنجليزي، مع بنك أسئلة من الفصل</div></div>' +
       '<span style="font-size:20px;color:var(--mu)">‹</span>' +
     '</div>' +
     '<div class="portal-card" onclick="S.proPortal=\'plans\';draw()">' +
@@ -4171,6 +4178,237 @@ async function genQuickQ(){
     if(ans)S.out=ans;
   }catch(e){toast("خطأ: "+e.message)}
   S.busy=false;draw();
+}
+
+/* ===== v2.66: مولّد أسئلة الأستاذ الشامل + مصنع الملازم + إضافة فئات الطلبة للكلاس ===== */
+function srcOf(k){
+  if(!S[k]){
+    S[k]=k==="qg"
+      ?{subj:"",topic:"",desc:"",lang:"ar",level:"uni",diff:"mix",nopt:4,ans:1,src:"",files:[],types:{mcq:{on:1,n:5},tf:{on:1,n:3},essay:{on:1,n:2},short:{on:0,n:3},fill:{on:0,n:3},match:{on:0,n:1}},out:""}
+      :{subj:"",syl:"",title:"",desc:"",lang:"ar",level:"uni",len:"mid",src:"",files:[],sec:{intro:1,exp:1,ex:1,exr:1,sum:1,q:1,key:0},out:"",cls:0};
+  }
+  return S[k];
+}
+function srcAll(o){return [o.src].concat((o.files||[]).map(function(f){return "【"+f.name+"】\n"+f.text})).filter(function(x){return String(x||"").trim()}).join("\n\n").slice(0,30000)}
+function selH(arr,cur,setter){return '<select onchange="'+setter+'=this.value">'+arr.map(function(a){return '<option value="'+a[0]+'"'+(String(cur)===String(a[0])?' selected':'')+'>'+a[1]+'</option>'}).join("")+'</select>'}
+async function srcFileText(f){
+  var ext=(f.name.split(".").pop()||"").toLowerCase();
+  if(/^image\//.test(f.type)||/^(jpg|jpeg|png|webp)$/.test(ext)){
+    if(!getUserKey())throw new Error("اربط الذكاء (زر 🔑) لقراءة الصور");
+    var du=await new Promise(function(r){shrinkImg(f,r)});if(!du)throw new Error("صورة غير صالحة");
+    return String(await callUserGemini("اكتب كل النص الموجود في هذه الصورة كما هو بدون إضافة أو شرح.","أنت نظام OCR دقيق للنصوص العربية والإنجليزية.",du)||"");
+  }
+  if(ext==="pdf"){
+    await loadLib(LIBS.pdf);pdfjsLib.GlobalWorkerOptions.workerSrc=LIBS.pdfw;
+    var pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise,txt="";
+    for(var p=1;p<=Math.min(pdf.numPages,80);p++){var pg=await pdf.getPage(p),tc=await pg.getTextContent();txt+=tc.items.map(function(i){return i.str}).join(" ")+"\n"}
+    if(txt.replace(/\s/g,"").length<80&&getUserKey()){
+      txt="";
+      for(var q=1;q<=Math.min(pdf.numPages,10);q++){var pg2=await pdf.getPage(q),vp=pg2.getViewport({scale:1.6}),cv=document.createElement("canvas");cv.width=vp.width;cv.height=vp.height;await pg2.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise;
+        txt+=String(await callUserGemini("اكتب كل النص الموجود في هذه الصفحة كما هو.","أنت نظام OCR دقيق.",cv.toDataURL("image/jpeg",0.85))||"")+"\n"}
+    }
+    return txt;
+  }
+  if(ext==="docx"){await loadLib(LIBS.mammoth);return (await mammoth.extractRawText({arrayBuffer:await f.arrayBuffer()})).value}
+  if(/^(xlsx|xls)$/.test(ext)){await loadLib(LIBS.xlsx);var wb=XLSX.read(await f.arrayBuffer(),{type:"array"});return wb.SheetNames.map(function(n){return XLSX.utils.sheet_to_csv(wb.Sheets[n])}).join("\n")}
+  if(/^(txt|md|csv)$/.test(ext))return await f.text();
+  throw new Error("نوع غير مدعوم ("+f.name+") — استخدم PDF أو docx أو txt أو صورة");
+}
+function srcPick(k,mode){
+  var inp=document.createElement("input");inp.type="file";inp.multiple=true;inp.accept=".pdf,.docx,.txt,.md,.csv,.xlsx,.xls,image/*";
+  inp.onchange=async function(){
+    var fs=Array.prototype.slice.call(inp.files||[]);if(!fs.length)return;
+    var o=srcOf(k);S.busy=true;draw();
+    for(var i=0;i<fs.length;i++){
+      var f=fs[i];toast("⏳ قراءة "+(i+1)+"/"+fs.length+": "+f.name);
+      try{
+        var tx=String(await srcFileText(f)||"").trim();
+        if(!tx){toast("ما لقيت نصاً في "+f.name);continue}
+        if(mode==="syl")o.syl=(o.syl?o.syl+"\n":"")+tx.slice(0,6000);
+        else o.files.push({name:f.name,text:tx.slice(0,40000)});
+      }catch(e){toast("تعذر: "+(e.message||e))}
+    }
+    S.busy=false;draw();
+  };
+  inp.click();
+}
+function srcBoxH(k,lab){
+  var o=srcOf(k);
+  return '<label>'+lab+'</label><textarea rows="4" placeholder="انسخ والصق النص هنا (اختياري)" oninput="S.'+k+'.src=this.value">'+esc(o.src)+'</textarea>'+
+    '<button class="b s" style="width:100%;margin-top:6px" '+(S.busy?'disabled':'')+' onclick="srcPick(\''+k+'\')">📎 رفع ملف أو عدة ملفات (PDF · Word · Excel · صور · نص)</button>'+
+    (o.files||[]).map(function(f,i){return '<div class="row" style="padding:4px 0;border-bottom:1px dashed var(--ln);font-size:12px"><span class="grow">📄 '+esc(f.name)+' <span class="mu">('+f.text.length+' حرف)</span></span><button class="b d" style="min-height:30px;padding:2px 10px" onclick="S.'+k+'.files.splice('+i+',1);draw()">✖</button></div>'}).join("");
+}
+function outBoxH(k,extra){
+  var o=S[k];
+  return '<div class="card"><b>✏️ النتيجة — تقدر تعدّلها بيدك قبل الحفظ</b><textarea rows="16" style="margin-top:8px;line-height:1.9" oninput="S.'+k+'.out=this.value">'+esc(o.out)+'</textarea>'+
+    '<div class="grid" style="margin-top:8px"><button class="b s" onclick="outWord(\''+k+'\')">📄 Word</button><button class="b s" onclick="outPrint(\''+k+'\')">🖨️ PDF / طباعة</button></div>'+
+    '<div class="grid"><button class="b s" onclick="outCopy(\''+k+'\')">📋 نسخ</button>'+(extra||'')+'</div></div>';
+}
+function outName(k){var o=S[k];return k==="qg"?("أسئلة_"+(o.subj||"مسبار")):("ملزمة_"+(o.title||o.subj||"مسبار"))}
+function outWord(k){var o=S[k];if(!String(o.out||"").trim())return;downloadWordFile(outName(k),'<pre style="font-family:Tahoma,Arial;white-space:pre-wrap;font-size:13pt">'+esc(o.out)+'</pre>',o.lang!=="en")}
+function outCopy(k){var o=S[k];if(navigator.clipboard)navigator.clipboard.writeText(o.out||"");toast("📋 تم النسخ")}
+function outPrint(k){
+  var o=S[k];if(!String(o.out||"").trim())return;
+  var fr=document.createElement("iframe");fr.style.cssText="position:fixed;width:0;height:0;border:0;right:0;bottom:0";document.body.appendChild(fr);
+  var d=fr.contentWindow.document;d.open();
+  d.write('<html dir="'+(o.lang==="en"?"ltr":"rtl")+'"><head><meta charset="utf-8"><title>'+esc(outName(k))+'</title><style>@page{size:A4;margin:15mm}body{font-family:Tahoma,Arial,sans-serif;line-height:2;font-size:14px;white-space:pre-wrap}</style></head><body>'+esc(o.out)+'</body></html>');
+  d.close();setTimeout(function(){try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){toast("تعذرت الطباعة، استخدم Word")}setTimeout(function(){fr.remove()},60000)},400);
+}
+function aiClean(a){return String(a||"").replace(/\*\*/g,"").replace(/^#+\s*/gm,"").trim()}
+
+/* ---------- مولّد أسئلة الأستاذ (بدون تخصيص مادة) ---------- */
+var QG_T=[["mcq","اختيار من متعدد (MCQ)"],["tf","صح وخطأ"],["essay","مقالي"],["short","إجابة قصيرة"],["fill","املأ الفراغ"],["match","مطابقة (ربط)"]];
+function qgH(){
+  var q=srcOf("qg");
+  return '<h2>🎓 مولّد أسئلة الأستاذ</h2><div class="card">'+
+    '<div class="mu" style="line-height:1.7;margin-bottom:6px">لأي مادة وأي تخصص (مدرسة أو جامعة): اكتب اسم المادة وصف شنو تريد، واختر أنواع الأسئلة، ومسبار يكتبها لك.</div>'+
+    '<label>اسم المادة</label><input value="'+esc(q.subj)+'" oninput="S.qg.subj=this.value" placeholder="مثال: الكيمياء العضوية / القانون المدني / Data Structures">'+
+    '<label>عنوان الفصل أو الموضوع (اختياري)</label><input value="'+esc(q.topic)+'" oninput="S.qg.topic=this.value" placeholder="مثال: الفصل الثالث — الألكينات">'+
+    '<div class="grid"><div><label>المستوى</label>'+selH([["sch","مدرسي"],["uni","جامعي"],["pg","دراسات عليا"]],q.level,"S.qg.level")+'</div>'+
+    '<div><label>لغة الأسئلة</label>'+selH([["ar","عربي"],["en","English"],["both","عربي + English"]],q.lang,"S.qg.lang")+'</div></div>'+
+    '<div class="grid"><div><label>الصعوبة</label>'+selH([["easy","سهلة"],["mid","متوسطة"],["hard","صعبة"],["mix","متدرجة"]],q.diff,"S.qg.diff")+'</div>'+
+    '<div><label>خيارات MCQ</label>'+selH([[3,"٣ خيارات"],[4,"٤ خيارات"],[5,"٥ خيارات"]],q.nopt,"S.qg.nopt")+'</div></div>'+
+    '<label>أنواع الأسئلة وعدد كل نوع</label>'+
+    QG_T.map(function(t){var x=q.types[t[0]];return '<div class="row" style="gap:8px"><label class="opt grow" style="margin:4px 0"><input type="checkbox" '+(x.on?'checked':'')+' onchange="S.qg.types.'+t[0]+'.on=this.checked?1:0"><span>'+t[1]+'</span></label><input type="number" min="1" max="50" value="'+x.n+'" style="width:70px;margin:0" oninput="S.qg.types.'+t[0]+'.n=parseInt(this.value)||1"></div>'}).join("")+
+    '<label class="opt"><input type="checkbox" '+(q.ans?'checked':'')+' onchange="S.qg.ans=this.checked?1:0"><span>✅ إرفاق الإجابات النموذجية</span></label>'+
+    '<label>وصف شلون تريد الأسئلة</label><textarea rows="3" oninput="S.qg.desc=this.value" placeholder="مثال: أسئلة تطبيقية تقيس الفهم مو الحفظ، المقالي يكون مسألة، ركّز على أول ٣ فصول...">'+esc(q.desc)+'</textarea>'+
+    srcBoxH("qg","المحتوى (اختياري): ألصق النص أو ارفع مصادرك")+
+    '<button class="b" style="width:100%;margin-top:10px" '+(S.busy?'disabled':'')+' onclick="qgRun()">'+(S.busy?'⏳ جاري التوليد...':'🤖 توليد الأسئلة')+'</button></div>'+
+    (q.out?outBoxH("qg"):'');
+}
+function qgPrompt(q,ts){
+  var en=q.lang==="en",ltr=en?["A","B","C","D","E"]:["أ","ب","ج","د","هـ"];
+  var lang=en?"اللغة الإنجليزية فقط":q.lang==="both"?"العربية والإنجليزية معاً: اكتب كل سؤال بالعربية وتحته ترجمته بالإنجليزية":"اللغة العربية الفصحى";
+  var lv={sch:"مدرسي",uni:"جامعي",pg:"دراسات عليا"}[q.level],df={easy:"سهلة",mid:"متوسطة",hard:"صعبة",mix:"متدرجة من السهل إلى الصعب"}[q.diff];
+  var nm={mcq:function(n){return n+" سؤال اختيار من متعدد، لكل سؤال "+q.nopt+" خيارات ("+ltr.slice(0,q.nopt).join("، ")+") وخيار واحد صحيح فقط"},tf:function(n){return n+" سؤال صح وخطأ"},essay:function(n){return n+" سؤال مقالي"},short:function(n){return n+" سؤال إجابة قصيرة"},fill:function(n){return n+" سؤال أكمل الفراغ"},match:function(n){return n+" سؤال مطابقة (عمودان للربط بينهما)"}};
+  var src=srcAll(q);
+  return "اكتب مجموعة أسئلة في مادة «"+q.subj.trim()+"»"+(q.topic.trim()?" — الموضوع: «"+q.topic.trim()+"»":"")+".\n"+
+    "المستوى: "+lv+". الصعوبة: "+df+". لغة الأسئلة: "+lang+".\n"+
+    "المطلوب بالضبط:\n"+ts.map(function(t){return "- "+nm[t[0]](t[1])}).join("\n")+"\n"+
+    "رتّب الأسئلة في أقسام حسب النوع بعنوان لكل قسم، وبترقيم واضح. لا تستخدم رموز ماركداون مثل ** أو #.\n"+
+    (q.ans?"في نهاية الورقة اكتب قسم (الإجابات النموذجية) لكل الأسئلة، ولأسئلة المقال نقاط الإجابة المتوقعة وتوزيع درجات مقترح.\n":"لا تكتب الإجابات.\n")+
+    (q.desc.trim()?"تعليمات الأستاذ: "+q.desc.trim()+"\n":"")+
+    (src?"اعتمد حصراً على المحتوى التالي ولا تضف معلومات من خارجه:\n\n"+src:"لا يوجد مصدر مرفق: اعتمد على المنهج الأكاديمي المعروف للمادة، ولا تختلق معلومات أو أرقاماً غير متأكد منها.");
+}
+async function qgRun(){
+  var q=srcOf("qg");
+  if(!q.subj.trim()){toast("اكتب اسم المادة أولاً");return}
+  var ts=QG_T.filter(function(t){return q.types[t[0]].on}).map(function(t){return [t[0],Math.max(1,Math.min(50,q.types[t[0]].n||1))]});
+  if(!ts.length){toast("اختر نوع سؤال واحد على الأقل");return}
+  if(!gate())return;
+  S.busy=true;draw();
+  try{var a=await callUserGemini(qgPrompt(q,ts),"أنت أستاذ جامعي خبير في صياغة الأسئلة الامتحانية الدقيقة لكل المواد والتخصصات.");if(a)q.out=aiClean(a)}
+  catch(e){toast("خطأ: "+(e.message||e))}
+  S.busy=false;draw();
+}
+
+/* ---------- مصنع الملازم ---------- */
+var HB_S=[["intro","مقدمة وأهداف التعلّم"],["exp","شرح تفصيلي للمفاهيم"],["ex","أمثلة محلولة"],["exr","تمارين للطالب"],["sum","ملخص ونقاط مراجعة"],["q","أسئلة نهاية الموضوع"],["key","إجابات التمارين والأسئلة"]];
+function hbH(){
+  var o=srcOf("hb"),cls=S.classes||[];
+  return '<h2>📘 مصنع الملازم الذكي</h2><div class="card">'+
+    '<div class="mu" style="line-height:1.7;margin-bottom:6px">اكتب مادتك والمنهج وعنوان الموضوع، وحط المصادر (نص أو ملفات). مسبار يألف الملزمة على مفرداتك، وتعدّلها بيدك، وبعدها تحفظها أو تنشرها للكلاس.</div>'+
+    '<label>اسم المادة</label><input value="'+esc(o.subj)+'" oninput="S.hb.subj=this.value" placeholder="مثال: الفيزياء الطبية">'+
+    '<label>المنهج / السيلباس (اكتب المفردات أو ارفعه كملف)</label><textarea rows="4" oninput="S.hb.syl=this.value" placeholder="مثال: ١) الإشعاع ٢) الموجات فوق الصوتية ٣) التصوير بالرنين...">'+esc(o.syl)+'</textarea>'+
+    '<button class="b s" style="width:100%;margin-top:6px" '+(S.busy?'disabled':'')+' onclick="srcPick(\'hb\',\'syl\')">📎 رفع ملف المنهج</button>'+
+    '<label>عنوان الموضوع اللي تسوي الملزمة عنه</label><input value="'+esc(o.title)+'" oninput="S.hb.title=this.value" placeholder="مثال: الموجات فوق الصوتية">'+
+    srcBoxH("hb","المصادر: انسخ المادة والصقها هنا، أو ارفعها كملف، أو ارفع عدة مصادر (يأخذ منها الذكاء)")+
+    '<div class="grid"><div><label>المستوى</label>'+selH([["sch","مدرسي"],["uni","جامعي"],["pg","دراسات عليا"]],o.level,"S.hb.level")+'</div><div><label>اللغة</label>'+selH([["ar","عربي"],["en","English"],["both","عربي + English"]],o.lang,"S.hb.lang")+'</div></div>'+
+    '<label>طول الملزمة</label>'+selH([["short","مختصرة"],["mid","متوسطة"],["long","مفصّلة"]],o.len,"S.hb.len")+
+    '<label>محتويات الملزمة</label>'+HB_S.map(function(s){return '<label class="opt"><input type="checkbox" '+(o.sec[s[0]]?'checked':'')+' onchange="S.hb.sec.'+s[0]+'=this.checked?1:0"><span>'+s[1]+'</span></label>'}).join("")+
+    '<label>ملاحظات إضافية (اختياري)</label><textarea rows="2" oninput="S.hb.desc=this.value" placeholder="مثال: بأسلوب مبسّط، ركّز على الجانب العملي، أمثلة من الواقع العراقي...">'+esc(o.desc)+'</textarea>'+
+    '<button class="b" style="width:100%;margin-top:10px" '+(S.busy?'disabled':'')+' onclick="hbRun()">'+(S.busy?'⏳ جاري تأليف الملزمة...':'🤖 ألّف الملزمة')+'</button></div>'+
+    (o.out?outBoxH("hb",'<button class="b s" onclick="hbToBag()">📁 حفظ بحقيبتي</button>')+
+      '<div class="card"><b>📤 نشر للطلاب</b>'+(cls.length?'<label>اختر الكلاس</label><select onchange="S.hb.cls=this.value">'+cls.map(function(c,i){return '<option value="'+i+'"'+(String(o.cls)===String(i)?' selected':'')+'>'+esc(c.n)+'</option>'}).join("")+'</select><button class="b" style="width:100%;margin-top:8px" onclick="hbToClass()">📤 نشر الملزمة بالكلاس</button>':'<div class="mu" style="margin-top:6px">ما عندك كلاس. أنشئ كلاساً من تبويب الكلاسات أولاً.</div>')+'</div>':'');
+}
+function hbPrompt(o){
+  var en=o.lang==="en";
+  var lang=en?"اللغة الإنجليزية فقط":o.lang==="both"?"العربية مع المصطلحات العلمية بالإنجليزية بين قوسين":"اللغة العربية الفصحى المبسطة (والمصطلحات العلمية بالإنجليزية بين قوسين)";
+  var lv={sch:"مدرسي",uni:"جامعي",pg:"دراسات عليا"}[o.level],ln={short:"حوالي 800 كلمة",mid:"حوالي 1800 كلمة",long:"حوالي 3500 كلمة أو أكثر"}[o.len];
+  var secs=HB_S.filter(function(s){return o.sec[s[0]]}).map(function(s){return "- "+s[1]}).join("\n");
+  var src=srcAll(o);
+  return "ألّف ملزمة دراسية في مادة «"+o.subj.trim()+"»"+(o.title.trim()?" عن الموضوع: «"+o.title.trim()+"»":"")+".\n"+
+    "المستوى: "+lv+". اللغة: "+lang+". الطول: "+ln+".\n"+
+    (o.syl.trim()?"المنهج/السيلباس المعتمد (التزم بمفرداته وترتيبه):\n"+o.syl.trim().slice(0,6000)+"\n":"")+
+    "اجعل الملزمة منظمة بعناوين ترقيمية (١، ٢، ٣) وعناوين فرعية، وتتضمن الأقسام التالية:\n"+secs+"\n"+
+    "لا تستخدم رموز ماركداون مثل ** أو #. استخدم أسطراً فارغة بين الأقسام.\n"+
+    (o.desc.trim()?"ملاحظات الأستاذ: "+o.desc.trim()+"\n":"")+
+    (src?"اعتمد على المصادر التالية في المحتوى (ودمجها بتنظيم، ولا تنسخها حرفياً)، ويمكنك إكمال النواقص بمعلومات علمية مؤكدة:\n\n"+src:"لا توجد مصادر مرفقة: اكتب من المنهج الأكاديمي المعروف، ولا تختلق معلومات أو أرقاماً غير متأكد منها، وأضف في آخر الملزمة سطراً يطلب من الأستاذ مراجعتها.");
+}
+async function hbRun(){
+  var o=srcOf("hb");
+  if(!o.subj.trim()){toast("اكتب اسم المادة أولاً");return}
+  if(!o.title.trim()&&!o.syl.trim()&&!srcAll(o)){toast("اكتب عنوان الموضوع أو ضع المنهج أو المصادر");return}
+  if(!HB_S.some(function(s){return o.sec[s[0]]})){toast("اختر قسماً واحداً على الأقل");return}
+  if(!gate())return;
+  S.busy=true;draw();
+  try{var a=await callUserGemini(hbPrompt(o),"أنت أستاذ جامعي ومؤلف ملازم دراسية متميز، تكتب بوضوح وتنظيم ودقة علمية.");if(a)o.out=aiClean(a)}
+  catch(e){toast("خطأ: "+(e.message||e))}
+  S.busy=false;draw();
+}
+function hbToBag(){
+  var o=S.hb;if(!o||!String(o.out||"").trim())return;
+  if(!S.bag||!S.bag.length)S.bag=[{n:"ملازمي",f:[]}];
+  S.bag[0].f.push({name:o.title||("ملزمة "+o.subj),text:o.out});
+  saveAllUserStorage();toast("📁 حُفظت الملزمة في حقيبتك");
+}
+function hbToClass(){
+  var o=S.hb,ci=parseInt(o.cls)||0,c=(S.classes||[])[ci];if(!o||!c||!String(o.out||"").trim())return;
+  c.mats=c.mats||[];c.mats.push({title:o.title||("ملزمة "+o.subj),text:o.out,at:Date.now()});
+  saveAllUserStorage();if((c.roster||[]).length)pubClass(ci,1);toast("📤 نُشرت الملزمة في «"+c.n+"»");draw();
+}
+
+/* ---------- إضافة فئات الطلبة للكلاس ---------- */
+function clsGrpOpen(ci){
+  var t=S.myT,gs=S.instGroups||[],c=S.classes[ci];
+  if(!keyParts()||!t||(t.status||"approved")!=="approved"||!gs.length||!c){importRoster(ci);return}
+  S.clsGrp={ci:ci,sel:(c.grps||[]).slice()};draw();
+}
+function clsGrpTog(id,on){var st=S.clsGrp;if(!st)return;st.sel=st.sel.filter(function(x){return x!==id});if(on)st.sel.push(id)}
+function clsGrpPickH(ci,c){
+  var gs=S.instGroups||[],ro=S.instRoster||[],st=S.clsGrp,mine=(S.myT&&S.myT.groups)||[];
+  var linked=(c.grps||[]).map(function(id){return gs.filter(function(g){return g.id===id})[0]}).filter(Boolean);
+  var chips=linked.length?'<div class="mu" style="font-size:12px;margin:4px 0">🗂️ الفئات المرتبطة: '+linked.map(function(g){return '<span class="badge">'+esc(g.name)+'</span>'}).join(" ")+'</div>':'';
+  if(!st||st.ci!==ci)return chips;
+  var list=gs.slice().sort(function(a,b){return (mine.indexOf(b.id)>-1?1:0)-(mine.indexOf(a.id)>-1?1:0)}).map(function(g){
+    var n=ro.filter(function(x){return gSame(x.g,g.name)}).length;
+    return '<label class="opt"><input type="checkbox" '+(st.sel.indexOf(g.id)>-1?'checked':'')+' onchange="clsGrpTog(\''+esc(g.id)+'\',this.checked)"><span>'+(mine.indexOf(g.id)>-1?'⭐ ':'')+esc(g.name)+' <span class="mu">· '+n+' طالب</span></span></label>';
+  }).join("");
+  return chips+'<div style="background:var(--bg);border-radius:12px;padding:10px;margin:8px 0"><b>اختر الفئات اللي تريد إضافتها لهذا الكلاس</b>'+
+    '<div class="mu" style="font-size:12px;margin:4px 0;line-height:1.6">⭐ = الفئات اللي تدرّسها. تنضاف الفئة كاملة (كل طلابها)، وإذا غيّرت الإدارة طلاب الفئة يتحدّث الكلاس تلقائياً.</div>'+list+
+    '<div class="grid"><button class="b" onclick="clsGrpApply('+ci+')">✅ إضافة للكلاس</button><button class="b s" onclick="S.clsGrp=null;draw()">إلغاء</button></div></div>';
+}
+function clsRebuild(ci){
+  var c=S.classes[ci],gs=S.instGroups||[],ro=S.instRoster||[];
+  var names=(c.grps||[]).map(function(id){var g=gs.filter(function(x){return x.id===id})[0];return g?g.name:null}).filter(Boolean);
+  var fromG=ro.filter(function(x){return names.some(function(n){return gSame(x.g,n)})}).map(function(x){return {n:x.n,c:x.c}});
+  var old={};(c.gcodes||[]).forEach(function(k){old[k]=1});
+  var keep=(c.roster||[]).filter(function(x){return !old[x.c]}),seen={};
+  c.roster=keep.concat(fromG).filter(function(x){if(seen[x.c])return false;seen[x.c]=1;return true});
+  c.gcodes=fromG.map(function(x){return x.c});
+}
+function clsGrpApply(ci){
+  var st=S.clsGrp,c=S.classes[ci],kp=keyParts();if(!st||!c)return;
+  if(!st.sel.length){toast("اختر فئة واحدة على الأقل");return}
+  if(!(S.instRoster||[]).length){toast("قائمة طلاب الإدارة غير متاحة — تأكد أن المدير سجّل الطلاب وفعّل مشاركة القائمة مع الأساتذة");return}
+  c.grps=st.sel.slice();clsRebuild(ci);
+  var mine=(S.myT&&S.myT.groups)||[],miss=st.sel.filter(function(id){return mine.indexOf(id)<0});
+  if(miss.length&&kp&&window.fbSetTeacherFields)window.fbSetTeacherFields(kp.id,S.uid,{groups:mine.concat(miss),at:Date.now()}).catch(function(){});
+  saveRoster((c.roster||[]).map(function(x){return x.n}).join("\n"));
+  S.clsGrp=null;saveAllUserStorage();pubClass(ci,1);
+  toast("✅ أُضيفت الفئات: "+c.roster.length+" طالب، وسيجدون الكلاس تلقائياً");draw();
+}
+function clsSyncAll(){
+  if(!S.classes||!S.instRosterShared||!(S.instRoster||[]).length||!(S.instGroups||[]).length)return;
+  var ch=0;
+  S.classes.forEach(function(c,ci){
+    if(!(c.grps||[]).length)return;
+    var a=JSON.stringify((c.roster||[]).map(function(x){return x.c}).sort());
+    clsRebuild(ci);
+    var b=JSON.stringify((c.roster||[]).map(function(x){return x.c}).sort());
+    if(a!==b){ch=1;pubClass(ci,1)}
+  });
+  if(ch){saveAllUserStorage();toast("🔄 تحدّث طلاب الكلاسات حسب فئات الإدارة")}
 }
 
 function micP(){var R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){toast("المتصفح لا يدعم الصوت، اكتب طلبك");return}S.pi=$("pi").value;var r=new R();r.lang="ar-IQ";r.onresult=function(e){S.pi=(S.pi+" "+e.results[0][0].transcript).trim();draw()};r.onerror=function(){toast("تعذر الاستماع، تأكد من إذن المايك")};r.start();toast("تكلم الآن")}
@@ -6217,6 +6455,7 @@ function instRosterWatch(){
     S.instRosterErr="";
     var share=!(meta&&meta.auto&&!meta.auto.t);S.instRosterShared=share;
     S.instRoster=share?a:[];
+    if(share)try{clsSyncAll()}catch(e){}
     var m={};if(share)a.forEach(function(x){if(x&&x.n&&x.p)m[normNm(x.n)]=x.p});S.instRosterMap=share?m:null;
     if(share&&a.length&&!String(S.rosterTxt||"").trim()&&typeof saveRoster==="function"){saveRoster(a.map(function(x){return x.n}).join("\n"));toast("👥 وصلت قائمة طلاب الإدارة ("+a.length+") وصارت قائمة الغياب تلقائياً")}
     draw();
@@ -6239,8 +6478,8 @@ function groupsAdminH(cur){
     return '<div class="row" style="padding:5px 0;border-bottom:1px dashed var(--ln)"><span class="grow"><b>'+esc(x.name)+'</b><br><span class="mu" style="font-size:11px">👥 '+n+' طالب</span></span><button class="b s" style="min-height:30px;padding:2px 10px" onclick="grpRename(\''+esc(x.id)+'\')">✏️</button><button class="b d" style="min-height:30px;padding:2px 10px" onclick="grpDelete(\''+esc(x.id)+'\')">🗑</button></div>'}).join(""):
     '<div class="mu" style="line-height:1.7">ما أنشأت فئات بعد. أنشئ فئة وسمّها بالاسم اللي تريده (مثل: المرحلة الأولى – A).</div>';
   var form=f.open?'<div style="background:var(--bg);border-radius:10px;padding:8px;margin:8px 0">'+
-    '<input placeholder="اسم المرحلة أو السنة (مثال: المرحلة الأولى)" value="'+esc(f.stage)+'" oninput="S.grpForm.stage=this.value">'+
-    '<input placeholder="اسم الصف / الشعبة / المجموعة (اختياري)" value="'+esc(f.section)+'" oninput="S.grpForm.section=this.value">'+
+    '<input placeholder="المرحلة أو السنة (مدرسة: الأول متوسط · جامعة: المرحلة الثانية)" value="'+esc(f.stage)+'" oninput="S.grpForm.stage=this.value">'+
+    '<input placeholder="الشعبة أو القسم (مدرسة: ألف · جامعة: قسم الكيمياء / شعبة ب)" value="'+esc(f.section)+'" oninput="S.grpForm.section=this.value">'+
     '<input placeholder="نوع الدراسة: صباحي / مسائي (اختياري)" value="'+esc(f.shift)+'" oninput="S.grpForm.shift=this.value">'+
     '<input placeholder="اسم المجموعة أو رمزها مثل A أو B (اختياري)" value="'+esc(f.code)+'" oninput="S.grpForm.code=this.value">'+
     '<div class="grid"><button class="b" style="background:#0891b2" onclick="grpSave()">💾 حفظ الفئة</button><button class="b s" onclick="S.grpForm.open=0;draw()">إلغاء</button></div></div>':'';
@@ -6691,7 +6930,7 @@ function rsOptsH(rc){var P='onchange="S.rsCode.pre=this.value.toUpperCase().repl
 /* ---- جهة الأستاذ ---- */
 function clsAutoH(ci,c){var n=(c.roster||[]).length;return '<div class="mu" style="font-size:12px;margin:4px 0">👥 '+n+' طالب مرتبط'+(n?' · يظهر لهم الكلاس تلقائياً':'')+'</div>'+
   '<label class="opt"><input type="checkbox" '+(c.autoExam?'checked':'')+' onchange="S.classes['+ci+'].autoExam=this.checked;saveAllUserStorage()"><span>📝 أتمتة الامتحانات: أي امتحان مباشر أطلقه يصل لطلاب هذا الكلاس</span></label>'+
-  '<div class="grid"><button class="b s" onclick="importRoster('+ci+')">👥 استيراد طلاب الإدارة</button><button class="b s" onclick="pubClass('+ci+')">☁️ تحديث للطلاب</button></div>'+(n?'<div class="grid"><button class="b s" onclick="clsExport('+ci+',\'xlsx\')">⬇️ Excel</button><button class="b s" onclick="clsExport('+ci+',\'doc\')">⬇️ Word</button><button class="b s" onclick="clsExport('+ci+',\'pdf\')">🖨️ PDF</button></div>':'')}
+  '<div class="grid"><button class="b s" onclick="clsGrpOpen('+ci+')">👥 إضافة فئات الطلبة</button><button class="b s" onclick="pubClass('+ci+')">☁️ تحديث للطلاب</button></div>'+(n?'<div class="grid"><button class="b s" onclick="clsExport('+ci+',\'xlsx\')">⬇️ Excel</button><button class="b s" onclick="clsExport('+ci+',\'doc\')">⬇️ Word</button><button class="b s" onclick="clsExport('+ci+',\'pdf\')">🖨️ PDF</button></div>':'')}
 function importRoster(ci){
   var kp=keyParts();if(!requireKey())return;
   ask("الصف/الشعبة المطلوبة (اكتب - لكل الطلاب)",function(g){
@@ -6717,7 +6956,7 @@ function autoPubAll(){clearTimeout(_pubDeb);_pubDeb=setTimeout(function(){
     if(S._pubSig[c.c]!==g)pubClass(ci,1)})},1500)}
 function pubClass(ci,q){
   var c=S.classes[ci],kp=keyParts();if(!S.uid||!window.fbPubClass){toast("سجّل الدخول أولاً");return}
-  var d={n:c.n,tEmail:S.email,tName:S.dispName||S.email,inst:kp?kp.id:"",rc:(c.roster||[]).map(function(x){return x.c}),mats:(c.mats||[]).map(function(m){return {title:m.title,text:String(m.text||"").slice(0,12000)}}),at:Date.now()};
+  var d={n:c.n,tEmail:S.email,tName:S.dispName||S.email,inst:kp?kp.id:"",rc:(c.roster||[]).map(function(x){return x.c}),mats:(c.mats||[]).map(function(m){return {title:m.title,text:String(m.text||"").slice(0,30000)}}),at:Date.now()};
   if(JSON.stringify(d).length>900000){toast("حجم الكلاس كبير جداً");return}
   S._pubSig=S._pubSig||{};S._pubSig[c.c]=sigOf(c);
   window.fbPubClass(pubId(c.c),d).then(function(){if(!q)toast("☁️ تم تحديث الكلاس للطلاب")}).catch(function(e){toast("تعذر النشر: "+((e&&e.code)||e))});
