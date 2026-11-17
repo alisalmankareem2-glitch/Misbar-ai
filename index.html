@@ -266,7 +266,7 @@ window.misbarHardReset=function(){
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.66.0";
+var APP_VERSION = "2.67.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -4103,11 +4103,12 @@ function proPortalsV(){
   }
   if(S.proPortal === "qbank"){
     return '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">بوابة الأسئلة وبنك الفصل</b></div>' +
-      qgH() +
+      '<h2>مولّد الأسئلة السريع</h2><div class="card"><label>الموضوع أو نص الدرس</label><input id="qt" value="التمثيل الضوئي"><div class="grid"><div><label>النوع</label><select id="qk"><option>اختيار من متعدد</option><option>مقالي</option><option>صح وخطأ</option></select></div><div><label>العدد</label><input id="qn" type="number" value="5" min="1" max="20"></div></div><button class="b" '+(S.busy?'disabled':'')+' onclick="genQuickQ()">'+(S.busy?'⏳ جاري التوليد...':'🤖 توليد الأسئلة')+'</button></div>'+
+      (S.out?'<div class="out" style="margin-top:8px">'+esc(S.out)+'</div><div class="grid" style="margin-top:8px"><button class="b s" onclick="window.print()">🖨️ PDF</button><button class="b s" onclick="downloadWordFile(\'أسئلة_مسبار\',\'<pre style=font-family:Tahoma;white-space:pre-wrap>\'+esc(S.out)+\'</pre>\',true)">📄 Word</button></div>':'') +
       bankV();
   }
-  if(S.proPortal === "hb"){
-    return '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">بوابة صناعة الملزمة</b></div>' + hbH();
+  if(S.proPortal === "sch" || S.proPortal === "uni"){
+    return gwPortalH(S.proPortal);
   }
   if(S.proPortal === "plans"){
     return '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">بوابة الخطط الدراسية</b></div>' +
@@ -4129,14 +4130,14 @@ function proPortalsV(){
       '<div class="grow"><b>بوابة الأوراق والملازم + مستنداتي</b><div class="mu">تصميم ورقة أسئلة A4، تأليف ملزمة مع غلاف، وإدارة مستنداتك ('+docsCount+')</div></div>' +
       '<span style="font-size:20px;color:var(--mu)">‹</span>' +
     '</div>' +
-    '<div class="portal-card" onclick="S.proPortal=\'hb\';draw()">' +
-      '<div class="portal-ico">📘</div>' +
-      '<div class="grow"><b>بوابة صناعة الملزمة بالذكاء</b><div class="mu">اكتب المادة والمنهج والموضوع وارفع مصادرك، ومسبار يألف الملزمة وتنشرها لكلاسك</div></div>' +
+    '<div class="portal-card" onclick="S.proPortal=\'sch\';S.gwTab=\'q\';draw()">' +
+      '<div class="portal-ico">🏫</div>' +
+      '<div class="grow"><b>بوابة المدارس</b><div class="mu">إسلامية، عربي، أحياء، كيمياء وكل المواد: أسئلة وملازم في مكان واحد</div></div>' +
       '<span style="font-size:20px;color:var(--mu)">‹</span>' +
     '</div>' +
-    '<div class="portal-card" onclick="S.proPortal=\'qbank\';draw()">' +
-      '<div class="portal-ico">❓</div>' +
-      '<div class="grow"><b>بوابة مولّد الأسئلة وبنك الفصل</b><div class="mu">مولّد أسئلة لأي مادة: MCQ، صح وخطأ، مقالي وغيرها بالعربي أو الإنجليزي، مع بنك أسئلة من الفصل</div></div>' +
+    '<div class="portal-card" onclick="S.proPortal=\'uni\';S.gwTab=\'q\';draw()">' +
+      '<div class="portal-ico">🎓</div>' +
+      '<div class="grow"><b>بوابة الجامعة</b><div class="mu">الأستاذ الجامعي يكتب مادته ويسوّي أسئلة وملازم بنفسه</div></div>' +
       '<span style="font-size:20px;color:var(--mu)">‹</span>' +
     '</div>' +
     '<div class="portal-card" onclick="S.proPortal=\'plans\';draw()">' +
@@ -4183,10 +4184,11 @@ async function genQuickQ(){
 /* ===== v2.66: مولّد أسئلة الأستاذ الشامل + مصنع الملازم + إضافة فئات الطلبة للكلاس ===== */
 function srcOf(k){
   if(!S[k]){
-    S[k]=k==="qg"
+    S[k]=k.indexOf("qg")===0
       ?{subj:"",topic:"",desc:"",lang:"ar",level:"uni",diff:"mix",nopt:4,ans:1,src:"",files:[],types:{mcq:{on:1,n:5},tf:{on:1,n:3},essay:{on:1,n:2},short:{on:0,n:3},fill:{on:0,n:3},match:{on:0,n:1}},out:""}
       :{subj:"",syl:"",title:"",desc:"",lang:"ar",level:"uni",len:"mid",src:"",files:[],sec:{intro:1,exp:1,ex:1,exr:1,sum:1,q:1,key:0},out:"",cls:0};
   }
+  if(/S$/.test(k)&&!S[k]._i){S[k].level="sch";S[k]._i=1}
   return S[k];
 }
 function srcAll(o){return [o.src].concat((o.files||[]).map(function(f){return "【"+f.name+"】\n"+f.text})).filter(function(x){return String(x||"").trim()}).join("\n\n").slice(0,30000)}
@@ -4244,7 +4246,7 @@ function outBoxH(k,extra){
     '<div class="grid" style="margin-top:8px"><button class="b s" onclick="outWord(\''+k+'\')">📄 Word</button><button class="b s" onclick="outPrint(\''+k+'\')">🖨️ PDF / طباعة</button></div>'+
     '<div class="grid"><button class="b s" onclick="outCopy(\''+k+'\')">📋 نسخ</button>'+(extra||'')+'</div></div>';
 }
-function outName(k){var o=S[k];return k==="qg"?("أسئلة_"+(o.subj||"مسبار")):("ملزمة_"+(o.title||o.subj||"مسبار"))}
+function outName(k){var o=S[k];return k.indexOf("qg")===0?("أسئلة_"+(o.subj||"مسبار")):("ملزمة_"+(o.title||o.subj||"مسبار"))}
 function outWord(k){var o=S[k];if(!String(o.out||"").trim())return;downloadWordFile(outName(k),'<pre style="font-family:Tahoma,Arial;white-space:pre-wrap;font-size:13pt">'+esc(o.out)+'</pre>',o.lang!=="en")}
 function outCopy(k){var o=S[k];if(navigator.clipboard)navigator.clipboard.writeText(o.out||"");toast("📋 تم النسخ")}
 function outPrint(k){
@@ -4258,23 +4260,23 @@ function aiClean(a){return String(a||"").replace(/\*\*/g,"").replace(/^#+\s*/gm,
 
 /* ---------- مولّد أسئلة الأستاذ (بدون تخصيص مادة) ---------- */
 var QG_T=[["mcq","اختيار من متعدد (MCQ)"],["tf","صح وخطأ"],["essay","مقالي"],["short","إجابة قصيرة"],["fill","املأ الفراغ"],["match","مطابقة (ربط)"]];
-function qgH(){
-  var q=srcOf("qg");
+function qgH(k){
+  var q=srcOf(k);
   return '<h2>🎓 مولّد أسئلة الأستاذ</h2><div class="card">'+
     '<div class="mu" style="line-height:1.7;margin-bottom:6px">لأي مادة وأي تخصص (مدرسة أو جامعة): اكتب اسم المادة وصف شنو تريد، واختر أنواع الأسئلة، ومسبار يكتبها لك.</div>'+
-    '<label>اسم المادة</label><input value="'+esc(q.subj)+'" oninput="S.qg.subj=this.value" placeholder="مثال: الكيمياء العضوية / القانون المدني / Data Structures">'+
-    '<label>عنوان الفصل أو الموضوع (اختياري)</label><input value="'+esc(q.topic)+'" oninput="S.qg.topic=this.value" placeholder="مثال: الفصل الثالث — الألكينات">'+
-    '<div class="grid"><div><label>المستوى</label>'+selH([["sch","مدرسي"],["uni","جامعي"],["pg","دراسات عليا"]],q.level,"S.qg.level")+'</div>'+
-    '<div><label>لغة الأسئلة</label>'+selH([["ar","عربي"],["en","English"],["both","عربي + English"]],q.lang,"S.qg.lang")+'</div></div>'+
-    '<div class="grid"><div><label>الصعوبة</label>'+selH([["easy","سهلة"],["mid","متوسطة"],["hard","صعبة"],["mix","متدرجة"]],q.diff,"S.qg.diff")+'</div>'+
-    '<div><label>خيارات MCQ</label>'+selH([[3,"٣ خيارات"],[4,"٤ خيارات"],[5,"٥ خيارات"]],q.nopt,"S.qg.nopt")+'</div></div>'+
+    '<label>اسم المادة</label><input value="'+esc(q.subj)+'" oninput="S.'+k+'.subj=this.value" placeholder="مثال: الكيمياء العضوية / القانون المدني / Data Structures">'+
+    '<label>عنوان الفصل أو الموضوع (اختياري)</label><input value="'+esc(q.topic)+'" oninput="S.'+k+'.topic=this.value" placeholder="مثال: الفصل الثالث — الألكينات">'+
+    '<div class="grid"><div><label>المستوى</label>'+selH([["sch","مدرسي"],["uni","جامعي"],["pg","دراسات عليا"]],q.level,"S."+k+".level")+'</div>'+
+    '<div><label>لغة الأسئلة</label>'+selH([["ar","عربي"],["en","English"],["both","عربي + English"]],q.lang,"S."+k+".lang")+'</div></div>'+
+    '<div class="grid"><div><label>الصعوبة</label>'+selH([["easy","سهلة"],["mid","متوسطة"],["hard","صعبة"],["mix","متدرجة"]],q.diff,"S."+k+".diff")+'</div>'+
+    '<div><label>خيارات MCQ</label>'+selH([[3,"٣ خيارات"],[4,"٤ خيارات"],[5,"٥ خيارات"]],q.nopt,"S."+k+".nopt")+'</div></div>'+
     '<label>أنواع الأسئلة وعدد كل نوع</label>'+
-    QG_T.map(function(t){var x=q.types[t[0]];return '<div class="row" style="gap:8px"><label class="opt grow" style="margin:4px 0"><input type="checkbox" '+(x.on?'checked':'')+' onchange="S.qg.types.'+t[0]+'.on=this.checked?1:0"><span>'+t[1]+'</span></label><input type="number" min="1" max="50" value="'+x.n+'" style="width:70px;margin:0" oninput="S.qg.types.'+t[0]+'.n=parseInt(this.value)||1"></div>'}).join("")+
-    '<label class="opt"><input type="checkbox" '+(q.ans?'checked':'')+' onchange="S.qg.ans=this.checked?1:0"><span>✅ إرفاق الإجابات النموذجية</span></label>'+
-    '<label>وصف شلون تريد الأسئلة</label><textarea rows="3" oninput="S.qg.desc=this.value" placeholder="مثال: أسئلة تطبيقية تقيس الفهم مو الحفظ، المقالي يكون مسألة، ركّز على أول ٣ فصول...">'+esc(q.desc)+'</textarea>'+
-    srcBoxH("qg","المحتوى (اختياري): ألصق النص أو ارفع مصادرك")+
-    '<button class="b" style="width:100%;margin-top:10px" '+(S.busy?'disabled':'')+' onclick="qgRun()">'+(S.busy?'⏳ جاري التوليد...':'🤖 توليد الأسئلة')+'</button></div>'+
-    (q.out?outBoxH("qg"):'');
+    QG_T.map(function(t){var x=q.types[t[0]];return '<div class="row" style="gap:8px"><label class="opt grow" style="margin:4px 0"><input type="checkbox" '+(x.on?'checked':'')+' onchange="S.'+k+'.types.'+t[0]+'.on=this.checked?1:0"><span>'+t[1]+'</span></label><input type="number" min="1" max="50" value="'+x.n+'" style="width:70px;margin:0" oninput="S.'+k+'.types.'+t[0]+'.n=parseInt(this.value)||1"></div>'}).join("")+
+    '<label class="opt"><input type="checkbox" '+(q.ans?'checked':'')+' onchange="S.'+k+'.ans=this.checked?1:0"><span>✅ إرفاق الإجابات النموذجية</span></label>'+
+    '<label>وصف شلون تريد الأسئلة</label><textarea rows="3" oninput="S.'+k+'.desc=this.value" placeholder="مثال: أسئلة تطبيقية تقيس الفهم مو الحفظ، المقالي يكون مسألة، ركّز على أول ٣ فصول...">'+esc(q.desc)+'</textarea>'+
+    srcBoxH(k,"المحتوى (اختياري): ألصق النص أو ارفع مصادرك")+
+    '<button class="b" style="width:100%;margin-top:10px" '+(S.busy?'disabled':'')+' onclick="qgRun(\''+k+'\')">'+(S.busy?'⏳ جاري التوليد...':'🤖 توليد الأسئلة')+'</button></div>'+
+    (q.out?outBoxH(k):'');
 }
 function qgPrompt(q,ts){
   var en=q.lang==="en",ltr=en?["A","B","C","D","E"]:["أ","ب","ج","د","هـ"];
@@ -4283,15 +4285,15 @@ function qgPrompt(q,ts){
   var nm={mcq:function(n){return n+" سؤال اختيار من متعدد، لكل سؤال "+q.nopt+" خيارات ("+ltr.slice(0,q.nopt).join("، ")+") وخيار واحد صحيح فقط"},tf:function(n){return n+" سؤال صح وخطأ"},essay:function(n){return n+" سؤال مقالي"},short:function(n){return n+" سؤال إجابة قصيرة"},fill:function(n){return n+" سؤال أكمل الفراغ"},match:function(n){return n+" سؤال مطابقة (عمودان للربط بينهما)"}};
   var src=srcAll(q);
   return "اكتب مجموعة أسئلة في مادة «"+q.subj.trim()+"»"+(q.topic.trim()?" — الموضوع: «"+q.topic.trim()+"»":"")+".\n"+
-    "المستوى: "+lv+". الصعوبة: "+df+". لغة الأسئلة: "+lang+".\n"+
+    (q.stage?"المرحلة/الصف: "+q.stage+".\n":"")+"المستوى: "+lv+". الصعوبة: "+df+". لغة الأسئلة: "+lang+".\n"+
     "المطلوب بالضبط:\n"+ts.map(function(t){return "- "+nm[t[0]](t[1])}).join("\n")+"\n"+
     "رتّب الأسئلة في أقسام حسب النوع بعنوان لكل قسم، وبترقيم واضح. لا تستخدم رموز ماركداون مثل ** أو #.\n"+
     (q.ans?"في نهاية الورقة اكتب قسم (الإجابات النموذجية) لكل الأسئلة، ولأسئلة المقال نقاط الإجابة المتوقعة وتوزيع درجات مقترح.\n":"لا تكتب الإجابات.\n")+
     (q.desc.trim()?"تعليمات الأستاذ: "+q.desc.trim()+"\n":"")+
     (src?"اعتمد حصراً على المحتوى التالي ولا تضف معلومات من خارجه:\n\n"+src:"لا يوجد مصدر مرفق: اعتمد على المنهج الأكاديمي المعروف للمادة، ولا تختلق معلومات أو أرقاماً غير متأكد منها.");
 }
-async function qgRun(){
-  var q=srcOf("qg");
+async function qgRun(k){
+  var q=srcOf(k);
   if(!q.subj.trim()){toast("اكتب اسم المادة أولاً");return}
   var ts=QG_T.filter(function(t){return q.types[t[0]].on}).map(function(t){return [t[0],Math.max(1,Math.min(50,q.types[t[0]].n||1))]});
   if(!ts.length){toast("اختر نوع سؤال واحد على الأقل");return}
@@ -4304,22 +4306,22 @@ async function qgRun(){
 
 /* ---------- مصنع الملازم ---------- */
 var HB_S=[["intro","مقدمة وأهداف التعلّم"],["exp","شرح تفصيلي للمفاهيم"],["ex","أمثلة محلولة"],["exr","تمارين للطالب"],["sum","ملخص ونقاط مراجعة"],["q","أسئلة نهاية الموضوع"],["key","إجابات التمارين والأسئلة"]];
-function hbH(){
-  var o=srcOf("hb"),cls=S.classes||[];
+function hbH(k){
+  var o=srcOf(k),cls=S.classes||[];
   return '<h2>📘 مصنع الملازم الذكي</h2><div class="card">'+
     '<div class="mu" style="line-height:1.7;margin-bottom:6px">اكتب مادتك والمنهج وعنوان الموضوع، وحط المصادر (نص أو ملفات). مسبار يألف الملزمة على مفرداتك، وتعدّلها بيدك، وبعدها تحفظها أو تنشرها للكلاس.</div>'+
-    '<label>اسم المادة</label><input value="'+esc(o.subj)+'" oninput="S.hb.subj=this.value" placeholder="مثال: الفيزياء الطبية">'+
-    '<label>المنهج / السيلباس (اكتب المفردات أو ارفعه كملف)</label><textarea rows="4" oninput="S.hb.syl=this.value" placeholder="مثال: ١) الإشعاع ٢) الموجات فوق الصوتية ٣) التصوير بالرنين...">'+esc(o.syl)+'</textarea>'+
-    '<button class="b s" style="width:100%;margin-top:6px" '+(S.busy?'disabled':'')+' onclick="srcPick(\'hb\',\'syl\')">📎 رفع ملف المنهج</button>'+
-    '<label>عنوان الموضوع اللي تسوي الملزمة عنه</label><input value="'+esc(o.title)+'" oninput="S.hb.title=this.value" placeholder="مثال: الموجات فوق الصوتية">'+
-    srcBoxH("hb","المصادر: انسخ المادة والصقها هنا، أو ارفعها كملف، أو ارفع عدة مصادر (يأخذ منها الذكاء)")+
-    '<div class="grid"><div><label>المستوى</label>'+selH([["sch","مدرسي"],["uni","جامعي"],["pg","دراسات عليا"]],o.level,"S.hb.level")+'</div><div><label>اللغة</label>'+selH([["ar","عربي"],["en","English"],["both","عربي + English"]],o.lang,"S.hb.lang")+'</div></div>'+
-    '<label>طول الملزمة</label>'+selH([["short","مختصرة"],["mid","متوسطة"],["long","مفصّلة"]],o.len,"S.hb.len")+
-    '<label>محتويات الملزمة</label>'+HB_S.map(function(s){return '<label class="opt"><input type="checkbox" '+(o.sec[s[0]]?'checked':'')+' onchange="S.hb.sec.'+s[0]+'=this.checked?1:0"><span>'+s[1]+'</span></label>'}).join("")+
-    '<label>ملاحظات إضافية (اختياري)</label><textarea rows="2" oninput="S.hb.desc=this.value" placeholder="مثال: بأسلوب مبسّط، ركّز على الجانب العملي، أمثلة من الواقع العراقي...">'+esc(o.desc)+'</textarea>'+
-    '<button class="b" style="width:100%;margin-top:10px" '+(S.busy?'disabled':'')+' onclick="hbRun()">'+(S.busy?'⏳ جاري تأليف الملزمة...':'🤖 ألّف الملزمة')+'</button></div>'+
-    (o.out?outBoxH("hb",'<button class="b s" onclick="hbToBag()">📁 حفظ بحقيبتي</button>')+
-      '<div class="card"><b>📤 نشر للطلاب</b>'+(cls.length?'<label>اختر الكلاس</label><select onchange="S.hb.cls=this.value">'+cls.map(function(c,i){return '<option value="'+i+'"'+(String(o.cls)===String(i)?' selected':'')+'>'+esc(c.n)+'</option>'}).join("")+'</select><button class="b" style="width:100%;margin-top:8px" onclick="hbToClass()">📤 نشر الملزمة بالكلاس</button>':'<div class="mu" style="margin-top:6px">ما عندك كلاس. أنشئ كلاساً من تبويب الكلاسات أولاً.</div>')+'</div>':'');
+    '<label>اسم المادة</label><input value="'+esc(o.subj)+'" oninput="S.'+k+'.subj=this.value" placeholder="مثال: الفيزياء الطبية">'+
+    '<label>المنهج / السيلباس (اكتب المفردات أو ارفعه كملف)</label><textarea rows="4" oninput="S.'+k+'.syl=this.value" placeholder="مثال: ١) الإشعاع ٢) الموجات فوق الصوتية ٣) التصوير بالرنين...">'+esc(o.syl)+'</textarea>'+
+    '<button class="b s" style="width:100%;margin-top:6px" '+(S.busy?'disabled':'')+' onclick="srcPick(\''+k+'\',\'syl\')">📎 رفع ملف المنهج</button>'+
+    '<label>عنوان الموضوع اللي تسوي الملزمة عنه</label><input value="'+esc(o.title)+'" oninput="S.'+k+'.title=this.value" placeholder="مثال: الموجات فوق الصوتية">'+
+    srcBoxH(k,"المصادر: انسخ المادة والصقها هنا، أو ارفعها كملف، أو ارفع عدة مصادر (يأخذ منها الذكاء)")+
+    '<div class="grid"><div><label>المستوى</label>'+selH([["sch","مدرسي"],["uni","جامعي"],["pg","دراسات عليا"]],o.level,"S."+k+".level")+'</div><div><label>اللغة</label>'+selH([["ar","عربي"],["en","English"],["both","عربي + English"]],o.lang,"S."+k+".lang")+'</div></div>'+
+    '<label>طول الملزمة</label>'+selH([["short","مختصرة"],["mid","متوسطة"],["long","مفصّلة"]],o.len,"S."+k+".len")+
+    '<label>محتويات الملزمة</label>'+HB_S.map(function(s){return '<label class="opt"><input type="checkbox" '+(o.sec[s[0]]?'checked':'')+' onchange="S.'+k+'.sec.'+s[0]+'=this.checked?1:0"><span>'+s[1]+'</span></label>'}).join("")+
+    '<label>ملاحظات إضافية (اختياري)</label><textarea rows="2" oninput="S.'+k+'.desc=this.value" placeholder="مثال: بأسلوب مبسّط، ركّز على الجانب العملي، أمثلة من الواقع العراقي...">'+esc(o.desc)+'</textarea>'+
+    '<button class="b" style="width:100%;margin-top:10px" '+(S.busy?'disabled':'')+' onclick="hbRun(\''+k+'\')">'+(S.busy?'⏳ جاري تأليف الملزمة...':'🤖 ألّف الملزمة')+'</button></div>'+
+    (o.out?outBoxH(k,'<button class="b s" onclick="hbToBag(\''+k+'\')">📁 حفظ بحقيبتي</button>')+
+      '<div class="card"><b>📤 نشر للطلاب</b>'+(cls.length?'<label>اختر الكلاس</label><select onchange="S.'+k+'.cls=this.value">'+cls.map(function(c,i){return '<option value="'+i+'"'+(String(o.cls)===String(i)?' selected':'')+'>'+esc(c.n)+'</option>'}).join("")+'</select><button class="b" style="width:100%;margin-top:8px" onclick="hbToClass(\''+k+'\')">📤 نشر الملزمة بالكلاس</button>':'<div class="mu" style="margin-top:6px">ما عندك كلاس. أنشئ كلاساً من تبويب الكلاسات أولاً.</div>')+'</div>':'');
 }
 function hbPrompt(o){
   var en=o.lang==="en";
@@ -4328,15 +4330,15 @@ function hbPrompt(o){
   var secs=HB_S.filter(function(s){return o.sec[s[0]]}).map(function(s){return "- "+s[1]}).join("\n");
   var src=srcAll(o);
   return "ألّف ملزمة دراسية في مادة «"+o.subj.trim()+"»"+(o.title.trim()?" عن الموضوع: «"+o.title.trim()+"»":"")+".\n"+
-    "المستوى: "+lv+". اللغة: "+lang+". الطول: "+ln+".\n"+
+    (o.stage?"المرحلة/الصف: "+o.stage+".\n":"")+"المستوى: "+lv+". اللغة: "+lang+". الطول: "+ln+".\n"+
     (o.syl.trim()?"المنهج/السيلباس المعتمد (التزم بمفرداته وترتيبه):\n"+o.syl.trim().slice(0,6000)+"\n":"")+
     "اجعل الملزمة منظمة بعناوين ترقيمية (١، ٢، ٣) وعناوين فرعية، وتتضمن الأقسام التالية:\n"+secs+"\n"+
     "لا تستخدم رموز ماركداون مثل ** أو #. استخدم أسطراً فارغة بين الأقسام.\n"+
     (o.desc.trim()?"ملاحظات الأستاذ: "+o.desc.trim()+"\n":"")+
     (src?"اعتمد على المصادر التالية في المحتوى (ودمجها بتنظيم، ولا تنسخها حرفياً)، ويمكنك إكمال النواقص بمعلومات علمية مؤكدة:\n\n"+src:"لا توجد مصادر مرفقة: اكتب من المنهج الأكاديمي المعروف، ولا تختلق معلومات أو أرقاماً غير متأكد منها، وأضف في آخر الملزمة سطراً يطلب من الأستاذ مراجعتها.");
 }
-async function hbRun(){
-  var o=srcOf("hb");
+async function hbRun(k){
+  var o=srcOf(k);
   if(!o.subj.trim()){toast("اكتب اسم المادة أولاً");return}
   if(!o.title.trim()&&!o.syl.trim()&&!srcAll(o)){toast("اكتب عنوان الموضوع أو ضع المنهج أو المصادر");return}
   if(!HB_S.some(function(s){return o.sec[s[0]]})){toast("اختر قسماً واحداً على الأقل");return}
@@ -4346,14 +4348,14 @@ async function hbRun(){
   catch(e){toast("خطأ: "+(e.message||e))}
   S.busy=false;draw();
 }
-function hbToBag(){
-  var o=S.hb;if(!o||!String(o.out||"").trim())return;
+function hbToBag(k){
+  var o=S[k];if(!o||!String(o.out||"").trim())return;
   if(!S.bag||!S.bag.length)S.bag=[{n:"ملازمي",f:[]}];
   S.bag[0].f.push({name:o.title||("ملزمة "+o.subj),text:o.out});
   saveAllUserStorage();toast("📁 حُفظت الملزمة في حقيبتك");
 }
-function hbToClass(){
-  var o=S.hb,ci=parseInt(o.cls)||0,c=(S.classes||[])[ci];if(!o||!c||!String(o.out||"").trim())return;
+function hbToClass(k){
+  var o=S[k],ci=parseInt(o.cls)||0,c=(S.classes||[])[ci];if(!o||!c||!String(o.out||"").trim())return;
   c.mats=c.mats||[];c.mats.push({title:o.title||("ملزمة "+o.subj),text:o.out,at:Date.now()});
   saveAllUserStorage();if((c.roster||[]).length)pubClass(ci,1);toast("📤 نُشرت الملزمة في «"+c.n+"»");draw();
 }
@@ -4411,6 +4413,24 @@ function clsSyncAll(){
   if(ch){saveAllUserStorage();toast("🔄 تحدّث طلاب الكلاسات حسب فئات الإدارة")}
 }
 
+
+/* ===== بوابة المدارس + بوابة الجامعة ===== */
+var SCH_SUBJ=["التربية الإسلامية","اللغة العربية","الأحياء","الكيمياء","الفيزياء","الرياضيات","اللغة الإنجليزية","التاريخ","الجغرافية","الحاسوب","العلوم","الاجتماعيات"];
+function schPick(i){var s=SCH_SUBJ[i];srcOf("qgS").subj=s;srcOf("hbS").subj=s;draw()}
+function schStage(v){srcOf("qgS").stage=v;srcOf("hbS").stage=v}
+function gwPortalH(g){
+  var sch=g==="sch",kq=sch?"qgS":"qg",kh=sch?"hbS":"hb",t=S.gwTab||"q",cur=srcOf(kq).subj;
+  var head='<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">'+(sch?'🏫 بوابة المدارس':'🎓 بوابة الجامعة')+'</b></div>';
+  var top=sch
+    ?'<div class="card"><b>اختر المادة</b><div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px">'+SCH_SUBJ.map(function(s,i){return '<button class="chip'+(cur===s?' on':'')+'" onclick="schPick('+i+')">'+s+'</button>'}).join("")+'</div>'+
+      '<label>أو اكتب مادة أخرى</label><input value="'+esc(cur)+'" oninput="srcOf(\'qgS\').subj=this.value;srcOf(\'hbS\').subj=this.value" placeholder="اسم المادة">'+
+      '<label>المرحلة والصف</label><input value="'+esc(srcOf(kq).stage||"")+'" oninput="schStage(this.value)" placeholder="مثال: الثاني متوسط / الخامس العلمي"></div>'
+    :'<div class="card"><div class="mu" style="line-height:1.7">اكتب مادتك الجامعية بالخانة داخل كل تبويب، وسوّي أسئلتك وملازمك بكل حرية لأي تخصص.</div></div>';
+  var tabs=[["q","❓ الأسئلة"],["h","📘 الملازم"],["b","🏦 بنك الفصل"],["p","📄 ورقة A4"]];
+  var tb='<div class="row" style="flex-wrap:wrap;gap:6px;margin:8px 0">'+tabs.map(function(x){return '<button class="chip'+(t===x[0]?' on':'')+'" onclick="S.gwTab=\''+x[0]+'\';draw()">'+x[1]+'</button>'}).join("")+'</div>';
+  var body=t==="q"?qgH(kq):t==="h"?hbH(kh):t==="b"?bankV():gwHomeV();
+  return head+top+tb+body;
+}
 function micP(){var R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){toast("المتصفح لا يدعم الصوت، اكتب طلبك");return}S.pi=$("pi").value;var r=new R();r.lang="ar-IQ";r.onresult=function(e){S.pi=(S.pi+" "+e.results[0][0].transcript).trim();draw()};r.onerror=function(){toast("تعذر الاستماع، تأكد من إذن المايك")};r.start();toast("تكلم الآن")}
 
 function bankV(){
