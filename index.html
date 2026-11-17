@@ -44,6 +44,10 @@ nav button.on{color:var(--ac)}nav i{display:block;font-style:normal;font-size:19
 .msg{padding:9px 12px;border-radius:12px;margin:6px 0;max-width:85%;background:var(--sf);border:1px solid var(--ln);white-space:pre-wrap;line-height:1.7}
 .msg.me{background:var(--ac);color:#fff;margin-inline-start:auto;border-color:var(--ac)}
 .hero{text-align:center;padding:34px 16px 10px}.hero .hat{font-size:64px}
+.lgfull{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;justify-content:center;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}
+.lgfull .hero{padding:24px 16px 8px}.lgfull .hero .hat{font-size:110px}.lgfull .hero h1{font-size:40px}.lgfull .hero p{font-size:17px}
+.lgfull main{width:100%;max-width:none;padding:18px 20px;box-sizing:border-box}.lgfull main .card{padding:20px;font-size:16px}.lgfull main .mu{font-size:15px}
+@media (min-width:760px){.lgfull main{max-width:640px}}
 .hero h1{font-size:28px;margin:6px 0}
 .tog{width:50px;height:28px;border-radius:14px;background:var(--ln);border:0;position:relative;cursor:pointer;flex-shrink:0}
 .tog.on{background:var(--ac)}.tog::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s}
@@ -266,7 +270,7 @@ window.misbarHardReset=function(){
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.68.0";
+var APP_VERSION = "2.69.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -1024,18 +1028,28 @@ function ownEnter(){
     });
     return;
   }
-  ask("أدخل رمز المالك (إذا نسيته اكتب: نسيت)",function(c){
-    if(c===S.code){setRole("own");return}
-    if(c==="نسيت"){
-      ask("اكتب رمز المالك الجديد (4 خانات أو أكثر)",function(n){
-        if(n.length<4){toast("الرمز قصير");return}
-        S.code=n;try{localStorage.setItem("misbar_ocode",n)}catch(e){}
-        toast("✅ تم تعيين رمز جديد. ادخل به الحين");
-      },2);
-      return;
-    }
-    toast("الرمز غير صحيح");
-  },2);
+  if(S._ownBusy)return;S._ownBusy=1;toast("⏳ جاري التحقق من حساب المالك...");
+  var get=window.fbOwnerCodeGet?window.fbOwnerCodeGet():Promise.resolve(null);
+  get.then(function(d){S.ownHash=d&&d.h?d.h:"";S.ownSrv=1},function(){S.ownHash="";S.ownSrv=0;toast("⚠️ تعذر قراءة رمز المالك من السيرفر (انشر قواعد Firestore الجديدة). يُستعمل رمز هذا الجهاز مؤقتاً")}).then(function(){
+    S._ownBusy=0;
+    ask("أدخل رمز المالك (إذا نسيته اكتب: نسيت)",async function(c){
+      if(c==="نسيت"){
+        ask("اكتب رمز المالك الجديد (4 خانات أو أكثر)",function(n){
+          if(n.length<4){toast("الرمز قصير");return}
+          ownSetCode(n).then(function(){toast("✅ تم تعيين رمز جديد يثبت على كل أجهزتك. ادخل به الحين")});
+        },2);
+        return;
+      }
+      if(await ownCheck(c)){if(S.ownSrv&&!S.ownHash)ownSetCode(c);setRole("own")}
+      else toast("الرمز غير صحيح");
+    },2);
+  });
+}
+async function sha256Hex(t){var b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return Array.prototype.map.call(new Uint8Array(b),function(x){return x.toString(16).padStart(2,"0")}).join("")}
+async function ownCheck(c){var h=await sha256Hex("misbar-owner|"+S.email+"|"+c);if(S.ownHash)return h===S.ownHash;return c===S.code}
+function ownSetCode(n){
+  S.code=n;try{localStorage.setItem("misbar_ocode",n)}catch(e){}
+  return sha256Hex("misbar-owner|"+S.email+"|"+n).then(function(h){S.ownHash=h;S.ownSrv=1;return window.fbOwnerCodeSet(h)}).catch(function(e){toast("⚠️ تعذر الحفظ على السيرفر: "+((e&&e.code)||e)+" — انشر قواعد Firestore الجديدة")});
 }
 function head(t){
   var me = findUserByEmail(S.email);
@@ -7227,12 +7241,12 @@ function reqV(){
   var inP=S.req.filter(function(r){return r.pid==pid(sel)}),ST=[["new","جديد"],["ok","مقبول"],["act","مفعّل"],["no","مرفوض/موقوف"]];
   var sts=ST.map(function(s){return '<button class="b '+(S.rs==s[0]?'':'s')+'" onclick="S.rs=\''+s[0]+'\';draw()">'+s[1]+' ('+inP.filter(function(r){return r.st==s[0]}).length+')</button>'}).join("");
   var subsN=S.subs.filter(function(s){return s.n==sel.n&&s.end>Date.now()}).length,list=inP.filter(function(r){return r.st==S.rs&&(!q||r.e.indexOf(q)>-1)});
-  return '<h2>إدارة طلبات الاشتراكات ('+tl+' جديد)</h2><div class="card"><div class="row" style="flex-wrap:wrap">'+tabs+'</div><div class="mu" style="margin:8px 0">المشتركون بباقة '+esc(sel.n)+': '+subsN+'</div><div class="row" style="flex-wrap:wrap">'+sts+'</div><input dir="ltr" placeholder="ابحث بالإيميل" value="'+esc(S.rq)+'" onchange="S.rq=this.value;draw()"></div>'+(list.length?list.map(function(r){var a='';if(r.st=="new")a='<button class="b" onclick="reqSt('+r.id+',\'ok\')">قبول</button><button class="b s" onclick="reqSt('+r.id+',\'no\')">رفض</button>';else if(r.st=="ok")a='<input type="date" id="sd'+r.id+'" value="'+new Date().toISOString().slice(0,10)+'"><button class="b" onclick="actv('+r.id+')">تأكيد الدفع وتفعيل</button>';else if(r.st=="act")a='<button class="b s" onclick="extR('+r.id+')">تمديد</button><button class="b s" onclick="stopR('+r.id+')">إيقاف</button>';var sb=S.subs.filter(function(s){return s.e==r.e})[0];return '<div class="card"><b dir="ltr">'+esc(r.e)+'</b><div class="mu">'+esc(r.n)+' · '+Number(r.p).toLocaleString("ar-IQ")+' د.ع · طُلب '+fd(r.d)+'</div>'+(r.st=="act"&&sb?'<div class="mu">من '+fd(sb.s||r.d)+' إلى '+fd(sb.end)+'</div>':'')+'<div class="row" style="flex-wrap:wrap;margin-top:6px">'+a+'</div></div>'}).join(""):'<div class="card mu">لا توجد طلبات هنا</div>');
+  return '<h2>إدارة طلبات الاشتراكات ('+tl+' جديد)</h2><div class="card"><div class="row" style="flex-wrap:wrap">'+tabs+'</div><div class="mu" style="margin:8px 0">المشتركون بباقة '+esc(sel.n)+': '+subsN+'</div><div class="row" style="flex-wrap:wrap">'+sts+'</div><input dir="ltr" placeholder="ابحث بالإيميل" value="'+esc(S.rq)+'" onchange="S.rq=this.value;draw()"></div>'+(list.length?list.map(function(r){var a='';if(r.st=="new")a='<button class="b" onclick="actv('+r.id+')">✅ قبول وتفعيل فوراً</button><button class="b s" onclick="reqSt('+r.id+',\'no\')">رفض</button>';else if(r.st=="ok")a='<input type="date" id="sd'+r.id+'" value="'+new Date().toISOString().slice(0,10)+'"><button class="b" onclick="actv('+r.id+')">تأكيد الدفع وتفعيل</button>';else if(r.st=="act")a='<button class="b s" onclick="extR('+r.id+')">تمديد</button><button class="b s" onclick="stopR('+r.id+')">إيقاف</button>';var sb=S.subs.filter(function(s){return s.e==r.e})[0];return '<div class="card"><b dir="ltr">'+esc(r.e)+'</b><div class="mu">'+esc(r.n)+' · '+Number(r.p).toLocaleString("ar-IQ")+' د.ع · طُلب '+fd(r.d)+'</div>'+(r.st=="act"&&sb?'<div class="mu">من '+fd(sb.s||r.d)+' إلى '+fd(sb.end)+'</div>':'')+'<div class="row" style="flex-wrap:wrap;margin-top:6px">'+a+'</div></div>'}).join(""):'<div class="card mu">لا توجد طلبات هنا</div>');
 }
 function plansV(){
   return '<h2>الباقات</h2>'+S.plans.map(function(x,i){return '<div class="card"><label>اسم الباقة</label><input value="'+esc(x.n)+'" onchange="S.plans['+i+'].n=this.value;draw()"><div class="grid"><div><label>السعر (د.ع)</label><input type="number" value="'+x.p+'" onchange="S.plans['+i+'].p=this.value"></div><div><label>المدة</label><div class="row"><input type="number" min="1" value="'+x.v+'" onchange="S.plans['+i+'].v=+this.value||1;draw()"><select onchange="S.plans['+i+'].u=this.value;draw()">'+["يوم","أسبوع","شهر"].map(function(u){return '<option'+(u==x.u?' selected':'')+'>'+u+'</option>'}).join("")+'</select></div></div></div><label>المميزات (تظهر للمستخدم)</label><textarea rows="2" onchange="S.plans['+i+'].f=this.value">'+esc(x.f||"")+'</textarea>'+audChipsH(x,i)+'<div class="row"><span class="grow">إظهار الباقة للمستخدمين</span><button class="tog'+(x.hide?'':' on')+'" onclick="S.plans['+i+'].hide=!S.plans['+i+'].hide;draw()"></button></div><button class="b d" style="margin-top:8px" onclick="S.plans.splice('+i+',1);draw()">حذف الباقة</button></div>'}).join("")+'<button class="b" onclick="S.plans.push({n:\'باقة جديدة\',p:0,v:1,u:\'شهر\',a:[\'pro\',\'stu\']});draw()">+ إضافة باقة</button><button class="b" style="width:100%;margin-top:8px" onclick="savePlans()">💾 حفظ الباقات ونشرها</button><h2>المشتركون الفعالون</h2>'+S.subs.map(function(s){var on=s.end>Date.now();return '<div class="card row"><span class="grow" dir="ltr">'+esc(s.e)+'<div class="mu" dir="rtl">'+esc(s.n)+' ['+(s.a&&s.a.length?s.a:["pro","stu"]).map(function(k){return AUDN(k)}).join(" + ")+'] · '+(on?'ينتهي ':'منتهي ')+fd(s.end)+'</div></span></div>'}).join("")+'<div class="card" style="border-inline-start:4px solid #8b5cf6"><b>⚙️ إعدادات التطبيق العامة (للمالك)</b><label style="margin-top:8px">عدد المحاولات التجريبية المجانية (لكل مستخدم جديد)</label><input type="number" value="'+S.free+'" onchange="if(window.fbSaveAppConfig) window.fbSaveAppConfig({freeLimit: Number(this.value)})"><div class="mu">يتم تطبيق هذا التغيير فوراً على جميع مستخدمي التطبيق عبر السحابة. (إذا وضعت 0 فلن يتمكن أحد من تجربة التطبيق مجاناً).</div></div>'+payCfgH();
 }
-function changeCode(){ask("اكتب الرمز الحالي",function(o){if(o!==S.code){toast("الرمز الحالي غير صحيح");return}ask("اكتب الرمز الجديد (4 خانات أو أكثر، حروف وأرقام)",function(n){if(n.length<4){toast("الرمز قصير");return}S.code=n;try{localStorage.setItem("misbar_ocode",n)}catch(e){}toast("تم تغيير الرمز وحُفظ على هذا الجهاز")},2)},2)}
+function changeCode(){ask("اكتب الرمز الحالي",async function(o){if(!(await ownCheck(o))){toast("الرمز الحالي غير صحيح");return}ask("اكتب الرمز الجديد (4 خانات أو أكثر، حروف وأرقام)",function(n){if(n.length<4){toast("الرمز قصير");return}ownSetCode(n).then(function(){toast("✅ تم تغيير الرمز، ويثبت على كل أجهزتك")})},2)},2)}
 
 /* ===== إعداد سيرفر الاتصال TURN (يظهر للمالك فقط) ===== */
 function turnCardV(){
@@ -7279,10 +7293,10 @@ function leavePortal(){S.sysRole=null;S.loginRole=null;S.role=null;try{localStor
 function portalLoginV(p){
   $("app").className="";
   var n={pro:"الأستاذ",stu:"الطالب",parent:"أولياء الأمور",admin:"المدير / رئيس القسم"}[p]||"";
-  $("app").innerHTML='<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">بوابة '+n+'</p></div><main>'+
+  $("app").innerHTML='<div class="lgfull"><div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">بوابة '+n+'</p></div><main>'+
     (inAppBrowser()?'<div class="card" style="border-inline-start:4px solid #f59e0b;line-height:1.8"><b>⚠️ افتح الرابط في المتصفح</b><br>Google لا يسمح بتسجيل الدخول من داخل تلغرام أو واتساب أو إنستغرام. انسخ الرابط وافتحه في Chrome أو Safari.<button class="b s" style="width:100%;margin-top:8px" onclick="copyAppLink()">📋 نسخ رابط التطبيق</button></div>':'')+
-    '<div class="card"><div class="mu" style="line-height:1.8;margin-bottom:10px">'+((p==="pro"||p==="stu")?'سجّل الدخول بحساب <b>Gmail</b> (…@gmail.com). ستُحفظ ملفاتك في <b>Google Drive الخاص بك</b>، وسيطلب منك Google السماح بذلك مرة واحدة فقط. حسابات الجامعة غير مدعومة حالياً.':'سجّل الدخول بحساب Google الخاص ببوابة <b>'+n+'</b>. تقدر تستعمل حساباً مختلفاً لكل بوابة على نفس الجهاز.')+'</div><button class="b" style="width:100%;min-height:50px;font-size:15px" onclick="fbLogin()">🔐 تسجيل الدخول بحساب Google</button></div>'+
-    '<button class="b s" style="width:100%;margin-top:10px" onclick="leavePortal()">↩ رجوع لاختيار البوابة</button></main>';
+    '<div class="card"><div class="mu" style="line-height:1.8;margin-bottom:10px">'+((p==="pro"||p==="stu")?'سجّل الدخول بحساب <b>Gmail</b> (…@gmail.com). ستُحفظ ملفاتك في <b>Google Drive الخاص بك</b>، وسيطلب منك Google السماح بذلك مرة واحدة فقط. حسابات الجامعة غير مدعومة حالياً.':'سجّل الدخول بحساب Google الخاص ببوابة <b>'+n+'</b>. تقدر تستعمل حساباً مختلفاً لكل بوابة على نفس الجهاز.')+'</div><button class="b" style="width:100%;min-height:64px;font-size:18px" onclick="fbLogin()">🔐 تسجيل الدخول بحساب Google</button></div>'+
+    '<button class="b s" style="width:100%;margin-top:10px" onclick="leavePortal()">↩ رجوع لاختيار البوابة</button></main></div>';
 }
 function gmailOk(e){return /@(gmail|googlemail)\.com$/i.test(String(e||"").trim())}
 var PORTAL_APP={pro:"pro_stu",stu:"pro_stu",parent:"parent",admin:"admin"};
@@ -7707,6 +7721,8 @@ window.fbConnectDrive=function(cb){
   });
 };
 
+window.fbOwnerCodeGet=function(){return getDoc(doc(db,"owner_private","code")).then(function(x){return x.exists()?x.data():null})};
+window.fbOwnerCodeSet=function(h){return setDoc(doc(db,"owner_private","code"),{h:h,at:Date.now()})};
 window.fbLogout=function(){
   try{ if(RTC && RTC.callId) endCall(); }catch(e){}
   unsubs.forEach(function(f){try{f()}catch(e){}});unsubs=[];
@@ -8011,7 +8027,7 @@ window.sendReq=function(){
 window.reqSt=function(id,st){updateDoc(doc(db,"requests",String(id)),{st:st}).catch(fail)};
 function subOf(id){return S.subs.filter(function(s){return (s.id||s.uid)==id})[0]}
 window.actv=function(id){
-  var r=gr(id),v=$("sd"+id).value,now=Date.now(),cur=subOf(subDocId(r)),st=v?new Date(v+"T00:00:00").getTime():now;
+  var r=gr(id),el=$("sd"+id),v=el?el.value:"",now=Date.now(),cur=subOf(subDocId(r)),st=v?new Date(v+"T00:00:00").getTime():now;
   if(cur&&cur.end>now)st=cur.end;
   setDoc(doc(db,"subscriptions",subDocId(r)),{uid:r.uid,a:r.a||["pro","stu"],e:r.e,n:r.n,s:cur&&cur.end>now?cur.s:st,end:st+dd(r)*864e5})
     .then(function(){return updateDoc(doc(db,"requests",String(id)),{st:"act"})}).catch(fail);
