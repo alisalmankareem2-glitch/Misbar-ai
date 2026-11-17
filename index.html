@@ -266,7 +266,7 @@ window.misbarHardReset=function(){
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.67.0";
+var APP_VERSION = "2.68.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -1009,7 +1009,33 @@ function tab(i){
 }
 function hat(){
   S.taps++;clearTimeout(S._t);S._t=setTimeout(function(){S.taps=0},2000);
-  if(S.taps>=5){S.taps=0;ask("أدخل رمز المالك",function(c){if(c===S.code)setRole("own");else toast("الرمز غير صحيح")},2)}
+  if(S.taps>=5){S.taps=0;ownEnter()}
+}
+/* دخول المالك: ١) تسجيل دخول Google ٢) التحقق أن البريد هو بريد المالك ٣) رمز المالك */
+function ownEnter(){
+  if(!S.uid){
+    S.ownWait=1;toast("🔐 سجّل الدخول ببريد المالك أولاً");
+    if(window.fbLogin)window.fbLogin();return;
+  }
+  if(!S.isOwner){
+    confirmModal("هذا الحساب ("+S.email+") ليس حساب المالك. تريد تبدّل الحساب وتدخل ببريد المالك؟",function(){
+      if(window.fbLogout)window.fbLogout();
+      S.ownWait=1;setTimeout(function(){if(window.fbLogin)window.fbLogin()},700);
+    });
+    return;
+  }
+  ask("أدخل رمز المالك (إذا نسيته اكتب: نسيت)",function(c){
+    if(c===S.code){setRole("own");return}
+    if(c==="نسيت"){
+      ask("اكتب رمز المالك الجديد (4 خانات أو أكثر)",function(n){
+        if(n.length<4){toast("الرمز قصير");return}
+        S.code=n;try{localStorage.setItem("misbar_ocode",n)}catch(e){}
+        toast("✅ تم تعيين رمز جديد. ادخل به الحين");
+      },2);
+      return;
+    }
+    toast("الرمز غير صحيح");
+  },2);
 }
 function head(t){
   var me = findUserByEmail(S.email);
@@ -7716,6 +7742,7 @@ function onAuth(u){
   }
   S.uid=u.uid;S.email=(u.email||"").toLowerCase();S.dispName=u.displayName||"";
   S.isOwner=S.email==OWNER.toLowerCase()&&u.emailVerified;
+  if(S.ownWait){S.ownWait=0;setTimeout(function(){try{ownEnter()}catch(e){}},400)}
 
   loadUserDeviceData();
   restoreAppStateFromSession();
