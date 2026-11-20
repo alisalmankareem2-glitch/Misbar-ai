@@ -270,7 +270,7 @@ window.misbarHardReset=function(){
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.69.0";
+var APP_VERSION = "2.70.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -6656,12 +6656,29 @@ function hwTeacherH(my){
 }
 function hwPublish(){
   var kp=keyParts(),f=S.hwF,t=S.myT;if(!kp||!f||!t)return;
+  if(S.busy){toast("جاري النشر، انتظر...");return}
   var gs=(S.instGroups||[]).filter(function(g){return f.gids[g.id]&&(t.groups||[]).indexOf(g.id)>-1});
   if(!String(f.title||"").trim()){toast("اكتب عنوان الواجب");return}
   if(!gs.length){toast("اختر الفئة المستهدفة");return}
-  window.fbAddHomework(kp.id,{inst:kp.id,title:f.title.trim(),details:(f.details||"").trim(),due:f.due||"",gids:gs.map(function(g){return g.id}),gnames:gs.map(function(g){return g.name}),subject:t.subject||getTSubj()||"",teacher:t.name||S.dispName||"",tuid:S.uid,tEmail:S.email,at:Date.now()})
-    .then(function(){S.hwF={title:"",details:"",due:"",gids:{}};toast("✅ تم نشر الواجب للطلاب وأولياء الأمور");draw()})
-    .catch(function(e){toast("تعذر النشر: "+((e&&e.code)||e))});
+  if(!f.due){toast("حدد تاريخ التسليم");return}
+  S.busy=true;draw();
+  var hwObj={inst:kp.id,title:f.title.trim(),details:(f.details||"").trim(),due:f.due||"",gids:gs.map(function(g){return g.id}),gnames:gs.map(function(g){return g.name}),subject:t.subject||getTSubj()||"",teacher:t.name||S.dispName||"",tuid:S.uid,tEmail:S.email,at:Date.now()};
+  window.fbAddHomework(kp.id,hwObj)
+    .then(function(){
+      /* إشعار تلقائي لأولياء الأمور بالواجب الجديد عبر parent_cards */
+      if(window.fbPutCardItem){
+        var ro=S.instRoster||[];
+        var targets=ro.filter(function(x){return gs.some(function(g){return window.gSame?gSame(x.g,g.name):(x.g&&x.g===g.name)})});
+        targets.forEach(function(x,i){
+          if(!x.p)return;
+          window.fbPutCardItem(x.p,{student:x.n,teacher:hwObj.teacher,teacherEmail:S.email,type:"note",subject:hwObj.subject,inst:kp.id,tuid:S.uid,note:"📚 واجب جديد: «"+hwObj.title+"»"+(hwObj.due?" · التسليم: "+hwObj.due:"")+(hwObj.details?" — "+hwObj.details.slice(0,120):""),at:hwObj.at+i},200+i).catch(function(){});
+        });
+      }
+      S.hwF={title:"",details:"",due:"",gids:{}};S.busy=false;
+      toast("✅ تم نشر الواجب للطلاب وأولياء الأمور"+(window.fbPutCardItem?" ("+gs.map(function(g){return g.name}).join("، ")+")":""));
+      draw();
+    })
+    .catch(function(e){S.busy=false;draw();toast("تعذر النشر: "+((e&&e.code)||e))});
 }
 function hwDel(id){var kp=keyParts();if(!kp)return;confirmModal("حذف هذا الواجب؟",function(){window.fbDelHomework(kp.id,id).catch(function(e){toast("تعذر: "+((e&&e.code)||e))})})}
 
@@ -6789,10 +6806,15 @@ function sendParentInApp(){
   if(!name){toast("اكتب اسم الطالب");return}
   if(!requireKey())return;
   if(!window.fbPutCardItem){toast("قاعدة البيانات غير جاهزة");return}
+  if(S.busy){toast("جاري الإرسال، انتظر...");return}
   var code=stuCode(name);
-  window.fbPutCardItem(code,{student:name,teacher:S.dispName||"الأستاذ",teacherEmail:S.email,inst:keyParts().id,tuid:S.uid,subject:getTSubj(),type:type,note:note||(type==="absent"?"غاب الطالب اليوم":""),at:Date.now()},0)
-    .then(function(){toast("✅ وصل التبليغ داخل التطبيق · كود الطالب: "+code)})
-    .catch(function(e){toast("تعذر الإرسال: "+(e&&e.message||e))});
+  if(!code){toast("⚠️ ما كو كود لهذا الطالب — تأكد من ربط المؤسسة وأن الاسم مطابق للسجل");return}
+  var now=Date.now(),d=new Date(now).toLocaleDateString("ar-IQ");
+  var autoNote=type==="absent"?"غاب الطالب بتاريخ "+d:type==="grade"?"ملاحظة على الدرجة":"تبليغ من الأستاذ";
+  S.busy=true;draw();
+  window.fbPutCardItem(code,{student:name,teacher:S.dispName||"الأستاذ",teacherEmail:S.email,inst:keyParts().id,tuid:S.uid,subject:getTSubj(),type:type,note:note||autoNote,at:now},0)
+    .then(function(){S.busy=false;draw();toast("✅ وصل التبليغ لولي الأمر · كود الطالب: "+code)})
+    .catch(function(e){S.busy=false;draw();toast("تعذر الإرسال: "+(e&&e.message||e))});
 }
 
 function normNm(s){ return String(s||"").replace(/[\u064B-\u0652\u0640]/g,"").replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/\s+/g," ").trim(); }
@@ -6802,40 +6824,52 @@ function rosterList(){
 }
 function presentSet(){
   var s = {};
-  (S.gr || []).forEach(function(g){ s[normNm(String(g[0]).replace(/ \(معدل.*\)/g,""))] = 1; });
+  /* الحضور يعتمد على الامتحان المباشر المفتوح حالياً فقط، لا على درجات قديمة في الدفتر. */
   Object.keys(S.liveQuizAnswers || {}).forEach(function(k){ var a = S.liveQuizAnswers[k]; if(a && a.name) s[normNm(a.name)] = 1; });
   return s;
+}
+function absenceSessionKey(){
+  var d=new Date(),day=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  return "misbar_abs_sent_"+(S.uid||"anon")+"_"+(keyParts()?keyParts().id:"local")+"_"+day;
 }
 function absentList(){ var p = presentSet(); return rosterList().filter(function(n){ return !p[normNm(n)]; }); }
 function saveRoster(v){ S.rosterTxt = v; S.absSkip = {}; try{ localStorage.setItem("misbar_roster_" + (S.uid||"anon"), v); }catch(e){} }
 function absenceCardV(){
   var ro = rosterList(), ab = absentList(); S.absSkip = S.absSkip || {};
+  var sent={};try{sent=JSON.parse(localStorage.getItem(absenceSessionKey())||"{}")}catch(e){}
   return '<div class="card" style="border-inline-start:4px solid #dc2626">' +
     '<h2>🚫 الغياب المؤتمت</h2>' +
-    '<div class="mu" style="line-height:1.7">ألصق أسماء كل طلاب الصف مرة وحدة (اسم بكل سطر). الحاضر = من عنده درجة بالدفتر أو دخل الامتحان المباشر، والباقي يُحسب غائب.</div>' +
+    '<div class="mu" style="line-height:1.7">ألصق أسماء طلاب الصف (اسم بكل سطر). الحاضر هو من دخل الامتحان المباشر الحالي فقط؛ لا تُستخدم درجات الأيام السابقة لتحديد الحضور.</div>' +
     '<textarea rows="5" placeholder="أسماء كل الطلاب، اسم بكل سطر" onchange="saveRoster(this.value);draw()">' + esc(S.rosterTxt || "") + '</textarea>' +
     '<input id="absSubj" placeholder="المادة / الامتحان (اختياري)" value="' + esc(S.absSubjVal || "") + '" oninput="S.absSubjVal=this.value">' +
     (ro.length ? '<div class="mu" style="margin:4px 0">👥 ' + ro.length + ' طالب · ✅ حاضر ' + (ro.length - ab.length) + ' · 🚫 غائب <b>' + ab.length + '</b></div>' : '') +
     (ab.length ? '<div style="max-height:180px;overflow-y:auto;background:var(--bg);border-radius:10px;padding:6px 8px;margin-bottom:8px">' +
-      ab.map(function(n, i){ return '<label class="row" style="margin:0;padding:3px 0;color:var(--tx);cursor:pointer"><input type="checkbox" style="width:auto;margin:0" ' + (S.absSkip[i] ? '' : 'checked') + ' onchange="S.absSkip[' + i + ']=!this.checked"><span class="grow">' + esc(n) + '</span><span class="badge" dir="ltr">' + esc(stuCode(n) || "—") + '</span></label>'; }).join("") + '</div>' +
-      '<div class="mu" style="font-size:11px;margin-bottom:6px">شيل العلامة عن أي طالب لا تريد تبلغ عنه (مثلاً عنده عذر).</div>' +
+      ab.map(function(n, i){ var alreadySent=!!sent[normNm(n)]; return '<label class="row" style="margin:0;padding:3px 0;color:var(--tx);cursor:pointer'+(alreadySent?';opacity:.5':'')+'"><input type="checkbox" style="width:auto;margin:0" ' + (S.absSkip[i]||alreadySent ? '' : 'checked') + ' '+(alreadySent?'disabled':'')+' onchange="S.absSkip[' + i + ']=!this.checked"><span class="grow">' + esc(n) + (alreadySent?' <span class="badge" style="background:#dcfce7;color:#15803d">تم التبليغ</span>':'') + '</span><span class="badge" dir="ltr">' + esc(stuCode(n) || "—") + '</span></label>'; }).join("") + '</div>' +
+      '<div class="mu" style="font-size:11px;margin-bottom:6px">شيل العلامة عن أي طالب لا تريد تبلغ عنه (مثلاً عنده عذر). الطلاب الذين بُلِّغ عنهم اليوم مشار إليهم ولا يمكن تكرار تبليغهم.</div>' +
       '<button class="b" style="width:100%;background:#dc2626" ' + (S.busy ? 'disabled' : '') + ' onclick="sendAbsence()">📤 تبليغ الغياب تلقائياً للأهالي والإدارة</button>' : '') +
   '</div>';
 }
 function sendAbsence(){
-  var list = absentList().filter(function(n, i){ return !S.absSkip[i]; });
-  if(!list.length){ toast("ما كو غياب للإرسال"); return; }
+  var sent={};try{sent=JSON.parse(localStorage.getItem(absenceSessionKey())||"{}")}catch(e){}
+  var list = absentList().filter(function(n, i){ return !S.absSkip[i] && !sent[normNm(n)]; });
+  if(!list.length){ toast("ما كو غياب جديد للإرسال (الكل بُلِّغ عنهم اليوم أو مشيلة علاماتهم)"); return; }
   if(!requireKey()) return;
   if(!window.fbPutCardItem || !window.fbSendReport){ toast("قاعدة البيانات غير جاهزة"); return; }
   var tName = S.dispName || S.email, now = Date.now(), d = new Date(now).toLocaleDateString("ar-IQ");
   var subj = ($("absSubj") ? $("absSubj").value.trim() : "") || S.absSubjVal || "";
   S.busy = true; draw();
   Promise.all(list.map(function(n, i){
-    return window.fbPutCardItem(stuCode(n), { student: n, teacher: tName, teacherEmail: S.email, type: "absent", subject: subj, inst: keyParts().id, tuid: S.uid, note: "غاب الطالب عن الامتحان" + (subj ? " (" + subj + ")" : "") + " بتاريخ " + d, at: now + i }, i + 1);
+    var code = stuCode(n);
+    if(!code){ return Promise.resolve(); }
+    return window.fbPutCardItem(code, { student: n, teacher: tName, teacherEmail: S.email, type: "absent", subject: subj, inst: keyParts().id, tuid: S.uid, note: "غاب الطالب" + (subj ? " عن " + subj : "") + " بتاريخ " + d, at: now + i }, i + 1);
   })).then(function(){
     return window.fbSendReport(keyParts().id, { teacher: tName, email: S.email, at: now, kind: "absence", subject: subj, grades: [], absent: list.map(function(n){ return [n, stuCode(n)]; }), rosterCount: rosterList().length });
-  }).then(function(){ S.busy = false; draw(); toast("✅ تم تبليغ غياب " + list.length + " طالب للأهالي والإدارة"); })
-    .catch(function(e){ S.busy = false; draw(); toast("تعذر الإرسال: " + (e && e.message || e)); });
+  }).then(function(){
+    /* حفظ الطلاب المبلَّغ عنهم لمنع التكرار في نفس اليوم */
+    list.forEach(function(n){ sent[normNm(n)] = now; });
+    try{ localStorage.setItem(absenceSessionKey(), JSON.stringify(sent)); }catch(e){}
+    S.busy = false; draw(); toast("✅ تم تبليغ غياب " + list.length + " طالب للأهالي والإدارة");
+  }).catch(function(e){ S.busy = false; draw(); toast("تعذر الإرسال: " + (e && e.message || e)); });
 }
 function adminAbsCardH(r){
   var csv = encodeURIComponent("\ufeffاسم الطالب,كود ولي الأمر\n" + (r.absent || []).map(function(a){ return '"' + a[0] + '","' + a[1] + '"'; }).join("\n"));
@@ -6851,16 +6885,38 @@ function sendGradesToAdmin(){
   if(!S.gr||!S.gr.length){toast("الدفتر فارغ");return}
   if(!requireKey())return;
   if(!window.fbSendReport||!window.fbPutCardItem){toast("قاعدة البيانات غير جاهزة");return}
-  var tName=S.dispName||S.email,now=Date.now();S.busy=true;draw();
-  Promise.all(S.gr.map(function(g,i){var nm=String(g[0]).replace(/ \(معدل.*\)/g,"").trim();return window.fbPutCardItem(stuCode(nm),{student:nm,teacher:tName,teacherEmail:S.email,type:"grade",subject:getTSubj(),inst:keyParts().id,tuid:S.uid,score:g[1],note:"الدرجة: "+g[1],at:now+i},i+1)}))
-   .then(function(){return window.fbSendReport(keyParts().id,{teacher:tName,email:S.email,at:now,grades:S.gr})})
-   .then(function(){S.busy=false;draw();toast("📤 وصلت الدرجات للإدارة ولكل ولي أمر بكود ابنه")})
-   .catch(function(e){S.busy=false;draw();toast("خطأ: "+(e&&e.message||e))});
+  if(S.busy){toast("جاري الإرسال، انتظر...");return}
+  var tName=S.dispName||S.email,now=Date.now(),subj=getTSubj();
+  /* تحقق من وجود أكواد قبل الإرسال */
+  var missing=S.gr.filter(function(g){return !stuCode(String(g[0]).replace(/ \(معدل.*\)/g,"").trim())});
+  if(missing.length){toast("⚠️ "+missing.length+" طالب بدون كود — تأكد من ربط المؤسسة أولاً");return}
+  S.busy=true;draw();
+  Promise.all(S.gr.map(function(g,i){
+    var nm=String(g[0]).replace(/ \(معدل.*\)/g,"").trim();
+    var score=Number(g[1])||0;
+    var lowNote=score<50?" ⚠️ درجة منخفضة":"";
+    return window.fbPutCardItem(stuCode(nm),{student:nm,teacher:tName,teacherEmail:S.email,type:"grade",subject:subj,inst:keyParts().id,tuid:S.uid,score:score,note:"الدرجة: "+score+lowNote,at:now+i},i+1);
+  }))
+  .then(function(){
+    /* تنبيه تلقائي لأولياء أمور الطلاب بدرجات منخفضة (أقل من 50) */
+    var lowStudents=S.gr.filter(function(g){return Number(g[1]||0)<50});
+    if(lowStudents.length&&window.fbPutCardItem){
+      lowStudents.forEach(function(g,i){
+        var nm=String(g[0]).replace(/ \(معدل.*\)/g,"").trim();
+        var code=stuCode(nm);if(!code)return;
+        window.fbPutCardItem(code,{student:nm,teacher:tName,teacherEmail:S.email,type:"note",subject:subj,inst:keyParts().id,tuid:S.uid,note:"🔔 تنبيه: درجة الطالب في "+subj+" ("+g[1]+") أقل من 50. يرجى المتابعة.",at:now+1000+i},100+i).catch(function(){});
+      });
+    }
+    return window.fbSendReport(keyParts().id,{teacher:tName,email:S.email,at:now,grades:S.gr,subject:subj});
+  })
+  .then(function(){S.busy=false;draw();toast("📤 وصلت الدرجات للإدارة ولكل ولي أمر"+(S.gr.filter(function(g){return Number(g[1]||0)<50}).length?" · 🔔 أُرسلت تنبيهات للدرجات المنخفضة":""))})
+  .catch(function(e){S.busy=false;draw();toast("خطأ: "+(e&&e.message||e))});
 }
 
 /* ===== v2.55: سجل الطلاب الرسمي (OCR) + أكواد + أتمتة الأساتذة والأهالي والكلاسات والامتحانات ===== */
 function stdCode(name,pre){var kp=keyParts();if(!kp)return "";var s=kp.sec+"|std|"+normNm(name),a=cyr(s,11),b=cyr(s,19),n=[a[0],a[1],b[0],b[1]],o="";for(var i=0;i<8;i++)o+=B32[((n[i%4]>>>(Math.floor(i/4)*8))&255)%31];return (pre||"STD")+"-"+o.slice(0,4)+"-"+o.slice(4,8)}
 function rosterDocId(){var kp=keyParts();if(!kp)return "x";var a=cyr(kp.sec+"|roster",5),b=cyr(kp.sec+"|roster",9);return kp.id+"_"+a[0].toString(36)+a[1].toString(36)+b[0].toString(36)+b[1].toString(36)}
+window.rosterDocId = rosterDocId;
 function waNum(v){var d=String(v||"").replace(/\D/g,"");if(d.length<7)return "";d=d.replace(/^00/,"");if(d.indexOf("964")===0)return d;return "964"+d.replace(/^0+/,"")}
 function sendCodeWA(c){var x=(S.rsPub||[]).filter(function(y){return y.c===c})[0],ph=(S.rsPh||{})[c],ins=(S.myInsts||[]).filter(function(i){return i.id===S.curInstId})[0];if(!x||!ph)return;
   var m="السلام عليكم ورحمة الله،\nتم تسجيل الطالب/ة *"+x.n+"* رسمياً في «"+(ins?ins.name:"المؤسسة")+"».\n🔑 كود متابعة ولي الأمر: *"+x.p+"*\nأدخله في بوابة أولياء الأمور بتطبيق مسبار AI لمتابعة الدرجات والغيابات:\n"+location.origin+location.pathname;
@@ -7129,12 +7185,40 @@ function stuV(){
   }).join(""):'<div class="card mu">لم تنضم لأي كلاس بعد.</div>');
 }
 function joinCls(){
-  var v=$("jc").value.trim().toUpperCase();
+  var v=($("jc")?$("jc").value:"").trim().toUpperCase();
   if(!v){toast("اكتب رمز الكلاس");return}
+  /* أولاً: ابحث في الكلاسات المحلية */
   if(S.classes.some(function(c){return c.c==v})){
     if(S.joined.indexOf(v)<0){S.joined.push(v);saveAllUserStorage()}
-    toast("تم الانضمام للكلاس بنجاح");draw();
-  }else toast("رمز الكلاس غير موجود");
+    toast("✅ تم الانضمام للكلاس بنجاح");draw();return;
+  }
+  /* ثانياً: ابحث في الكلاسات السحابية عبر Firestore */
+  if(window.fbWatchMyClasses&&S.stuLink){
+    toast("⏳ جاري البحث عن الكلاس...");
+    return; /* الكلاسات السحابية تُجلب تلقائياً عبر stuIdentH وfbWatchMyClasses */
+  }
+  /* ثالثاً: حاول جلب الكلاس من السحابة بكوده مباشرة (fbPubClass يحفظه بكود الكلاس كـ document id) */
+  if(window.fbGetDoc&&window.fbGetDocRef){
+    toast("⏳ جاري البحث عن الكلاس...");
+    window.fbGetDoc(window.fbGetDocRef("classes_pub", v))
+      .then(function(snap){
+        if(snap&&snap.exists&&snap.exists()){
+          var d=snap.data();d.c=v;
+          if(!S.classes.some(function(c){return c.c===v})){S.classes.push(d);}
+          if(S.joined.indexOf(v)<0){S.joined.push(v);}
+          saveAllUserStorage();
+          toast("✅ تم الانضمام للكلاس «"+(d.n||v)+"»");
+          draw();
+        } else {
+          toast("رمز الكلاس غير موجود — تأكد من الرمز مع الأستاذ");
+        }
+      }).catch(function(e){
+        console.warn("joinCls cloud lookup failed",e&&e.code);
+        toast("رمز الكلاس غير موجود — تأكد من الرمز مع الأستاذ");
+      });
+    return;
+  }
+  toast("رمز الكلاس غير موجود — تأكد من الرمز مع الأستاذ");
 }
 
 async function matAsk(src){
