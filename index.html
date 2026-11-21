@@ -282,7 +282,7 @@ window.misbarHardReset=function(){
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.82.0";
+var APP_VERSION = "2.81.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -1571,40 +1571,12 @@ function blkDivisionH(b){
   return html;
 }
 function blkTextBoxH(b){
-  var pos=b.pos||"under";
-  var st='position:relative;min-width:'+(b.w||160)+'px;min-height:'+(b.h||44)+'px;'
+  var st='position:relative;display:inline-block;min-width:'+(b.w||160)+'px;min-height:'+(b.h||44)+'px;'
+    +'left:'+(b.x||0)+'px;top:'+(b.y||0)+'px;'
     +'color:'+(b.color||"#000")+';background:'+(b.bg||"transparent")+';'
     +'text-align:'+(b.align||"center")+';border:1px dashed #999;padding:6px;';
-  if(pos==="right")st+='float:right;margin-left:10px;clear:both;';
-  else if(pos==="left")st+='float:left;margin-right:10px;clear:both;';
-  else if(pos==="center")st+='display:block;margin:8px auto;';
-  else st+='display:block;margin:8px 0;'; // under - تحت الكتابة
   return '<div class="blk-textbox" style="'+st+'">'+esc(b.t||"")+'</div>';
 }
-// Initialize text box resize and drag functionality
-window.addEventListener("DOMContentLoaded",function(){
-  var textboxes=document.querySelectorAll(".blk-textbox");
-  textboxes.forEach(function(t){
-    // Add resize handles
-    var cSize=8;
-    t.innerHTML+='<div class="tb-handle tb-ts" style="width:'+cSize+'px;height:'+cSize+'px;top:0;left:0" title="تكبير من الأعلى اليسرى"></div>';
-    t.innerHTML+='<div class="tb-handle tb-te" style="width:'+cSize+'px;height:'+cSize+'px;top:0;right:0" title="تكبير من الأعلى اليمنى"></div>';
-    t.innerHTML+='<div class="tb-handle tb-bs" style="width:'+cSize+'px;height:'+cSize+'px;bottom:0;left:0" title="تكبير من الأسفل اليسرى"></div>';
-    t.innerHTML+='<div class="tb-handle tb-be" style="width:'+cSize+'px;height:'+cSize+'px;bottom:0;right:0" title="تكبير من الأسفل اليمنى"></div>';
-    t.innerHTML+='<div class="tb-handle tb-t" style="height:'+cSize+'px;top:0;left:'+cSize+'px;right:'+cSize+'px" title="تكبير من الأعلى"></div>';
-    t.innerHTML+='<div class="tb-handle tb-b" style="height:'+cSize+'px;bottom:0;left:'+cSize+'px;right:'+cSize+'px" title="تكبير من الأسفل"></div>';
-    t.innerHTML+='<div class="tb-handle tb-l" style="width:'+cSize+'px;top:'+cSize+'px;bottom:'+cSize+'px;left:0" title="تكبير من اليسار"></div>';
-    t.innerHTML+='<div class="tb-handle tb-r" style="width:'+cSize+'px;top:'+cSize+'px;bottom:'+cSize+'px;right:0" title="تكبير من اليمين"></div>';
-    // Add draggable top bar
-    var dragDiv=document.createElement("div");
-    dragDiv.className="tb-drag";
-    dragDiv.style.cssText="height:24px;line-height:24px;cursor:move;position:absolute;top:0;left:0;width:100%;";
-    dragDiv.title="السحب للتحريك";
-    dragDiv.textContent=textboxes[0]?textboxes[0].querySelector("div").textContent||"مربع نص": "";
-    t.insertBefore(dragDiv,t.firstChild);
-  });
-});
-</script>
 function blkImgH(b){
   return '<div style="margin:8px 0;text-align:center"><img src="'+b.src+'" alt="" style="max-width:85%;max-height:200px;border-radius:4px"></div>';
 }
@@ -1618,7 +1590,7 @@ function addQBlock(i,type){
   var q=S.pp.q[i];
   if(!q.blocks)q.blocks=[];
   if(type==="table")q.blocks.push({type:"table",rows:3,cols:3,cells:[["","",""],["","",""],["","",""]],border:true,style:"grid"});
-  else if(type==="textbox")q.blocks.push({type:"textbox",t:"اكتب هنا",w:180,h:50,x:0,y:0,pos:"under",align:"center",color:"#000",bg:"transparent",isResizing:false,isDragging:false,resizeEdge:"",dragOffset:{x:0,y:0}});
+  else if(type==="textbox")q.blocks.push({type:"textbox",t:"اكتب هنا",w:180,h:50,x:0,y:0,align:"center",color:"#000",bg:"transparent"});
   else if(type==="math")q.blocks.push({type:"math",expr:"x² + 2x − 3 = 0"});
   else if(type==="chem")q.blocks.push({type:"chem",expr:"2H₂ + O₂ ⇌ 2H₂O"});
   else if(type==="img")q.blocks.push({type:"img",src:""});
@@ -1678,12 +1650,7 @@ function qBlockEditorBody(i,bi){
     return '<label>النص</label><textarea rows="2" oninput="setBlkProp('+i+','+bi+',\'t\',this.value)">'+esc(b.t||"")+'</textarea>'+
       '<div class="grid"><div><label>العرض (px)</label><input type="number" value="'+(b.w||180)+'" oninput="setBlkProp('+i+','+bi+',\'w\',this.value)"></div>'+
       '<div><label>الارتفاع (px)</label><input type="number" value="'+(b.h||50)+'" oninput="setBlkProp('+i+','+bi+',\'h\',this.value)"></div></div>'+
-      '<label>موقع المربع</label><select onchange="setBlkProp('+i+','+bi+',\'pos\',this.value)">'+
-        '<option value="under"'+(b.pos==="under"?' selected':'')+'>تحت الكتابة</option>'+
-        '<option value="right"'+(b.pos==="right"?' selected':'')+'>على اليمين</option>'+
-        '<option value="left"'+(b.pos==="left"?' selected':'')+'>على اليسار</option>'+
-        '<option value="center"'+(b.pos==="center"?' selected':'')+'>بالوسط</option></select>'+
-      '<label>المحاذاة الداخلية</label><select onchange="setBlkProp('+i+','+bi+',\'align\',this.value)">'+
+      '<label>المحاذاة</label><select onchange="setBlkProp('+i+','+bi+',\'align\',this.value)">'+
         '<option value="center"'+(b.align==="center"?' selected':'')+'>وسط</option>'+
         '<option value="right"'+(b.align==="right"?' selected':'')+'>يمين</option>'+
         '<option value="left"'+(b.align==="left"?' selected':'')+'>يسار</option></select>'+
@@ -6869,7 +6836,7 @@ function adminPortalV(){
       '<div style="max-height:130px;overflow-y:auto;background:var(--bg);padding:6px 8px;border-radius:8px;margin-bottom:8px;font-size:12px">'+(r.grades||[]).map(function(g){return '<div class="row" style="padding:2px 0;border-bottom:1px dashed var(--ln)"><span class="grow">'+esc(g[0])+'</span><span class="badge" dir="ltr">'+esc(stuCode(g[0]))+'</span><b>'+esc(g[1])+'</b></div>'}).join("")+'</div>'+
       '<a href="data:text/csv;charset=utf-8,'+csv+'" download="كشف_درجات_'+esc(r.teacher)+'.csv" class="b s" style="display:block;text-align:center;text-decoration:none;width:100%;color:#9333ea;background:#f3e8ff;padding:8px">⬇️ تنزيل كشف الدرجات والأكواد (Excel)</a></div>';
   }).join(""):'<div class="card mu" style="text-align:center;padding:20px 0">لا توجد سجلات بعد. تظهر هنا فور إرسال الأساتذة.</div>';
-  return head+keyCard+groupsAdminH(cur)+teachersAdminH(cur)+repliesAdminH()+rosterAdminH(cur)+adminLiveQuizV()+gradebookAdminV()+adminAnalyticsV()+'<input placeholder="🔍 ابحث باسم الطالب أو الأستاذ..." value="'+esc(S.adminSearchQ||"")+'" oninput="S.adminSearchQ=this.value;draw()"><h2>السجلات ('+list.length+')</h2>'+reps+out;
+  return head+keyCard+groupsAdminH(cur)+teachersAdminH(cur)+repliesAdminH()+rosterAdminH(cur)+adminLiveQuizV()+gradebookAdminV()+'<input placeholder="🔍 ابحث باسم الطالب أو الأستاذ..." value="'+esc(S.adminSearchQ||"")+'" oninput="S.adminSearchQ=this.value;draw()"><h2>السجلات ('+list.length+')</h2>'+reps+out;
 }
 
 /* ==================== مراقبة الإدارة للامتحانات المباشرة الجارية ==================== */
@@ -8167,11 +8134,6 @@ function restoreAppStateFromSession(){
 }
 
 function draw(){
-  // Prevent flicker: block re-entrant draw() calls within 150ms
-  if(window._drawLock){return;}
-  window._drawLock=true;
-  setTimeout(function(){window._drawLock=false;},150);
-
   saveAppStateToSession();
 
   // Force reset to show 3 portals on this major architectural update
@@ -8211,8 +8173,7 @@ function draw(){
   }
 
   if(S.sysRole==="pro"&&S.uid){try{if(keyParts()){if(!S._tReg&&window.fbRegTeacher){S._tReg=1;window.fbRegTeacher()}instRosterWatch();instTeacherWatch()}}catch(e){}}
-  if(S.sysRole==="admin"&&keyParts()){if(!S._gbReg&&window.fbWatchAllGrades){S._gbReg=1;window.fbWatchAllGrades(keyParts().id,function(g){S.adminGrades=g;draw()})}
-    if(!S._anReg&&window.fbWatchAnalytics){S._anReg=1;window.fbWatchAnalytics(keyParts().id,function(a){S.analytics=a;draw()})}}
+  if(S.sysRole==="admin"&&keyParts()){if(!S._gbReg&&window.fbWatchAllGrades){S._gbReg=1;window.fbWatchAllGrades(keyParts().id,function(g){S.adminGrades=g;draw()})}}
   if(S.sysRole==="stu"&&S.stuCode){if(!S._sgReg&&window.fbWatchStudentGrades){S._sgReg=1;window.fbWatchStudentGrades(S.stuCode,function(g){S.studentGrades=g;draw()})}}
   var h="",r=S.role;
   
@@ -8284,7 +8245,7 @@ for(var _v of ["13.2.0","12.18.0"]){
   }catch(e){console.warn("firebase "+_v+" failed",e)}
 }
 if(!FB){throw new Error("Firebase SDK failed to load")}
-var {initializeApp,getApps}=FB[0];
+var {initializeApp}=FB[0];
 var {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,reauthenticateWithPopup,onAuthStateChanged,signOut}=FB[1];
 var {getFirestore,initializeFirestore,doc,setDoc,getDoc,updateDoc,deleteDoc,collection,onSnapshot,query,where,runTransaction,arrayUnion}=FB[2];
 
@@ -8300,11 +8261,7 @@ var CFG={
 };
 /* v2.58: لكل بوابة حساب Google مستقل على نفس الجهاز (بوابة الأستاذ/الطالب على التطبيق الأساسي كي لا تضيع جلسات الزبائن الحالية) */
 var PORTALS=["pro_stu","parent","admin"],APPS={},AUTHS={},DBS={};
-PORTALS.forEach(function(p){
-  var existing=getApps().find(function(a){return a.name===p||(p==="pro_stu"&&a.name==="[DEFAULT]")});
-  var a=existing||(p==="pro_stu"?initializeApp(CFG):initializeApp(CFG,p));
-  APPS[p]=a;AUTHS[p]=getAuth(a);DBS[p]=initializeFirestore(a,{experimentalAutoDetectLongPolling:true});
-});
+PORTALS.forEach(function(p){var a=p==="pro_stu"?initializeApp(CFG):initializeApp(CFG,p);APPS[p]=a;AUTHS[p]=getAuth(a);DBS[p]=initializeFirestore(a,{experimentalAutoDetectLongPolling:true})});
 var curPortal="pro_stu",app=APPS.pro_stu,auth=AUTHS.pro_stu,db=DBS.pro_stu,unsubs=[],remotePlans=[];
 var fail=function(e){toast(e&&e.code=="permission-denied"?"لا تملك الصلاحية":"خطأ: "+((e&&e.code)||e))};
 var err=function(e){console.warn(e&&e.code?e.code:e)};
@@ -8443,14 +8400,12 @@ window.fbExportLiveQuiz = function(pin){
   });
 };
 
-var _wc=null,_wr=null,_wi=null,_wa=null,_pg=0; /* _pg: جيل البوابة الحالي — يبطل نتائج المستمعات التابعة لبوابة سابقة */
+var _wc=null,_wr=null,_wi=null,_pg=0; /* _pg: جيل البوابة الحالي — يبطل نتائج المستمعات التابعة لبوابة سابقة */
 window.fbPutCardItem=function(code,item,sfx){return setDoc(doc(collection(db,"parent_cards",code,"items"),Date.now()+"_"+(sfx||0)+"_"+(S.uid||"anon")),item)};
 window.fbSendReport=function(inst,rep){return setDoc(doc(collection(db,"inst",inst,"reports"),Date.now()+"_"+(S.uid||"anon")),rep)};
 window.fbCreateInst=function(id,d){return setDoc(doc(db,"inst",id),d)};
 window.fbWatchMyInsts=function(){var g=_pg;if(_wi)_wi();_wi=onSnapshot(query(collection(db,"inst"),where("adminUid","==",S.uid)),function(s){if(g!==_pg)return;var a=[];s.forEach(function(d){var x=d.data();x.id=d.id;a.push(x)});S.myInsts=a;if(S.sysRole==="admin")draw()},function(e){if(g!==_pg||S.sysRole!=="admin")return;toast("تعذر قراءة المؤسسات: "+e.message)})};
 window.fbWatchInstReports=function(id){var g=_pg;if(_wr)_wr();_wr=onSnapshot(collection(db,"inst",id,"reports"),function(s){if(g!==_pg)return;var r=[];s.forEach(function(d){r.push(d.data())});S.adminReports=r.sort(function(a,b){return (b.at||0)-(a.at||0)});if(S.sysRole==="admin")draw()},function(e){if(g!==_pg||S.sysRole!=="admin")return;toast("تعذر قراءة التقارير: "+e.message)})};
-
-window.fbWatchAnalytics=function(instId,cb){var g=_pg;if(_wa)_wa();_wa=onSnapshot(collectionGroup(db,"parent_cards"),function(s){if(g!==_pg)return;var grades=[],students={},subjects={},total=0;s.forEach(function(d){var D=d.data();if(D.type==="grade"&&D.score!==undefined){grades.push({score:D.score,subject:D.subject||"عام",student:D.student||"unknown",teacher:D.teacher||"unknown",at:D.at||0});total++;if(!students[D.student])students[D.student]=0;students[D.student]++;if(!subjects[D.subject])subjects[D.subject]=0;subjects[D.subject]++;});cb({grades,students,subjects,total})},function(e){if(g!==_pg||S.sysRole!=="admin")return;toast("تعذر قراءة التحليلات: "+e.message)})};
 window.fbWatchCard=function(code){var g=_pg;if(_wc)_wc();_wc=onSnapshot(collection(db,"parent_cards",code,"items"),function(s){if(g!==_pg)return;var r=[];s.forEach(function(d){r.push(d.data())});S.cardItems=r.sort(function(a,b){return (b.at||0)-(a.at||0)});if(S.sysRole==="parent")draw()},function(e){if(g!==_pg||S.sysRole!=="parent")return;S.cardItems=[];toast("تعذر القراءة: "+e.message)})};
 
 window.fbPubRoster=function(inst,list,auto,phones){var t=Date.now(),rid=window.rosterDocId();return Promise.all(list.map(function(x){return Promise.all([setDoc(doc(db,"student_codes",x.c),{inst:inst,n:x.n,g:x.g||"",p:x.p||"",sec:x.sec?1:0,at:t},{merge:true}),setDoc(doc(db,"student_names",nameDocId(inst,x.n)),{inst:inst,n:x.n,g:x.g||"",c:x.c,p:x.p||"",at:t})])})).then(function(){return setDoc(doc(db,"rosters",rid),{inst:inst,list:list,auto:auto,at:t})}).then(function(){return updateDoc(doc(db,"inst",inst),{auto:auto,rosterN:list.length,rosterAt:t})}).then(function(){return Object.keys(phones||{}).length?setDoc(doc(db,"inst",inst,"private","phones"),{m:phones},{merge:true}):0})};
@@ -8591,24 +8546,6 @@ function gradebookAdminV(){
   (filtered.length?'<div class="mu" style="margin-top:6px">إجمالي السجلات: '+filtered.length+' درجة</div>':'<div class="card mu">لا توجد درجات مسجلة بعد لهذه المؤسسة.</div>')+
   '</div>';
 }
-
-function adminAnalyticsV(){
-  var data=S.analytics||{grades:[],students:{},subjects:{},total:0};
-  var grades=data.grades||[],total=grades.length;
-  if(!total)return '<div class="card"><b>📈 التحليلات والإحصائيات</b><div class="mu" style="margin-top:6px">لا توجد بيانات درجات كافية للتحليل بعد.</div></div>';
-  var avg=Math.round(grades.reduce(function(a,g){return a+(Number(g.score)||0)},0)/total);
-  var pass=grades.filter(function(g){return Number(g.score)>=50}).length;
-  var best=grades.reduce(function(a,g){return Number(g.score)>Number(a.score)?g:a},grades[0]);
-  var subjects=Object.keys(data.subjects||{}).map(function(name){var arr=grades.filter(function(g){return g.subject===name}),av=arr.reduce(function(a,g){return a+(Number(g.score)||0)},0)/arr.length;return {name:name,count:arr.length,avg:Math.round(av)}}).sort(function(a,b){return b.avg-a.avg});
-  var bars=subjects.map(function(s){var pct=Math.max(4,Math.min(100,s.avg));return '<div style="margin:8px 0"><div class="row" style="font-size:13px"><b class="grow">'+esc(s.name)+'</b><span>'+s.avg+'% · '+s.count+' درجة</span></div><div style="height:9px;background:#e5e7eb;border-radius:8px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+(s.avg>=50?'#16a34a':'#dc2626')+';border-radius:8px"></div></div></div>'}).join('');
-  var weak=grades.filter(function(g){return Number(g.score)<50}).sort(function(a,b){return Number(a.score)-Number(b.score)}).slice(0,8);
-  var weakRows=weak.map(function(g){return '<tr><td>'+esc(g.student)+'</td><td>'+esc(g.subject)+'</td><td style="color:#dc2626;font-weight:bold">'+Number(g.score)+'%</td></tr>'}).join('');
-  return '<div class="card"><div class="row"><b class="grow">📈 التحليلات والإحصائيات</b><button class="b s" onclick="analyticsExport()">📥 تنزيل التقرير</button></div>'+
-  '<div class="grid" style="margin:10px 0"><div class="card" style="text-align:center"><div class="mu">معدل الدرجات</div><b style="font-size:24px;color:'+(avg>=50?'#16a34a':'#dc2626')+'">'+avg+'%</b></div><div class="card" style="text-align:center"><div class="mu">نسبة النجاح</div><b style="font-size:24px;color:#16a34a">'+Math.round(pass/total*100)+'%</b></div><div class="card" style="text-align:center"><div class="mu">عدد الدرجات</div><b style="font-size:24px">'+total+'</b></div><div class="card" style="text-align:center"><div class="mu">أعلى درجة</div><b style="font-size:24px;color:#2563eb">'+Number(best.score)+'%</b><div class="mu">'+esc(best.student)+'</div></div></div>'+
-  '<h4 style="margin:10px 0 4px">📚 متوسط الدرجات حسب المادة</h4>'+bars+
-  '<h4 style="margin:14px 0 4px;color:#dc2626">⚠️ الطلاب الذين يحتاجون متابعة</h4>'+(weak.length?'<div style="overflow:auto"><table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;width:100%"><tr><th>الطالب</th><th>المادة</th><th>الدرجة</th></tr>'+weakRows+'</table></div>':'<div class="mu">لا توجد درجات منخفضة.</div>')+'</div>';
-}
-function analyticsExport(){var d=S.analytics||{grades:[]},g=d.grades||[],lines=[["الطالب","المادة","الدرجة","المعلم","التاريخ"]].concat(g.map(function(x){return [x.student,x.subject,x.score,x.teacher,new Date(x.at||0).toLocaleDateString()]}));var csv="\ufeff"+lines.map(function(r){return r.map(function(v){return '"'+String(v==null?"":v).replace(/"/g,'""')+'"'}).join(",")}).join("\n");var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="analytics.csv";a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},1000)}
 
 /* درجات الطالب - عرض درجات الطالب الحالي في جميع المواد */
 function gradebookStudentV(){
