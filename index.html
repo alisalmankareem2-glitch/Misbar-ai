@@ -282,7 +282,7 @@ window.misbarHardReset=function(){
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.75.0";
+var APP_VERSION = "2.81.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -476,6 +476,8 @@ function saveDeviceOnly(){
     localStorage.setItem(p+"fl", JSON.stringify(S.fl));
     localStorage.setItem(p+"cv", JSON.stringify(S.cv));
     localStorage.setItem(p+"classes", JSON.stringify(S.classes));
+    localStorage.setItem(p+"myInsts", JSON.stringify(S.myInsts||[]));
+    localStorage.setItem(p+"tHw", JSON.stringify(S.tHw||[]));
     localStorage.setItem(p+"posts", JSON.stringify(S.posts));
     localStorage.setItem(p+"hiddenMsgs", JSON.stringify(S.hiddenMsgs||{}));
     localStorage.setItem(p+"blocked", JSON.stringify(S.blocked||[]));
@@ -1234,7 +1236,23 @@ async function qbAIFromFile(fi){
 
 function gwHomeV(){
   var list=S.docs||[];
+  var isAdmin=(S.sysRole==="admin");
   return driveBannerH()+
+  (isAdmin?
+    '<div class="card" style="border-inline-start:4px solid #15803d;margin:10px 0;padding:12px;background:#f0fdf4">'+
+    '<h3 style="margin:0 0 8px 0;color:#166534">📊 لوحة تحكم الإدارة</h3>'+
+    '<div class="grid" style="gap:12px;margin-top:8px">'+
+    '<div><b>كلاسات:</b> '+ (S.classes||[]).length +'</div>'+
+    '<div><b>فئات:</b> '+ (S.instGroups||[]).length +'</div>'+
+    '</div>'+
+    '<div style="margin-top:8px"><button class="b s" onclick="clsFormOpen(-1)">➕ إضافة كلاس جديد</button></div>'+
+    '<div style="margin-top:8px"><h4 style="margin:0 0 6px;font-size:.9rem;color:#166534">📚 الكلاسات</h4>'+renderClsList()+'</div>'+
+    '<div style="margin-top:8px"><h4 style="margin:0 0 6px;font-size:.9rem;color:#7e22ce">👥 الفئات</h4>'+renderGrpList()+'</div>'+
+    '<div style="margin-top:8px"><button class="b" style="background:#7e22ce;width:100%" onclick="grpFormOpenNew()">➕ إنشاء فئة جديدة</button></div>'+
+    '<div style="margin-top:8px"><h4 style="margin:0 0 6px;font-size:.9rem;color:#f59e04">📚 الواجبات (جميع الأساتذة)</h4>'+adminHwH()+'</div>'+
+    '<div style="margin-top:8px"><button class="b" style="background:#f59e0b;width:100%" onclick="adminHwFormOpen(-1)">➕ إضافة واجب جديد</button></div>'+
+    '</div>':'')+
+  clsFormH()+grpFormH()+adminHwFormH()+
   '<h2>📄 بوابة الأوراق والملازم</h2>'+
   '<div class="card" style="border-inline-start:4px solid var(--ac)">'+
     '<div class="row"><div class="grow"><b>أوراق الأسئلة والملازم</b><div class="mu">اكتب أسئلتك أو ملزمتك على الهاتف، ومسبار يرتبها لك في صفحات A4 جاهزة للطباعة أو الحفظ على Google Drive.</div></div><span style="font-size:32px">🖨️</span></div>'+
@@ -1366,7 +1384,7 @@ function ppNew(subj,sample){
     qn:ltr?"Q":"س",sub:ltr?"a":"أ",
     close:ltr?"Good luck":"مع تمنياتي لكم بالنجاح والتوفيق",closeSpace:18,
     sig:true,wlang:ltr?"en":"ar",digits:ltr?"w":"a",txtDigits:"keep",
-    opt:0,note:""
+    opt:0,note:"",gradePos:"right"
   };
   var q=[{t:"",m:"",s:"",horiz:false,img:""}];
   if(sample){
@@ -1461,7 +1479,9 @@ function qEye(i){
     else bdr="border:3px double "+c+";";
   }
   var mTxt=q.m?(' ('+dg(esc(q.m))+(rtl?' درجات':' marks')+')'):'';
-  var inner='<div style="margin:7px 0"><div><b style="color:'+(o.qcolor||c)+'">'+lab+mTxt+'</b> '+tdg(q.t).replace(/\n/g,'<br>')+'</div>';
+  var gp=o.gradePos||"right";
+  var qlab='<b style="color:'+(o.qcolor||c)+'">'+lab+'</b>';
+  var inner='<div style="margin:7px 0"><div>'+(gp==="left"?mTxt+' ':'')+qlab+(gp==="right"?' '+mTxt:'')+' '+tdg(q.t).replace(/\n/g,'<br>')+'</div>';
   if(q.img)inner+='<div style="margin:6px 0;text-align:center"><img src="'+q.img+'" alt="" style="max-width:85%;max-height:180px;border-radius:6px'+(o.bw?'':';')+'"></div>';
   inner+=qBlocksH(q);
   var ss=String(q.s||"").split("\n").filter(function(x){return x.trim()});
@@ -1740,9 +1760,11 @@ function paperH(){
     h+='<div style="font-size:.9em">'+tdg(f.subj)+(f.stage?' — '+tdg(f.stage):'')+'<br>'+tdg(f.round)+(f.year?' · '+dg(esc(f.year)):'')+'</div>';
     h+='</div>';
   }
+  var gp = o.gradePos || "right";
   h+='<div style="display:flex;justify-content:space-between;border-top:1.5px solid '+c+';border-bottom:1.5px solid '+c+';padding:3px 8px;margin:6px 0;font-weight:600">'+
-    '<span>'+(rtl?'الزمن: ':'Time: ')+tdg(f.dur)+'</span>'+
-    '<span>'+(rtl?'الدرجة: ':'Total Marks: ')+dg(esc(f.grade))+'</span>'+
+    (gp==="right"?'<span>'+(rtl?'الزمن: ':'Time: ')+tdg(f.dur)+'</span>':'')+
+    '<span style="text-align:'+(gp==="right"?"right":"left")+';color:'+c+'">'+(rtl?'الدرجة: ':'Total Marks: ')+dg(esc(f.grade))+'</span>'+
+    (gp==="left"?'<span>'+(rtl?'الزمن: ':'Time: ')+tdg(f.dur)+'</span>':'')+
   '</div>';
   if(o.name)h+='<div style="margin:6px 0;font-size:.95em">'+(rtl?'اسم الطالب: ........................................ الشعبة: ............':'Student Name: ........................................ Class: ............')+'</div>';
   if(o.opt>0)h+='<div style="font-weight:700;color:'+c+';margin:4px 0">'+(rtl?'ملاحظة: أجب عن ('+dg(o.opt)+') من الأسئلة الآتية فقط.':'Note: Answer ('+dg(o.opt)+') of the following questions only.')+'</div>';
@@ -1751,7 +1773,8 @@ function paperH(){
   p.q.forEach(function(q,i){
     if(i&&o.sep)h+='<hr>';
     var mTxt=q.m?(' ('+dg(esc(q.m))+(rtl?' درجات':' marks')+')'):'';
-    h+='<div style="margin:7px 0"><div><b style="color:'+qc+'">'+lab(i)+mTxt+'</b> '+tdg(q.t).replace(/\n/g,'<br>')+'</div>';
+    var qlab='<b style="color:'+qc+'">'+lab(i)+'</b>';
+    h+='<div style="margin:7px 0"><div>'+(gp==="left"?mTxt+' ':'')+qlab+(gp==="right"?' '+mTxt:'')+' '+tdg(q.t).replace(/\n/g,'<br>')+'</div>';
     if(q.img)h+='<div style="margin:6px 0;text-align:center"><img src="'+q.img+'" alt="" style="max-width:85%;max-height:180px;border-radius:6px"></div>';
     h+=qBlocksH(q);
     var ss=String(q.s||"").split("\n").filter(function(x){return x.trim()});
@@ -2020,6 +2043,7 @@ function ppEdScr(){
         '</div>'+
         ppSel("o.borderStyle","شكل الإطار المزخرف",[["double","إطار مزدوج رسمي"],["ornate","إطار مزدوج بزخرفة داخلية"],["solid","إطار مفرد أنيق"],["dashed","إطار متقطع"]],o.borderStyle)+
         ppSel("o.margin","زخارف هوامش الصفحات",[["none","بدون زخرفة"],["corners","زوايا إطار مزدوج"],["wave","موج هندسي"],["lines","خطوط"]],o.margin||"none")+
+        ppSel("o.gradePos","مكان ظهور الدرجة (الكلية وكل سؤال)",[["right","على اليمين"],["left","على اليسار"]],o.gradePos||"right")+
         ppChk("o.colorImgs","إظهار الصور بألوانها (بدون تحويل رمادي)",!o.bw)+
         '<button class="b s" style="width:100%;margin-top:6px" onclick="resetPaperColors()">↺ إعادة ألوان الصفحة الافتراضية</button>'+
       '</div>':'')+
@@ -6812,7 +6836,54 @@ function adminPortalV(){
       '<div style="max-height:130px;overflow-y:auto;background:var(--bg);padding:6px 8px;border-radius:8px;margin-bottom:8px;font-size:12px">'+(r.grades||[]).map(function(g){return '<div class="row" style="padding:2px 0;border-bottom:1px dashed var(--ln)"><span class="grow">'+esc(g[0])+'</span><span class="badge" dir="ltr">'+esc(stuCode(g[0]))+'</span><b>'+esc(g[1])+'</b></div>'}).join("")+'</div>'+
       '<a href="data:text/csv;charset=utf-8,'+csv+'" download="كشف_درجات_'+esc(r.teacher)+'.csv" class="b s" style="display:block;text-align:center;text-decoration:none;width:100%;color:#9333ea;background:#f3e8ff;padding:8px">⬇️ تنزيل كشف الدرجات والأكواد (Excel)</a></div>';
   }).join(""):'<div class="card mu" style="text-align:center;padding:20px 0">لا توجد سجلات بعد. تظهر هنا فور إرسال الأساتذة.</div>';
-  return head+keyCard+groupsAdminH(cur)+teachersAdminH(cur)+repliesAdminH()+rosterAdminH(cur)+'<input placeholder="🔍 ابحث باسم الطالب أو الأستاذ..." value="'+esc(S.adminSearchQ||"")+'" oninput="S.adminSearchQ=this.value;draw()"><h2>السجلات ('+list.length+')</h2>'+reps+out;
+  return head+keyCard+groupsAdminH(cur)+teachersAdminH(cur)+repliesAdminH()+rosterAdminH(cur)+adminLiveQuizV()+gradebookAdminV()+'<input placeholder="🔍 ابحث باسم الطالب أو الأستاذ..." value="'+esc(S.adminSearchQ||"")+'" oninput="S.adminSearchQ=this.value;draw()"><h2>السجلات ('+list.length+')</h2>'+reps+out;
+}
+
+/* ==================== مراقبة الإدارة للامتحانات المباشرة الجارية ==================== */
+function adminLiveQuizV(){
+  var h='<div class="card" style="border-inline-start:4px solid #15803d;background:#f0fdf4"><h2>📡 الامتحانات المباشرة الجارية (مراقبة الإدارة)</h2><div class="mu" style="margin-bottom:10px">تظهر هنا جميع الامتحانات المباشرة التي يطلقها الأساتذة في مؤسستك. يمكنك مراقبة الطلاب وتصفية الدرجات فوراً.</div>';
+  if(window.fbWatchAllLiveQuizzes){
+    h+='<div id="adminLiveQuizList" style="min-height:100px"><div class="mu">جاري تحميل الامتحانات المباشرة...</div></div>';
+    window.fbWatchAllLiveQuizzes(cur.id, function(quizzes){
+      var el=document.getElementById("adminLiveQuizList");
+      if(!el)return;
+      if(!quizzes||!quizzes.length){el.innerHTML='<div class="card mu" style="text-align:center;padding:20px 0">لا توجد امتحانات مباشرة جارية حالياً.</div>';return;}
+      el.innerHTML=quizzes.map(function(q){
+        var ans=q.answers||{}, keys=Object.keys(ans||{});
+        var finished=keys.filter(function(k){return ans[k]&&ans[k].answered}).length;
+        var cheating=keys.filter(function(k){return ans[k]&&ans[k].cheated}).length;
+        var timeout=keys.filter(function(k){return ans[k]&&ans[k].timeout}).length;
+        var left='';
+        if(q.duration && q.at){
+          var endTime=q.at+(q.duration*60000);
+          var rem=endTime-Date.now();
+          if(rem>0){var m=Math.floor(rem/60000),s=Math.floor((rem%60000)/1000);left='<span class="badge" style="background:#15803d;color:#fff">⏳剩 '+m+':'+(s<10?'0'+s:s)+' د</span>';}else{left='<span class="badge" style="background:#b91c1c;color:#fff">⏰ انتهى الوقت</span>';}
+        }
+        return '<div class="card" style="margin-bottom:8px;border:1px solid var(--ln);border-radius:10px"><div class="row" style="padding:8px"><b class="grow">📚 '+esc(q.teacherName||q.teacher||"أستاذ")+'</b><span class="badge" dir="ltr" style="font-size:12px">PIN: '+esc(q.pin||"")+'</span></div><div class="row" style="padding:4px 8px"><span class="mu">👥 '+finished+'/'+keys.length+' سلّم · 🚫 '+cheating+' غش · ⏳ '+timeout+' انتهى الوقت</span><span class="mu" style="margin-left:auto">'+left+'</span></div><div style="max-height:120px;overflow-y:auto;background:var(--bg);padding:6px 8px;border-radius:8px;font-size:12px;margin:0 8px 8px">'+keys.map(function(k){
+          var a=ans[k];
+          if(!a)return '';
+          var badge=a.cheated?'<span class="badge" style="background:#fee2e2;color:#b91c1c">🚫 غش (0)</span>':(a.timeout?'<span class="badge" style="background:#fef3c7;color:#92400e">⏳ انتهى الوقت</span>':'<span class="badge" style="background:#dcfce7;color:#15803d">✅ '+a.score+'/'+a.total+'</span>');
+          return '<div class="row" style="padding:2px 0;border-bottom:1px dashed var(--ln)"><span class="grow">'+esc(a.name||"طالب")+'</span><span>'+badge+'</span></div>';
+        }).join("")+'</div><div style="padding:4px 8px 8px"><button class="b s" style="background:#9333ea;width:100%" onclick="adminExportLiveQuiz(\''+esc(q.pin||"")+'\')">⬇️ تنزيل كشوف درجات هذا الامتحان (CSV)</button></div></div>';
+      }).join("");
+    });
+  } else {
+    h+='<div class="card mu">مراقبة الامتحانات المباشرة تتطلب الاتصال بالسيرفر (Firebase).</div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+function adminExportLiveQuiz(pin){
+  toast("⏳ جاري تحضير كشوف درجات الامتحان "+pin+"...");
+  if(window.fbExportLiveQuiz){
+    window.fbExportLiveQuiz(pin).then(function(url){
+      var a=document.createElement("a");a.href=url;a.download="درجات_امتحان_"+pin+".csv";document.body.appendChild(a);a.click();document.body.removeChild(a);
+      toast("✅ تم تنزيل كشوف درجات الامتحان");
+    }).catch(function(e){toast("تعذر التنزيل: "+e.message);});
+  } else {
+    toast("هذه الميزة تتطلب الاتصال بالسيرفر");
+  }
 }
 
 var _quizInterval = null;
@@ -6965,24 +7036,6 @@ function groupsAdminH(cur){
     '<div class="mu" style="line-height:1.7;margin-bottom:6px">أنشئ المراحل والمجموعات بالأسماء اللي تريدها. الأستاذ يختار منها الفئات اللي يدرّسها، وتوزّع الطلاب عليها من سجل الطلاب بالأسفل.</div>'+
     (f.open?'':'<button class="b" style="width:100%;background:#0891b2" onclick="S.grpForm.open=1;draw()">➕ إنشاء فئة جديدة</button>')+form+'<div style="margin-top:8px">'+list+'</div></div>';
 }
-function grpSave(){
-  var c=curInst(),f=S.grpForm;if(!c||!f)return;var name=grpName(f);
-  if(!name){toast("اكتب اسم المرحلة أو المجموعة");return}
-  if((S.instGroups||[]).some(function(x){return gSame(x.name,name)})){toast("هذه الفئة موجودة مسبقاً");return}
-  window.fbSaveGroup(c.id,null,{name:name,stage:f.stage||"",section:f.section||"",shift:f.shift||"",code:f.code||"",at:Date.now()})
-    .then(function(){S.grpForm={open:0,stage:"",section:"",shift:"",code:""};toast("✅ تمت إضافة الفئة «"+name+"»");draw()})
-    .catch(function(e){toast("تعذر الحفظ: "+((e&&e.code)||e))});
-}
-function grpRename(id){
-  var c=curInst(),g=(S.instGroups||[]).filter(function(x){return x.id===id})[0];if(!c||!g)return;
-  ask("الاسم الجديد للفئة",function(v){v=(v||"").trim();if(!v)return;var old=g.name;
-    window.fbSaveGroup(c.id,id,{name:v}).then(function(){
-      var l=(S.rsPub||[]).map(function(x){return gSame(x.g,old)?Object.assign({},x,{g:v}):x});
-      var ch=l.some(function(x,i){return x.g!==S.rsPub[i].g});
-      return ch?window.fbPubRoster(c.id,l,S.rsAuto||{t:1,p:1},{}):0;
-    }).then(function(){toast("✅ تم تغيير الاسم")}).catch(function(e){toast("تعذر: "+((e&&e.code)||e))});
-  });
-}
 function grpDelete(id){
   var c=curInst(),g=(S.instGroups||[]).filter(function(x){return x.id===id})[0];if(!c||!g)return;
   confirmModal("حذف الفئة «"+g.name+"»؟ الطلاب يبقون بسجلهم لكن بدون فئة، وتُزال من الأساتذة.",function(){
@@ -7100,6 +7153,50 @@ function hwPublish(){
 }
 function hwDel(id){var kp=keyParts();if(!kp)return;confirmModal("حذف هذا الواجب؟",function(){window.fbDelHomework(kp.id,id).catch(function(e){toast("تعذر: "+((e&&e.code)||e))})})}
 
+/* ---------- الإدارة: عرض وإدارة جميع الواجبات ---------- */
+function adminHwH(){
+  var hw=(S.tHw||[]).slice().sort(function(a,b){return (b.at||0)-(a.at||0)});
+  if(!hw.length)return '<div class="card mu">لا توجد واجبات منشورة بعد.</div>';
+  return '<div class="card"><div class="row"><b class="grow">الواجب</b><span class="badge">الفئة</span><span class="badge">المعلم</span></div>'+hw.map(function(x,i){
+    return '<div class="row" style="padding:6px 0;border-bottom:1px dashed var(--ln);font-size:13px"><span class="grow"><b>'+esc(x.title||"بدون عنوان")+'</b><br><span class="mu" style="font-size:11px">'+esc((x.gnames||[]).join("، "))+' · '+esc(x.subject||"")+' · التسليم: '+esc(x.due||"—")+'</span></span><span class="badge">'+esc(x.gnames?x.gnames.join("، "):"")+'</span><span class="badge">'+esc(x.teacher||"")+'</span><div style="display:flex;gap:4px"><button class="b s" style="padding:2px 8px;font-size:12px" onclick="adminHwFormOpen(\''+esc(x.id)+'\')">✏️</button><button class="b d" style="padding:2px 8px;font-size:12px" onclick="adminHwDel(\''+esc(x.id)+'\')">🗑</button></div></div>';
+  }).join("")+'</div>';
+}
+function adminHwFormOpen(hi){
+  S.hwAdminForm=S.hwAdminForm||{id:"",title:"",details:"",due:"",gids:{}};
+  if(hi!==-1){
+    var x=(S.tHw||[]).filter(function(h){return h.id===hi})[0]||{};
+    S.hwAdminForm={id:x.id||"",title:x.title||"",details:x.details||"",due:x.due||"",gids:{}};
+    (x.gids||[]).forEach(function(g){S.hwAdminForm.gids[g]=true;});
+  }else{S.hwAdminForm={id:"",title:"",details:"",due:"",gids:{}};}
+  draw();
+}
+function adminHwFormClose(){S.hwAdminForm=null;draw();}
+function adminHwSave(){
+  var kp=keyParts(),f=S.hwAdminForm;if(!kp||!f)return;
+  if(S.busy){toast("جاري الحفظ، انتظر...");return}
+  if(!String(f.title||"").trim()){toast("اكتب عنوان الواجب");return}
+  var gs=(S.instGroups||[]).filter(function(g){return f.gids[g.id]});
+  if(!gs.length){toast("اختر فئة واحدة على الأقل");return}
+  if(!f.due){toast("حدد تاريخ التسليم");return}
+  S.busy=true;draw();
+  var hwObj={inst:kp.id,title:f.title.trim(),details:(f.details||"").trim(),due:f.due||"",gids:gs.map(function(g){return g.id}),gnames:gs.map(function(g){return g.name}),subject:"",teacher:"المدير",tuid:S.uid,tEmail:S.email,at:Date.now(),admin:true};
+  var p=f.id?window.fbDelHomework(kp.id,f.id).then(function(){return window.fbAddHomework(kp.id,hwObj)}):window.fbAddHomework(kp.id,hwObj);
+  p.then(function(){
+    S.hwAdminForm=null;S.busy=false;draw();toast("✅ تم حفظ الواجب");
+  }).catch(function(e){S.busy=false;draw();toast("تعذر: "+((e&&e.code)||e))});
+}
+function adminHwDel(id){var kp=keyParts();if(!kp)return;confirmModal("حذف هذا الواجب؟",function(){window.fbDelHomework(kp.id,id).then(function(){draw();toast("✅ تم الحذف")}).catch(function(e){toast("تعذر: "+((e&&e.code)||e))})})}
+function adminHwFormH(){
+  var f=S.hwAdminForm;if(!f)return "";
+  var gs=S.instGroups||[];
+  return '<div class="card" style="border-inline-start:4px solid #f59e0b"><h2>'+(f.id?"✏️ تعديل واجب":"➕ إضافة واجب جديد")+'</h2>'+
+    '<input placeholder="عنوان الواجب" value="'+esc(f.title||"")+'" oninput="S.hwAdminForm.title=this.value" class="grow" style="margin-bottom:6px">'+
+    '<textarea rows="3" placeholder="تفاصيل المطلوب" oninput="S.hwAdminForm.details=this.value" class="grow" style="margin-bottom:6px">'+esc(f.details||"")+'</textarea>'+
+    '<label>تاريخ التسليم</label><input type="date" value="'+esc(f.due||"")+'" onchange="S.hwAdminForm.due=this.value" style="margin-bottom:6px">'+
+    '<div class="mu" style="margin:4px 0">الفئة المستهدفة:</div>'+gs.map(function(g){return '<label class="opt"><input type="checkbox" '+(f.gids[g.id]?'checked':'')+' onchange="S.hwAdminForm.gids[\''+esc(g.id)+'\']=this.checked"><span>'+esc(g.name)+'</span></label>'}).join("")+
+    '<div style="display:flex;gap:8px;margin-top:10px"><button class="b" style="flex:1;background:#f59e0b" onclick="adminHwSave()">💾 حفظ</button><button class="b s" style="flex:1" onclick="adminHwFormClose()">إلغاء</button></div></div>';
+}
+
 /* ---------- عرض موحّد لولي الأمر والطالب (نفس المصدر) ---------- */
 function rfSet(id,k,v,quiet){S.rf=S.rf||{};var f=S.rf[id]=S.rf[id]||{aware:null,reason:"",note:""};f[k]=v;if(!quiet)draw()}
 function replyFormH(a){
@@ -7189,7 +7286,7 @@ function parentsPortalV(){
   var ch=pChildren(),cur=ch[S.pCur||0],adding=S.pAdd||!ch.length;
   var head=driveBannerH()+'<div class="card" style="border-inline-start:4px solid #2563eb;background:#eff6ff"><h2>👨‍👩‍👦 بوابة أولياء الأمور</h2><div class="mu" style="line-height:1.6">تابع درجات ابنك وغياباته وواجباته. ترى ابنك فقط.</div></div>';
   var tabs=ch.length?'<div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">'+ch.map(function(c,i){return '<button class="b '+((i===(S.pCur||0)&&!adding)?'':'s')+'" style="min-height:34px" onclick="S.pCur='+i+';S.pAdd=0;S.ch=null;draw()">🧑‍🎓 '+esc(c.n||"طالب")+'</button>'}).join("")+'<button class="b s" style="min-height:34px" onclick="S.pAdd=1;S.pFind=null;S.pErr=\'\';draw()">➕ ربط ابن</button></div>':'';
-  var body=adding?pLinkH():childViewH(cur,"parent")+'<button class="b s" style="width:100%;margin-top:8px" onclick="pRemove('+(S.pCur||0)+')">إزالة هذا الابن من حسابي</button>';
+  var body=adding?pLinkH():childViewH(cur,"parent")+'<button class="b s" style="width:100%;margin-top:8px" onclick="pRemove('+(S.pCur||0)+')">إزالة هذا الابن من حسابي</button>'+gradebookParentV();
   return head+tabs+body+'<button class="b d" style="width:100%;margin-top:14px" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">تسجيل الخروج والعودة للرئيسية</button>';
 }
 
@@ -7465,6 +7562,89 @@ function rsOptsH(rc){var P='onchange="S.rsCode.pre=this.value.toUpperCase().repl
 function clsAutoH(ci,c){var n=(c.roster||[]).length;return '<div class="mu" style="font-size:12px;margin:4px 0">👥 '+n+' طالب مرتبط'+(n?' · يظهر لهم الكلاس تلقائياً':'')+'</div>'+
   '<label class="opt"><input type="checkbox" '+(c.autoExam?'checked':'')+' onchange="S.classes['+ci+'].autoExam=this.checked;saveAllUserStorage()"><span>📝 أتمتة الامتحانات: أي امتحان مباشر أطلقه يصل لطلاب هذا الكلاس</span></label>'+
   '<div class="grid"><button class="b s" onclick="clsGrpOpen('+ci+')">👥 إضافة فئات الطلبة</button><button class="b s" onclick="pubClass('+ci+')">☁️ تحديث للطلاب</button></div>'+(n?'<div class="grid"><button class="b s" onclick="clsExport('+ci+',\'xlsx\')">⬇️ Excel</button><button class="b s" onclick="clsExport('+ci+',\'doc\')">⬇️ Word</button><button class="b s" onclick="clsExport('+ci+',\'pdf\')">🖨️ PDF</button></div>':'')}
+/* ---- لوحة التحكم: دوال الكلاسات والفئات (نمط S + draw) ---- */
+function renderClsList(){
+  var html='';
+  if(!S.classes.length){html='<div class="mu">لا توجد كلاسات بعد. اضغط «إضافة كلاس جديد».</div>';}
+  else{
+    S.classes.forEach(function(c,ci){
+      html+='<div class="card" style="margin:6px 0">'+
+        '<div class="row"><b class="grow">'+esc(c.n)+'</b><span class="badge">'+((c.roster||[]).length)+' طالب</span></div>'+
+        (c.key?'<div class="mu" dir="ltr" style="font-size:12px">🔑 '+esc(c.key)+'</div>':'')+
+        (c.autoExam?'<div class="mu" style="font-size:12px;color:#166534">✓ أتمتة الامتحانات مفعّلة</div>':'')+
+        '<div class="row" style="margin-top:6px;flex-wrap:wrap">'+
+        '<button class="b s" onclick="clsFormOpen('+ci+')">✏️ تعديل</button>'+
+        '<button class="b s" onclick="pubClass('+ci+')">☁️ نشر</button>'+
+        '<button class="b d" onclick="clsDel('+ci+')">🗑️ حذف</button>'+
+        '</div></div>';
+    });
+  }
+  return html;
+}
+/* ---- دوال الكلاسات (نمط S + draw) ---- */
+function clsFormOpen(ci){
+  S.clsForm=(ci>=0)?{i:ci,n:S.classes[ci].n||'',autoExam:!!S.classes[ci].autoExam}:{i:-1,n:'',autoExam:false};
+  draw();
+}
+function clsFormClose(){S.clsForm=null;draw();}
+function clsSave(){
+  var f=S.clsForm;if(!f)return;
+  if(!f.n){toast('اسم الكلاس مطلوب');return}
+  if(f.i>=0){S.classes[f.i].n=f.n;S.classes[f.i].autoExam=f.autoExam}
+  else{
+    var code=randStr(4);
+    while(S.classes.some(function(c){return c.c===code}))code=randStr(4);
+    S.classes.push({n:f.n,c:code,mats:[],roster:[],autoExam:!!f.autoExam,at:Date.now()});
+  }
+  S.clsForm=null;saveAllUserStorage();draw();toast('✅ تم الحفظ');
+}
+function clsDel(ci){
+  confirmModal('حذف الكلاس «'+(S.classes[ci].n||'')+'»؟',function(){
+    S.classes.splice(ci,1);saveAllUserStorage();draw();toast('✅ تم الحذف');
+  });
+}
+function clsFormH(){
+  var f=S.clsForm;if(!f)return '';
+  return '<div class="card" style="border:2px solid #15803d;background:#f0fdf4">'+
+    '<h3 style="margin:0 0 8px">'+(f.i>=0?'✏️ تعديل الكلاس':'➕ إضافة كلاس جديد')+'</h3>'+
+    '<label>اسم الكلاس</label><input value="'+esc(f.n)+'" oninput="S.clsForm.n=this.value" placeholder="مثال: خامس أ - رياضيات">'+
+    '<label class="opt"><input type="checkbox" '+(f.autoExam?'checked':'')+' onchange="S.clsForm.autoExam=this.checked"><span>📝 أتمتة الامتحانات المباشرة</span></label>'+
+    '<div class="row" style="margin-top:8px"><button class="b" onclick="clsSave()">💾 حفظ</button><button class="b s" onclick="clsFormClose()">إلغاء</button></div>'+
+    '</div>';
+}
+/* ---- دوال الفئات (تربط بـ S.instGroups عبر Firestore) ---- */
+function renderGrpList(){
+  var g=S.instGroups||[],ro=S.rsPub||[];
+  if(!g.length)return '<div class="mu" style="line-height:1.7">لا توجد فئات بعد. اضغط «➕ إنشاء فئة جديدة» بالأعلى.</div>';
+  return g.map(function(x){
+    var n=ro.filter(function(s){return gSame(s.g,x.name)}).length;
+    return '<div class="row" style="padding:5px 0;border-bottom:1px dashed var(--ln)"><span class="grow"><b>'+esc(x.name)+'</b><br><span class="mu" style="font-size:11px">👥 '+n+' طالب</span></span><button class="b s" style="min-height:30px;padding:2px 10px" onclick="grpRename(\''+esc(x.id)+'\')">✏️</button><button class="b d" style="min-height:30px;padding:2px 10px" onclick="grpDelete(\''+esc(x.id)+'\')">🗑</button></div>';
+  }).join("");
+}
+function grpFormOpenNew(){
+  if(!curInst()){toast("اربط مؤسستك أولاً (مفتاح المؤسسة في بوابة الإدارة)");return}
+  S.grpForm={open:1,stage:"",section:"",shift:"",code:""};draw();
+}
+function grpFormClose(){S.grpForm={open:0,stage:"",section:"",shift:"",code:""};draw();}
+function grpSave(){
+  var c=curInst(),f=S.grpForm;if(!c||!f)return;var name=grpName(f);
+  if(!name){toast("اكتب اسم المرحلة أو المجموعة");return}
+  if((S.instGroups||[]).some(function(x){return gSame(x.name,name)})){toast("هذه الفئة موجودة مسبقاً");return}
+  window.fbSaveGroup(c.id,null,{name:name,stage:f.stage||"",section:f.section||"",shift:f.shift||"",code:f.code||"",at:Date.now()})
+    .then(function(){S.grpForm={open:0,stage:"",section:"",shift:"",code:""};toast("✅ تمت إضافة الفئة «"+name+"»");draw()})
+    .catch(function(e){toast("تعذر الحفظ: "+((e&&e.code)||e))});
+}
+function grpFormH(){
+  var f=S.grpForm;if(!f||!f.open)return '';
+  return '<div class="card" style="border:2px solid #7e22ce;background:#faf5ff">'+
+    '<h3 style="margin:0 0 8px">➕ إضافة فئة جديدة</h3>'+
+    '<input placeholder="المرحلة أو السنة (مدرسة: الأول متوسط · جامعة: المرحلة الثانية)" value="'+esc(f.stage||"")+'" oninput="S.grpForm.stage=this.value">'+
+    '<input placeholder="الشعبة أو القسم (مدرسة: ألف · جامعة: قسم الكيمياء / شعبة ب)" value="'+esc(f.section||"")+'" oninput="S.grpForm.section=this.value">'+
+    '<input placeholder="نوع الدراسة: صباحي / مسائي (اختياري)" value="'+esc(f.shift||"")+'" oninput="S.grpForm.shift=this.value">'+
+    '<input placeholder="اسم المجموعة أو رمزها مثل A أو B (اختياري)" value="'+esc(f.code||"")+'" oninput="S.grpForm.code=this.value">'+
+    '<div class="row" style="margin-top:8px"><button class="b" style="background:#7e22ce" onclick="grpSave()">💾 حفظ الفئة</button><button class="b s" onclick="grpFormClose()">إلغاء</button></div>'+
+    '</div>';
+}
 function importRoster(ci){
   var kp=keyParts();if(!requireKey())return;
   ask("الصف/الشعبة المطلوبة (اكتب - لكل الطلاب)",function(g){
@@ -7993,6 +8173,8 @@ function draw(){
   }
 
   if(S.sysRole==="pro"&&S.uid){try{if(keyParts()){if(!S._tReg&&window.fbRegTeacher){S._tReg=1;window.fbRegTeacher()}instRosterWatch();instTeacherWatch()}}catch(e){}}
+  if(S.sysRole==="admin"&&keyParts()){if(!S._gbReg&&window.fbWatchAllGrades){S._gbReg=1;window.fbWatchAllGrades(keyParts().id,function(g){S.adminGrades=g;draw()})}}
+  if(S.sysRole==="stu"&&S.stuCode){if(!S._sgReg&&window.fbWatchStudentGrades){S._sgReg=1;window.fbWatchStudentGrades(S.stuCode,function(g){S.studentGrades=g;draw()})}}
   var h="",r=S.role;
   
   if(r === "own"){
@@ -8009,8 +8191,8 @@ function draw(){
       navb([["🏛️","البوابات"],["📷","السكنر"],["🎒","الحقيبة"],["🏫","الكلاسات"],["🤖","الذكاء"],["💯","الخدمات"]]);
   }
   else if(S.sysRole === 'stu' && r === 'stu'){
-    h=head("واجهة الطالب")+'<main>'+topBarH()+[stuV,filesV,revV,aiAndTextV][S.tab]()+'</main>'+
-      navb([["📚","كلاساتي"],["📷","السكنر"],["🧠","المراجعة"],["🤖","الذكاء والنص"]]);
+    h=head("واجهة الطالب")+'<main>'+topBarH()+[stuV,filesV,revV,gradebookStudentV,aiAndTextV][S.tab]()+'</main>'+
+      navb([["📚","كلاساتي"],["📷","السكنر"],["🧠","المراجعة"],["📊","درجاتي"],["🤖","الذكاء والنص"]]);
   }
   else if(r === "own"){
     h=head("لوحة المالك")+'<main>'+ownV()+'</main>';
@@ -8187,6 +8369,37 @@ window.fbWatchStudentReset = function(pin, uid, onResetCallback){
   });
 };
 
+window.fbWatchAllLiveQuizzes = function(instId, cb){
+  var q = query(collectionGroup(db, "live_quizzes"), where("teacher","==",S.email));
+  var u = onSnapshot(q, function(snap){
+    var list = [];
+    snap.forEach(function(d){
+      var x = d.data();
+      x.pin = d.id;
+      list.push(x);
+    });
+    list.sort(function(a,b){return (b.at||0)-(a.at||0)});
+    cb(list);
+  }, function(e){cb([]);});
+  unsubs.push(u);
+  return u;
+};
+
+window.fbExportLiveQuiz = function(pin){
+  return getDoc(doc(db,"live_quizzes",pin)).then(function(s){
+    if(!s.exists()) throw new Error("الامتحان غير موجود");
+    var d=s.data(), ans=d.answers||{};
+    var rows=["اسم الطالب,الدرجة,الإجمالي,الحالة,وقت التسليم"];
+    Object.keys(ans).forEach(function(k){
+      var a=ans[k];
+      var state=a.cheated?"غش (صفر)":(a.timeout?"انتهى الوقت":"سلّم");
+      rows.push('"'+a.name+'",'+a.score+','+a.total+','+state+','+new Date(a.at||0).toLocaleString("ar-SA"));
+    });
+    var blob=new Blob(["\ufeff"+rows.join("\n")],{type:"text/csv"});
+    return URL.createObjectURL(blob);
+  });
+};
+
 var _wc=null,_wr=null,_wi=null,_pg=0; /* _pg: جيل البوابة الحالي — يبطل نتائج المستمعات التابعة لبوابة سابقة */
 window.fbPutCardItem=function(code,item,sfx){return setDoc(doc(collection(db,"parent_cards",code,"items"),Date.now()+"_"+(sfx||0)+"_"+(S.uid||"anon")),item)};
 window.fbSendReport=function(inst,rep){return setDoc(doc(collection(db,"inst",inst,"reports"),Date.now()+"_"+(S.uid||"anon")),rep)};
@@ -8268,6 +8481,106 @@ window.fbToggleDone=function(ch,hid,on){
   var ref=doc(db,"inst",inst,"hwdone",hid+"_"+ch.p);
   return on?setDoc(ref,{hid:hid,code:ch.p,done:true,at:Date.now()}):deleteDoc(ref);
 };
+
+/* ===== v2.81: دفتر الدرجات المتكامل (Gradebook) ===== */
+/* قراءة جميع بطاقات الدرجات لطالب معين عبر كوده */
+window.fbWatchStudentGrades=function(studentCode,cb){
+  var u=onSnapshot(collection(db,"parent_cards",studentCode,"items"),function(s){
+    var grades=[];s.forEach(function(d){var x=d.data();if(x.type==="grade")grades.push(x)});
+    cb(grades.sort(function(a,b){return (b.at||0)-(a.at||0)}));
+  },function(e){cb([]);});
+  unsubs.push(u);return u;
+};
+
+/* قراءة جميع الدرجات في مؤسسة معينة (للإدارة) - تجميع من جميع بطاقات الطلاب */
+window.fbWatchAllGrades=function(instId,cb){
+  var u=onSnapshot(collectionGroup(query(collection(db,"parent_cards"))),function(s){
+    var all=[];s.forEach(function(d){var x=d.data();if(x.type==="grade"&&x.inst===instId)all.push(x)});
+    cb(all.sort(function(a,b){return (b.at||0)-(a.at||0)}));
+  },function(e){cb([]);});
+  unsubs.push(u);return u;
+};
+
+/* تصدير الدرجات إلى CSV */
+window.fbExportGradesCSV=function(instId,grades){
+  var rows=[["الطالب","المادة","الدرجة","المعلم","التاريخ","الحالة"]];
+  grades.forEach(function(g){
+    var state=g.score>=50?"ناجح":(g.score>=40?"مقبول":"ضعيف");
+    rows.push([g.student||"",g.subject||"",g.score||"",g.teacher||"",new Date(g.at||0).toLocaleDateString("ar-SA"),state]);
+  });
+  var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"'}).join(",")}).join("\n");
+  var blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");a.href=url;a.download="grades_"+instId+".csv";a.click();URL.revokeObjectURL(url);
+};
+
+/* ===== v2.81: واجهات دفتر الدرجات ===== */
+/* دفتر الدرجات للإدارة - عرض جميع درجات جميع الطلاب في المؤسسة */
+function gradebookAdminV(){
+  var inst=S.curInstId||(keyParts()?keyParts().id:"");
+  if(!inst)return '<div class="card mu">اختر مؤسسة أولاً من أعلى الصفحة.</div>';
+  var grades=S.adminGrades||[];
+  var subjects=Array.from(new Set(grades.map(function(g){return g.subject}).filter(Boolean)));
+  var students=Array.from(new Set(grades.map(function(g){return g.student}).filter(Boolean)));
+  var filterSubj=S.gbSubj||"all";
+  var filterStu=S.gbStu||"all";
+  var filtered=grades.filter(function(g){
+    return (filterSubj==="all"||g.subject===filterSubj)&&(filterStu==="all"||g.student===filterStu);
+  });
+  var avg=filtered.length?Math.round(filtered.reduce(function(s,g){return s+(g.score||0)},0)/filtered.length):0;
+  var below50=filtered.filter(function(g){return (g.score||0)<50}).length;
+  var optsSubj=subjects.map(function(s){return '<option value="'+esc(s)+'"'+(filterSubj===s?' selected':'')+'>'+esc(s)+'</option>'}).join("");
+  var optsStu=students.map(function(s){return '<option value="'+esc(s)+'"'+(filterStu===s?' selected':'')+'>'+esc(s)+'</option>'}).join("");
+  var rows=filtered.map(function(g){
+    var state=(g.score||0)>=50?"ناجح":((g.score||0)>=40?"مقبول":"ضعيف");
+    var color=(g.score||0)>=50?"#16a34a":((g.score||0)>=40?"#d97706":"#dc2626");
+    return '<tr><td>'+esc(g.student)+'</td><td>'+esc(g.subject)+'</td><td style="color:'+color+';font-weight:600">'+esc(g.score)+'</td><td>'+esc(g.teacher||"")+'</td><td>'+new Date(g.at||0).toLocaleDateString("ar-SA")+'</td><td><span style="color:'+color+';font-weight:600">'+state+'</span></td></tr>';
+  }).join("");
+  return '<div class="card"><div class="row" style="margin-bottom:8px"><b class="grow">📊 دفتر الدرجات - '+esc(inst)+'</b><div style="font-size:12px;color:var(--mu)">المعدل: <b>'+avg+'</b> · أقل من 50: <b style="color:#dc2626">'+below50+'</b> طالب</div></div>'+
+  '<div class="grid" style="margin-bottom:8px">'+
+  '<select onchange="S.gbSubj=this.value;draw()"><option value="all">جميع المواد</option>'+optsSubj+'</select>'+
+  '<select onchange="S.gbStu=this.value;draw()"><option value="all">جميع الطلاب</option>'+optsStu+'</select>'+
+  '<button class="b" onclick="fbExportGradesCSV(\''+esc(inst)+'\',filtered)">📥 تصدير CSV</button>'+
+  '</div>'+
+  '<table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;width:100%"><tr><th>الطالب</th><th>المادة</th><th>الدرجة</th><th>المعلم</th><th>التاريخ</th><th>الحالة</th></tr>'+rows+'</table>'+
+  (filtered.length?'<div class="mu" style="margin-top:6px">إجمالي السجلات: '+filtered.length+' درجة</div>':'<div class="card mu">لا توجد درجات مسجلة بعد لهذه المؤسسة.</div>')+
+  '</div>';
+}
+
+/* درجات الطالب - عرض درجات الطالب الحالي في جميع المواد */
+function gradebookStudentV(){
+  var code=S.stuCode||S.uid;
+  if(!code)return '<div class="card mu">لا يوجد كود طالب.</div>';
+  var grades=S.studentGrades||[];
+  var subjects=Array.from(new Set(grades.map(function(g){return g.subject}).filter(Boolean)));
+  var bySubj={};grades.forEach(function(g){if(!bySubj[g.subject])bySubj[g.subject]=[];bySubj[g.subject].push(g.score||0)});
+  var avgAll=grades.length?Math.round(grades.reduce(function(s,g){return s+(g.score||0)},0)/grades.length):0;
+  var subjHtml=Object.keys(bySubj).map(function(s){
+    var arr=bySubj[s];var avg=Math.round(arr.reduce(function(a,b){return a+b},0)/arr.length);
+    var last=arr[arr.length-1]||0;
+    return '<div class="card" style="margin:6px 0"><div class="row"><b class="grow">'+esc(s)+'</b><span style="font-weight:600">'+esc(last)+'</span></div><div class="mu" style="font-size:12px">المعدل: '+avg+' · عدد الاختبارات: '+arr.length+'</div></div>';
+  }).join("");
+  return '<div class="card"><div class="row"><b class="grow">📚 درجاتي</b><span style="font-weight:600">المعدل العام: <b>'+avgAll+'</b></span></div>'+subjHtml+(grades.length?'<div class="mu" style="margin-top:8px">إجمالي الدرجات المسجلة: '+grades.length+' درجة</div>':'<div class="card mu">لا توجد درجات مسجلة بعد.</div>')+'</div>';
+}
+
+/* درجات ولي الأمر - عرض درجات الأبناء مع تنبيهات للدرجات المنخفضة */
+function gradebookParentV(){
+  var chs=S.chs||[];
+  if(!chs.length)return '<div class="card mu">لا يوجد أبناء مضافون. أضف ابناً من خلال كود الطالب.</div>';
+  var html='<h3>📊 درجات الأبناء</h3>';
+  chs.forEach(function(ch){
+    var grades=S.studentGrades||[];
+    var myGrades=grades.filter(function(g){return g.student===ch.n||g.student===ch.p});
+    var avg=myGrades.length?Math.round(myGrades.reduce(function(s,g){return s+(g.score||0)},0)/myGrades.length):0;
+    var low=myGrades.filter(function(g){return (g.score||0)<50}).length;
+    html+='<div class="card" style="margin:8px 0"><div class="row"><b class="grow">'+esc(ch.n||"طالب")+'</b><span style="font-weight:600">المعدل: <b>'+avg+'</b></span></div>'+
+    (low?'<div class="mu" style="color:#dc2626;font-weight:600">⚠️ '+low+' درجة أقل من 50 - يرجى المتابعة مع المدرسة</div>':'')+
+    '<div style="margin-top:6px">'+myGrades.map(function(g){return '<span class="badge" style="display:inline-block;margin:2px 4px">'+esc(g.subject||"")+': <b style="color:'+((g.score||0)>=50?"#16a34a":"#dc2626")+'">'+esc(g.score)+'</b></span>'}).join("")+'</div>'+
+    (myGrades.length?'<div class="mu" style="font-size:11px;margin-top:4px">آخر تحديث: '+new Date(Math.max.apply(null,myGrades.map(function(g){return g.at||0}))).toLocaleDateString("ar-SA")+'</div>':'<div class="mu">لا توجد درجات مسجلة بعد.</div>')+
+    '</div>';
+  });
+  return '<div class="card">'+html+'</div>';
+}
 
 window.fbPubClass=function(code,d){return setDoc(doc(db,"classes_pub",code),d,{merge:true})};
 window.fbClassPin=function(codes,pin){return Promise.all(codes.map(function(c){return updateDoc(doc(db,"classes_pub",c),{livePin:pin,liveAt:Date.now()}).catch(err)}))};
