@@ -6,11 +6,11 @@
 <meta name="theme-color" content="#15803d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="مسبار AI">
+<meta name="apple-mobile-web-app-title" content="مسبار المدرسة">
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
-<title>مسبار AI</title>
+<title>مسبار المدرسة</title>
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f6f7fb;--sf:#fff;--tx:#14213d;--mu:#667085;--ln:#e4e7ee;--ac:#1d4ed8;--acs:#e3ebff;--gold:#c8962b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -147,6 +147,7 @@ body { background: #f0f2f5; }
 button.b { transition: all 0.2s ease; font-weight: 700; letter-spacing: 0.2px; }
 button.b:not(:disabled):active { transform: scale(0.96); }
 main { animation: fadeIn 0.4s ease-out; }
+#app.noanim main{animation:none}
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ===== v2.60: Elegant UI Refresh ===== */
@@ -281,7 +282,7 @@ function misbarStuck(){
 function misbarShowFail(){
   var a=document.getElementById("app");if(!a)return;
   var er=(window.__errs||[]).slice(-3).join(" | ").replace(/</g,"&lt;");
-  a.innerHTML='<div class="splash"><img src="./icon-192.png" alt="" class="sp-logo"><h1>مسبار AI</h1><p>تعذّر إكمال التهيئة.<br>تأكد من الإنترنت ثم أعد المحاولة.</p>'
+  a.innerHTML='<div class="splash"><img src="./icon-192.png" alt="" class="sp-logo"><h1>مسبار المدرسة</h1><p>تعذّر إكمال التهيئة.<br>تأكد من الإنترنت ثم أعد المحاولة.</p>'
     +'<button class="sp-btn" onclick="location.reload()">إعادة المحاولة</button>'
     +'<button class="sp-btn g" onclick="misbarHardReset()">مسح الذاكرة المؤقتة وإعادة التحميل</button>'
     +(er?'<p dir="ltr" style="font-size:11px;opacity:.6;max-width:90%;word-break:break-word;margin-top:12px">'+er+'</p>':'')+'</div>';
@@ -304,7 +305,7 @@ window.misbarHardReset=function(){
 };
 </script>
 <div id="app">
-  <div class="splash"><img src="./icon-192.png" alt="" class="sp-logo"><h1>مسبار AI</h1><p>جاري تهيئة الجلسة...</p><div class="sp-bar"><i></i></div></div>
+  <div class="splash"><img src="./icon-192.png" alt="" class="sp-logo"><h1>مسبار المدرسة</h1><p>جاري تهيئة الجلسة...</p><div class="sp-bar"><i></i></div></div>
 </div>
 <div id="toast"></div>
 
@@ -312,7 +313,7 @@ window.misbarHardReset=function(){
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.76.0";
+var APP_VERSION = "2.78.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -337,7 +338,7 @@ async function checkForLiveUpdate() {
       if (Date.now() - lastReload < 5000) return; // الحماية من التحديث اللانهائي (Loop Protection)
       sessionStorage.setItem("misbar_last_reload", Date.now());
       
-      toast("🔄 جاري تحديث مسبار AI تلقائياً إلى الإصدار " + data.v + "...");
+      toast("🔄 جاري تحديث مسبار المدرسة تلقائياً إلى الإصدار " + data.v + "...");
       if ("caches" in window) {
         var keys = await caches.keys();
         await Promise.all(keys.map(function(k){ return caches.delete(k); }));
@@ -355,42 +356,62 @@ async function checkForLiveUpdate() {
 var _fromPopState = false;
 var _lastHistKey = "";
 function getNavStateKey(){
-  return [S.role||"", S.tab||0, S.curChatId||"", S.proPortal||"", S.scnDocId||"", S.profileOpen?1:0, S.subv?1:0, S.gw?S.gw.view:"", S.openMat?1:0, S.scnCam?1:0, S.scnEd?1:0, S.scnPrintDoc?1:0, S.pp?((S.pp.tab||"qs")+":"+(S.pp.view||"student")+":"+(S.pp.sheet?(S.pp.sheet.sub||"m"):"")):"", S.bk?(S.bk.tab||"info"):""].join("|");
+  return [S.role||"", S.tab||0, S.curChatId||"", S.proPortal||"", S.scnDocId||"", S.profileOpen?1:0, S.subv?1:0, S.gw?S.gw.view:"", S.openMat?1:0, S.scnCam?1:0, S.scnEd?1:0, S.scnPrintDoc?1:0, S.pp?((S.pp.tab||"qs")+":"+(S.pp.view||"student")+":"+(S.pp.sheet?(S.pp.sheet.sub||"m"):"")):"", S.bk?(S.bk.tab||"info"):"", S.quiz?1:0, S.stuActiveQuiz?1:0, S.clsGrp?1:0, S.aiSubTab||"ai", S.aiSubTab2||"omr", S.scnEd?(S.scnEd.step||"e"):""].join("|");
 }
-function navSt(k){
-  var st={k:k};
+function navSt(k,d){
+  var st={k:k,d:d||0,tb:S.tab||0,a1:S.aiSubTab||"ai",a2:S.aiSubTab2||"omr"};
   st.gv=S.gw?S.gw.view:"";
   if(S.pp){st.pt=S.pp.tab||"qs";if(st.pt==="form")st.pt="info";st.pv=S.pp.view||"student";st.ps=S.pp.sheet?(S.pp.sheet.sub||"m"):""}
   if(S.bk){st.bt=S.bk.tab||"info"}
   return st;
 }
+var _navStack=[],_skipPop=false;
 function syncHistoryState(){
   var k = getNavStateKey();
   if(_fromPopState){ _lastHistKey = k; return; }
   if(!_lastHistKey){
-    _lastHistKey = k;
-    try{ history.replaceState(navSt(k), ""); }catch(e){}
+    _lastHistKey = k; _navStack=[k];
+    try{ history.replaceState(navSt(k,0), ""); }catch(e){}
     return;
   }
   if(k !== _lastHistKey){
-    _lastHistKey = k;
-    try{ history.pushState(navSt(k), ""); }catch(e){}
+    var n=_navStack.length,hs=history.state;
+    /* المستخدم رجع بزر داخل التطبيق إلى الشاشة السابقة: نرجع خطوة في السجل بدل إضافة خطوة جديدة */
+    if(n>1&&_navStack[n-2]===k&&hs&&typeof hs.d==="number"&&hs.d>0){
+      _navStack.pop();_lastHistKey=k;_skipPop=true;setTimeout(function(){_skipPop=false},500);
+      try{history.back()}catch(e){_skipPop=false}
+      return;
+    }
+    _lastHistKey = k; _navStack.push(k);
+    try{ history.pushState(navSt(k,_navStack.length-1), ""); }catch(e){}
   }
 }
 window.addEventListener("popstate", function(e){
+  if(_skipPop){_skipPop=false;return}
+  var st=e.state||{};
+  if(typeof st.d==="number")_navStack.length=Math.max(1,Math.min(_navStack.length,st.d+1));
   _fromPopState = true;
+  var fin=function(){_fromPopState=false};
   var md = document.getElementById("md");
-  if(md){ md.remove(); S.chatModal = null; _fromPopState = false; syncHistoryState(); return; }
-  if(S.profileOpen){ S.profileOpen = false; draw(); _fromPopState = false; return; }
-  if(S.subv){ S.subv = 0; draw(); _fromPopState = false; return; }
-  if(S.curChatId !== null){ S.curChatId = null; draw(); _fromPopState = false; return; }
-  if(S.openMat !== null){ S.openMat = null; S.out = ""; S.quiz = null; draw(); _fromPopState = false; return; }
-  if(S.pp !== null || S.bk !== null || S.gw !== null){ edApplyNav(e.state); _fromPopState = false; return; }
-  if(S.proPortal !== null){ S.proPortal = null; draw(); _fromPopState = false; return; }
-  if(S.scnDocId !== null){ setOpenScnDoc(null); draw(); _fromPopState = false; return; }
-  if(S.role !== null && S.tab > 0){ S.tab = 0; draw(); _fromPopState = false; return; }
-  if(S.role !== null){ S.role = null; draw(); _fromPopState = false; return; }
-  _fromPopState = false;
+  if(md){ md.remove(); S.chatModal = null; fin(); syncHistoryState(); return; }
+  if(S.scnCam){ closeLiveScannerCam(); fin(); return; }
+  if(S.scnEd){ S.scnEd = null; draw(); fin(); return; }
+  if(S.scnPrintDoc){ S.scnPrintDoc = null; draw(); fin(); return; }
+  if(S.profileOpen){ S.profileOpen = false; draw(); fin(); return; }
+  if(S.subv){ S.subv = 0; draw(); fin(); return; }
+  if(S.curChatId !== null){ S.curChatId = null; draw(); fin(); return; }
+  if(S.stuActiveQuiz){ S.stuActiveQuiz = null; draw(); fin(); return; }
+  if(S.quiz){ S.quiz = null; draw(); fin(); return; }
+  if(S.clsGrp){ S.clsGrp = null; draw(); fin(); return; }
+  if(S.openMat !== null){ S.openMat = null; S.out = ""; S.quiz = null; draw(); fin(); return; }
+  if(S.pp !== null || S.bk !== null || S.gw !== null){ edApplyNav(e.state); fin(); return; }
+  if(S.proPortal !== null){ S.proPortal = null; draw(); fin(); return; }
+  if(S.scnDocId !== null){ setOpenScnDoc(null); draw(); fin(); return; }
+  if(S.aiSubTab2 && S.aiSubTab2 !== "omr" && (st.a2||"omr") !== S.aiSubTab2){ S.aiSubTab2 = st.a2||"omr"; S.out=""; draw(); fin(); return; }
+  if(S.aiSubTab && S.aiSubTab !== "ai" && (st.a1||"ai") !== S.aiSubTab){ S.aiSubTab = st.a1||"ai"; S.out=""; draw(); fin(); return; }
+  if(S.role !== null && S.tab > 0){ S.tab = (typeof st.tb==="number"&&st.tb<S.tab)?st.tb:0; draw(); fin(); return; }
+  if(S.role !== null){ S.role = null; draw(); fin(); return; }
+  fin();
 });
 
 
@@ -433,7 +454,7 @@ var S={
   classes:[{n:"الأحياء - الصف الخامس",c:"AB12",mats:[{title:"مقدمة في الخلية الحية",text:"الخلية هي الوحدة الأساسية التركيبية والوظيفية في جميع الكائنات الحية. تقسم الخلايا إلى بدائية النواة وحقيقية النواة، وتحتوي حقيقية النواة على عضيات محاطة بأغشية مثل النواة والميتوكوندريا."}]}],
   joined:["AB12"],openMat:null,out:"",
   quiz:null,quizAns:{},quizDone:false,
-  posts:[{author:"إدارة مسبار",text:"مرحباً بكم في منصة مسبار AI التعليمية للأساتذة والطلاب."}],
+  posts:[{author:"إدارة مسبار",text:"مرحباً بكم في منصة مسبار المدرسة التعليمية للأساتذة والطلاب."}],
   feedbacks:[],
   tx:"",pend:"",gr:[["زينب أحمد",18],["مصطفى كريم",15]],
   bank:[],bi:"",bt:"",ai:[],free:3,prov:"Gemini",aiSubTab:"ai",
@@ -999,13 +1020,38 @@ async function aiFast(msgs,sys,web,onText){
   }
   throw err;
 }
+function acctAI(){return !!(window.fbAiRun&&S.uid&&!S._acctDown)}
+function aiReady(){return !!getUserKey()||acctAI()}
+function aiPartsOf(prompt,du){var parts=[{text:prompt}];if(du&&du.indexOf("base64,")>-1){var sp=du.split("base64,");parts.push({inlineData:{mimeType:(sp[0].replace("data:","").replace(";","")||"image/jpeg"),data:sp[1]}})}return parts}
+function acctFail(e){if(e&&e.code==="ai-setup"){S._acctDown=true;toast("⚠️ "+e.message)}}
+async function callAcctAI(prompt,sys,du,jsonMode,onChunk,ex){
+  ex=ex||{};
+  try{var r=await window.fbAiRun({contents:[{role:"user",parts:aiPartsOf(prompt,du)}],sys:sys,json:!!jsonMode,onText:onChunk,url:!!ex.url,web:!!ex.web});return r.txt}
+  catch(e){acctFail(e);throw e}
+}
+async function acctChat(msgs,sys,web,onText){
+  var contents=msgs.map(function(m){return {role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]}});
+  try{var r=await window.fbAiRun({contents:contents,sys:sys,web:!!web,onText:onText});return r.txt}
+  catch(e){acctFail(e);throw e}
+}
+async function gGenRaw(body){
+  var k=getUserKey();
+  if(k)return await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+(S._gm&&S._gm[0]||"gemini-2.5-flash")+":generateContent?key="+encodeURIComponent(k),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  if(!acctAI())throw new Error("اربط الذكاء أولاً من تبويب الذكاء الاصطناعي");
+  var gc=body.generationConfig||{},sys=body.systemInstruction&&body.systemInstruction.parts&&body.systemInstruction.parts[0]&&body.systemInstruction.parts[0].text;
+  try{var r=await window.fbAiRun({contents:body.contents,sys:sys,json:gc.responseMimeType==="application/json"});
+    return {ok:true,status:200,json:async function(){return {candidates:[{content:{parts:[{text:r.txt}]}}]}}}}
+  catch(e){acctFail(e);throw e}
+}
 async function askAI(p,msgs,sys,web,onText){
   S.aiWeb=!!web;S.aiLast={mode:"none",src:[]};
+  if(p==="Gemini"&&!provKey("Gemini")&&acctAI()){var at=await acctChat(msgs,sys,web,onText);S.aiLast={mode:web?"native":"none",src:[]};return at}
   if(p==="Gemini"&&provKey("Gemini")){try{var r=await aiFast(msgs,sys,web,onText);S.aiLast={mode:web?"native":"none",src:r.src};return r.txt}catch(e){if(e.status===401||e.status===403)throw e}}
   return await callAIText(p,msgs,sys);
 }
-async function callUserGemini(prompt,sysInst,imgDataUrl,jsonMode,onChunk){
+async function callUserGemini(prompt,sysInst,imgDataUrl,jsonMode,onChunk,ex){
   var key=getUserKey();
+  if(!key&&acctAI()){try{return await callAcctAI(prompt,sysInst||AI_SYS,imgDataUrl,jsonMode,onChunk,ex)}catch(e){if(!(e&&e.code==="ai-setup"))throw e}}
   if(!key){
     var alt=(provKey("ChatGPT")?"ChatGPT":(provKey("Claude")?"Claude":""));
     if(alt && !imgDataUrl){
@@ -1024,7 +1070,7 @@ async function callUserGemini(prompt,sysInst,imgDataUrl,jsonMode,onChunk){
   for(var m=0;m<models.length;m++){
     var go=async function(off){
       var gc={temperature:0.65};if(jsonMode)gc.responseMimeType="application/json";if(off)gc.thinkingConfig={thinkingBudget:0};
-      var body={contents:[{role:"user",parts:parts}],generationConfig:gc};if(sysInst)body.systemInstruction={parts:[{text:sysInst}]};
+      var body={contents:[{role:"user",parts:parts}],generationConfig:gc};if(sysInst)body.systemInstruction={parts:[{text:sysInst}]};var _tl=[];if(ex&&ex.url)_tl.push({urlContext:{}});if(ex&&ex.web)_tl.push({googleSearch:{}});if(_tl.length&&!jsonMode)body.tools=_tl;
       if(onChunk&&!jsonMode)return (await gStream(key,models[m],body,onChunk)).txt;
       var res=await fetchT("https://generativelanguage.googleapis.com/v1beta/models/"+models[m]+":generateContent?key="+encodeURIComponent(key),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)},30000),data=await res.json();
       if(data&&data.candidates&&data.candidates[0]&&data.candidates[0].content)return data.candidates[0].content.parts.map(function(p){return p.text||""}).join("");
@@ -1186,7 +1232,7 @@ function symBarH(elId,subjName){
 function gwHomeV(){
   var list=S.docs||[];
   return driveBannerH()+
-  '<h2>📄 بوابة الأوراق والملازم</h2>'+
+  '<h2>📄 بوابة الأسئلة والملازم</h2>'+
   '<div class="card" style="border-inline-start:4px solid var(--ac)">'+
     '<div class="row"><div class="grow"><b>أوراق الأسئلة والملازم</b><div class="mu">اكتب أسئلتك أو ملزمتك على الهاتف، ومسبار يرتبها لك في صفحات A4 جاهزة للطباعة أو الحفظ على Google Drive.</div></div><span style="font-size:32px">🖨️</span></div>'+
     '<div class="grid" style="margin-top:10px">'+
@@ -1211,7 +1257,7 @@ function gwHomeV(){
 }
 function shareApp(){
   var u=location.href;
-  if(navigator.share)navigator.share({title:"مسبار AI",text:"أوراق الأسئلة والملازم الجاهزة للطباعة A4",url:u}).catch(function(){});
+  if(navigator.share)navigator.share({title:"مسبار المدرسة",text:"أوراق الأسئلة والملازم الجاهزة للطباعة A4",url:u}).catch(function(){});
   else if(navigator.clipboard){navigator.clipboard.writeText(u);toast("تم نسخ رابط التطبيق")}
   else toast(u);
 }
@@ -1302,7 +1348,7 @@ function startEditor(sample){
 
 
 /* ===== v2.74: شكل الدرجة + إظهار/إخفاء الدرجة والتاريخ ===== */
-var MF_LIST=[["d","(10 درجات)"],["n","(10)"],["l","(الدرجة: 10)"],["w","(10 درجة)"],["of","(.... من 10)"],["c","نص مخصص"]];
+var MF_LIST=[["d","تلقائي حسب اللغة"],["n","(10)"],["of","(.... من 10)"],["ar_d","عربي: (10 درجات)"],["ar_l","عربي: (الدرجة: 10)"],["ar_w","عربي: (10 درجة)"],["en_d","English: (10 marks)"],["en_l","English: (Mark: 10)"],["en_s","English: (Score: 10)"],["en_of","English: (.... / 10)"],["c","✏️ نص مخصص"]];
 function ppMarkTxt(q,o,rtl,dg){
   if(!q||!q.m||q.hm||o.noQM)return "";
   var m=dg(esc(q.m)),f=q.mf||o.mf||"d",t;
@@ -1310,6 +1356,13 @@ function ppMarkTxt(q,o,rtl,dg){
   else if(f==="l")t=(rtl?"الدرجة: ":"Mark: ")+m;
   else if(f==="w")t=m+(rtl?" درجة":" mark");
   else if(f==="of")t="......... "+(rtl?"من ":"/ ")+m;
+  else if(f==="ar_d")t=m+" درجات";
+  else if(f==="ar_l")t="الدرجة: "+m;
+  else if(f==="ar_w")t=m+" درجة";
+  else if(f==="en_d")t=m+" marks";
+  else if(f==="en_l")t="Mark: "+m;
+  else if(f==="en_s")t="Score: "+m;
+  else if(f==="en_of")t="......... / "+m;
   else if(f==="c"){var c=String(q.mc||o.mc||"");t=c?dg(esc(c)).replace(/\{m\}/g,m):m+(rtl?" درجات":" marks")}
   else t=m+(rtl?" درجات":" marks");
   return " ("+t+")";
@@ -1322,6 +1375,8 @@ function ppInpEye(path,label,val,type,flag,shown,inv){
 }
 var HL_LIST=[["solid","مستمر"],["double","مزدوج"],["dashed","متقطع"],["dotted","نقاط"],["thick","عريض"]];
 function hlChips(o){return HL_LIST.map(function(x){return '<button type="button" class="chip'+((o.hls||"solid")===x[0]?' on':'')+'" onclick="psd(\'o.hls\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")}
+function ppRoundYearH(f,o,dg,tdg){var a=[];if(!o.noRound&&f.round)a.push(tdg(f.round));if(!o.noYear&&f.year)a.push(dg(esc(f.year)));return a.length?'<br>'+a.join(' · '):''}
+function ppEyeLbl(label,flag,shown){return '<label style="display:flex;align-items:center;gap:6px">'+label+'<button type="button" class="ed-ib" style="width:30px;height:30px;margin-inline-start:auto'+(shown?'':';opacity:.55')+'" onclick="psd(\''+flag+'\','+(shown?'true':'false')+')" aria-label="إظهار أو إخفاء في الورقة">'+mIc(shown?"eye":"eyeoff",18)+'</button><small class="mu" style="font-weight:400">'+(shown?'ظاهر':'مخفي')+'</small></label>'}
 function psd(path,v){var y=window.scrollY;ps(path,v);draw();window.scrollTo(0,y)}
 function pqs(i,k,v){edMark(true);S.pp.q[i][k]=v;edAuto();updSheet();edRenderSheet()}
 function edMfAll(f){var y=window.scrollY,p=S.pp;edMark(true);p.o.mf=f;p.q.forEach(function(q){q.mf=""});edAuto();draw();window.scrollTo(0,y)}
@@ -1459,7 +1514,7 @@ function paperH(){
     h+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0">'+
       '<div style="flex:1;font-size:.9em">'+tdg(f.ministry)+(f.school?'<br><b>'+tdg(f.school)+'</b>':'')+'</div>'+
       '<div style="text-align:center">'+(o.logo?'<img src="'+o.logo+'" alt="" style="max-height:66px">':'')+'</div>'+
-      '<div style="flex:1;text-align:end"><b style="color:'+c+';font-size:1.05em">'+tdg(f.title)+'</b><div style="font-size:.9em">'+tdg(subjShow(f,typeof o!=="undefined"?o:null))+(f.stage?' — '+tdg(f.stage):'')+'<br>'+tdg(f.round)+(f.year?' · '+dg(esc(f.year)):'')+'</div></div>'+
+      '<div style="flex:1;text-align:end"><b style="color:'+c+';font-size:1.05em">'+tdg(f.title)+'</b><div style="font-size:.9em">'+tdg(subjShow(f,typeof o!=="undefined"?o:null))+(f.stage?' — '+tdg(f.stage):'')+ppRoundYearH(f,o,dg,tdg)+'</div></div>'+
     '</div>';
   } else {
     var taCss = hAl === "right" ? "right" : (hAl === "left" ? "left" : "center");
@@ -1467,7 +1522,7 @@ function paperH(){
     if(o.logo) h+='<div style="margin-bottom:6px"><img src="'+o.logo+'" alt="" style="max-height:66px"></div>';
     h+='<div style="font-size:.9em;margin-bottom:4px">'+tdg(f.ministry)+(f.school?'<br><b>'+tdg(f.school)+'</b>':'')+'</div>';
     h+='<div style="margin-bottom:4px"><b style="color:'+c+';font-size:1.05em">'+tdg(f.title)+'</b></div>';
-    h+='<div style="font-size:.9em">'+tdg(subjShow(f,typeof o!=="undefined"?o:null))+(f.stage?' — '+tdg(f.stage):'')+'<br>'+tdg(f.round)+(f.year?' · '+dg(esc(f.year)):'')+'</div>';
+    h+='<div style="font-size:.9em">'+tdg(subjShow(f,typeof o!=="undefined"?o:null))+(f.stage?' — '+tdg(f.stage):'')+ppRoundYearH(f,o,dg,tdg)+'</div>';
     h+='</div>';
   }
   if(!(o.noTime&&o.noTotal&&!o.showDate))h+='<div style="display:flex;justify-content:space-between;border-top:1.5px solid '+c+';border-bottom:1.5px solid '+c+';padding:3px 8px;margin:6px 0;font-weight:600">'+
@@ -1537,7 +1592,7 @@ return h+tbh+'</div>';
 
 async function genPaperAI(){
   if(!gate())return;
-  if(!getUserKey()){openAutoKeyConnect();return}
+  if(!aiReady()){openAutoKeyConnect();return}
   var p=S.pp,subj=p.f.subj,stage=p.f.stage||"المرحلة الدراسية";
   ask("اكتب موضوع الأسئلة ليولّدها ذكاء حسابك فوراً",async function(topic){
     var ltr=isWlangRtl(p.o.wlang)?0:1;
@@ -1604,7 +1659,7 @@ function ocrQuestionImage(i, target, inp){
   toast("🤖 جاري استخراج النص من الصورة...");
   var r = new FileReader();
   r.onload = async function(){
-    if(!getUserKey()){
+    if(!aiReady()){
        toast("⚠️ يرجى ربط حساب Gemini من تبويب الذكاء الاصطناعي لاستخراج النص"); return;
     }
     try{
@@ -1925,7 +1980,7 @@ function ppEdScr(){
       ppInp("f.ministry","المديرية / الوزارة",fo.ministry)+
       ppInp("f.title","عنوان الامتحان (شهري / نصف السنة / نهائي / مخصص)",fo.title)+
       ppInp("f.stage","المرحلة والصف",fo.stage)+
-      '<div class="grid">'+ppSel("f.round","الكورس أو الدور",["الكورس الأول","الكورس الثاني","الدور الأول","الدور الثاني","First Course","Second Course"],fo.round)+ppInp("f.year","السنة الدراسية",fo.year)+'</div>'+
+      '<div class="grid">'+'<div>'+ppEyeLbl("الكورس أو الدور","o.noRound",!o.noRound)+'<select style="'+(o.noRound?"opacity:.5":"")+'" onchange="ps(\'f.round\',this.value)">'+["الكورس الأول","الكورس الثاني","الدور الأول","الدور الثاني","First Course","Second Course"].map(function(x){return opt1(x,fo.round)}).join("")+'</select></div><div>'+ppEyeLbl("السنة الدراسية","o.noYear",!o.noYear)+'<input value="'+esc(fo.year)+'" style="'+(o.noYear?"opacity:.5":"")+'" oninput="ps(\'f.year\',this.value)"></div></div>'+
       '<div class="grid">'+'<div><div>'+ppInpEye("f.dur","المدة (الزمن)",fo.dur,"","o.noTime",!o.noTime,false)+'</div></div><div><div>'+ppInpEye("f.grade","الدرجة الكلية",fo.grade,"number","o.noTotal",!o.noTotal,false)+'</div></div></div>'+ppInpEye("f.date","التاريخ (فارغ = تاريخ اليوم)",fo.date||"","date","o.showDate",!!o.showDate,true)+
       ppInp("f.teacher","اسم المعلم / المدرس",fo.teacher)+
       '<label>صفة المعلم في الورقة</label><div class="row" style="flex-wrap:wrap;margin-bottom:8px">'+["مدرس المادة","مدرسة المادة","معلم","معلمة","Subject Teacher","مسمى مخصص"].map(function(x){return '<button type="button" class="chip '+(fo.tt==x?"on":"")+'" onclick="ps(\'f.tt\',\''+x+'\')">'+x+'</button>'}).join("")+'</div>'+
@@ -2072,7 +2127,7 @@ function addBkBlock(type){
 }
 async function genBkBlockAI(){
   if(!gate())return;
-  if(!getUserKey()){openAutoKeyConnect();return}
+  if(!aiReady()){openAutoKeyConnect();return}
   var ch=S.bk.chs[S.bk.curCh];if(!ch)return;
   ask("اكتب عنوان الفقرة ليولّد ذكاء حسابك شرحاً ومثالاً محلولاً",async function(topic){
     var rtl=isWlangRtl(S.bk.o.wlang);
@@ -3787,7 +3842,7 @@ function addMatDirect(ci){
 /* ==================== بوابات الأستاذ المنظمة (٤ بوابات نظيفة بدون أي هوسة) ==================== */
 function proPortalsV(){
   if(S.proPortal === "papers"){
-    return '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">بوابة الأوراق والملازم</b></div>' + gwHomeV();
+    return '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">بوابة الأسئلة والملازم</b></div>' + gwHomeV();
   }
   if(S.proPortal === "qbank"){
     return '<div class="row" style="margin-bottom:8px"><button class="b s" onclick="S.proPortal=null;draw()">← رجوع للبوابات</button><b class="grow">بوابة الأسئلة وبنك الفصل</b></div>' +
@@ -3815,8 +3870,8 @@ function proPortalsV(){
     return '<div class="portal-card" onclick="'+on+'"'+(hl?' style="border-color:#15803d;background:var(--acs)"':'')+'><div class="portal-ico">'+mIc(ic,26)+'</div><div class="grow"><b>'+t+'</b><div class="mu">'+sub+'</div></div><span style="font-size:20px;color:var(--mu)">‹</span></div>';
   };
   return '<h2>ماذا تريد أن تعمل؟</h2>' +
-    card("doc","الأوراق والملازم","اكتب امتحاناً أو ملزمة وطبعها A4 ("+docsCount+" مستند)","S.proPortal='papers';draw()") +
-    card("spark","مولّد الأسئلة والملازم","اطلب من الذكاء أسئلة أو ملزمة جاهزة لمادتك","S.proPortal='sch';S.gwTab='q';draw()") +
+    card("doc","الأسئلة والملازم","اكتب امتحاناً أو ملزمة وطبعها A4 ("+docsCount+" مستند)","S.proPortal='papers';draw()") +
+    card("spark","مولّد الذكاء الاصطناعي","مولّد أسئلة ومولّد ملازم من مصادرك (PDF · Word · روابط)","S.proPortal='sch';S.gwTab='q';draw()") +
     card("chart","دفتر الدرجات","سجّل الدرجات واحسب المعدلات ("+grCount+" طالب)","S.proPortal='grades';draw()") +
     card("live","الامتحان المباشر","امتحان للطلاب بكود ومؤقت وحماية من الغش","S.proPortal='live';draw()",1) +
     card("cal","الخطط الدراسية","خطة يومية أو أسبوعية أو شهرية جاهزة للطباعة","S.proPortal='plans';draw()");
@@ -3826,7 +3881,7 @@ async function genQuickQ(){
   if(!gate())return;
   var topic=$("qt").value.trim(),kind=$("qk").value,num=Math.min(parseInt($("qn").value)||5,20);
   if(!topic){toast("اكتب الموضوع أولاً");return}
-  if(!getUserKey()){
+  if(!aiReady()){
     var qs=[],T="«"+topic+"»";
     var stems=["عرّف "+T+" وبيّن أهميته.","اذكر أهم خصائص "+T+" مع مثال توضيحي.","وضّح العلاقة بين "+T+" وما يرتبط به، معلّلاً إجابتك.","قارن بين "+T+" وما يشابهه من مفاهيم.","علّل: لماذا يُعدّ "+T+" مهماً في هذه المادة؟"];
     for(var i=1;i<=num;i++){
@@ -3856,12 +3911,19 @@ function srcOf(k){
   if(/S$/.test(k)&&!S[k]._i){S[k].level="sch";S[k]._i=1}
   return S[k];
 }
-function srcAll(o){return [o.src].concat((o.files||[]).map(function(f){return "【"+f.name+"】\n"+f.text})).filter(function(x){return String(x||"").trim()}).join("\n\n").slice(0,30000)}
+function srcLinks(o){return String((o&&o.links)||"").split(/[\s,،]+/).map(function(x){return x.trim()}).filter(function(x){return /^https?:\/\/[^\s]+\.[^\s]+$/i.test(x)}).filter(function(x,i,a){return a.indexOf(x)===i}).slice(0,20)}
+function srcExtra(o){var u=srcLinks(o);return {url:u.length>0,web:!!(o&&o.web)}}
+function srcAll(o){
+  var lk=srcLinks(o),parts=[o.src].concat((o.files||[]).map(function(f){return "【"+f.name+"】\n"+f.text}));
+  var main=parts.filter(function(x){return String(x||"").trim()}).join("\n\n").slice(0,30000);
+  if(lk.length)main+=(main?"\n\n":"")+"【روابط مصادر: افتح كل رابط واقرأ محتواه واعتمد عليه مع بقية المصادر】\n"+lk.join("\n");
+  return main;
+}
 function selH(arr,cur,setter){return '<select onchange="'+setter+'=this.value">'+arr.map(function(a){return '<option value="'+a[0]+'"'+(String(cur)===String(a[0])?' selected':'')+'>'+a[1]+'</option>'}).join("")+'</select>'}
 async function srcFileText(f){
   var ext=(f.name.split(".").pop()||"").toLowerCase();
   if(/^image\//.test(f.type)||/^(jpg|jpeg|png|webp)$/.test(ext)){
-    if(!getUserKey())throw new Error("اربط الذكاء (زر 🔑) لقراءة الصور");
+    if(!aiReady())throw new Error("اربط الذكاء (زر 🔑) لقراءة الصور");
     var du=await new Promise(function(r){shrinkImg(f,r)});if(!du)throw new Error("صورة غير صالحة");
     return String(await callUserGemini("اكتب كل النص الموجود في هذه الصورة كما هو بدون إضافة أو شرح.","أنت نظام OCR دقيق للنصوص العربية والإنجليزية.",du)||"");
   }
@@ -3869,7 +3931,7 @@ async function srcFileText(f){
     await loadLib(LIBS.pdf);pdfjsLib.GlobalWorkerOptions.workerSrc=LIBS.pdfw;
     var pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise,txt="";
     for(var p=1;p<=Math.min(pdf.numPages,80);p++){var pg=await pdf.getPage(p),tc=await pg.getTextContent();txt+=tc.items.map(function(i){return i.str}).join(" ")+"\n"}
-    if(txt.replace(/\s/g,"").length<80&&getUserKey()){
+    if(txt.replace(/\s/g,"").length<80&&aiReady()){
       txt="";
       for(var q=1;q<=Math.min(pdf.numPages,10);q++){var pg2=await pdf.getPage(q),vp=pg2.getViewport({scale:1.6}),cv=document.createElement("canvas");cv.width=vp.width;cv.height=vp.height;await pg2.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise;
         txt+=String(await callUserGemini("اكتب كل النص الموجود في هذه الصفحة كما هو.","أنت نظام OCR دقيق.",cv.toDataURL("image/jpeg",0.85))||"")+"\n"}
@@ -3903,6 +3965,8 @@ function srcBoxH(k,lab){
   var o=srcOf(k);
   return '<label>'+lab+'</label><textarea rows="4" placeholder="انسخ والصق النص هنا (اختياري)" oninput="S.'+k+'.src=this.value">'+esc(o.src)+'</textarea>'+
     '<button class="b s" style="width:100%;margin-top:6px" '+(S.busy?'disabled':'')+' onclick="srcPick(\''+k+'\')">📎 رفع ملف أو عدة ملفات (PDF · Word · Excel · صور · نص)</button>'+
+    '<label>🔗 روابط مصادر (اختياري) — رابط في كل سطر</label><textarea rows="2" dir="ltr" style="text-align:start" placeholder="https://ar.wikipedia.org/wiki/...\nhttps://docs.google.com/document/d/... (يجب أن يكون الرابط عاماً)" oninput="S.'+k+'.links=this.value">'+esc(o.links||"")+'</textarea>'+
+    '<label class="opt"><input type="checkbox" '+(o.web?'checked':'')+' onchange="S.'+k+'.web=this.checked?1:0"><span>🌐 اسمح للذكاء بالبحث في الإنترنت لإكمال المعلومات</span></label>'+
     (o.files||[]).map(function(f,i){return '<div class="row" style="padding:4px 0;border-bottom:1px dashed var(--ln);font-size:12px"><span class="grow">📄 '+esc(f.name)+' <span class="mu">('+f.text.length+' حرف)</span></span><button class="b d" style="min-height:30px;padding:2px 10px" onclick="S.'+k+'.files.splice('+i+',1);draw()">✖</button></div>'}).join("");
 }
 function outBoxH(k,extra){
@@ -3964,7 +4028,7 @@ async function qgRun(k){
   if(!ts.length){toast("اختر نوع سؤال واحد على الأقل");return}
   if(!gate())return;
   S.busy=true;draw();
-  try{var a=await callUserGemini(qgPrompt(q,ts),"أنت أستاذ جامعي خبير في صياغة الأسئلة الامتحانية الدقيقة لكل المواد والتخصصات.");if(a)q.out=aiClean(a)}
+  try{var a=await callUserGemini(qgPrompt(q,ts),"أنت أستاذ جامعي خبير في صياغة الأسئلة الامتحانية الدقيقة لكل المواد والتخصصات.",null,false,null,srcExtra(q));if(a)q.out=aiClean(a)}
   catch(e){toast("خطأ: "+(e.message||e))}
   S.busy=false;draw();
 }
@@ -4009,7 +4073,7 @@ async function hbRun(k){
   if(!HB_S.some(function(s){return o.sec[s[0]]})){toast("اختر قسماً واحداً على الأقل");return}
   if(!gate())return;
   S.busy=true;draw();
-  try{var a=await callUserGemini(hbPrompt(o),"أنت أستاذ جامعي ومؤلف ملازم دراسية متميز، تكتب بوضوح وتنظيم ودقة علمية.");if(a)o.out=aiClean(a)}
+  try{var a=await callUserGemini(hbPrompt(o),"أنت أستاذ جامعي ومؤلف ملازم دراسية متميز، تكتب بوضوح وتنظيم ودقة علمية.",null,false,null,srcExtra(o));if(a)o.out=aiClean(a)}
   catch(e){toast("خطأ: "+(e.message||e))}
   S.busy=false;draw();
 }
@@ -4091,10 +4155,15 @@ function gwPortalH(g){
       '<label>أو اكتب مادة أخرى</label><input value="'+esc(cur)+'" oninput="srcOf(\'qgS\').subj=this.value;srcOf(\'hbS\').subj=this.value" placeholder="اسم المادة">'+
       '<label>المرحلة والصف</label><input value="'+esc(srcOf(kq).stage||"")+'" oninput="schStage(this.value)" placeholder="مثال: الثاني متوسط / الخامس العلمي"></div>'
     :'<div class="card"><div class="mu" style="line-height:1.7">اكتب مادتك الجامعية بالخانة داخل كل تبويب، وسوّي أسئلتك وملازمك بكل حرية لأي تخصص.</div></div>';
-  var tabs=[["q","❓ الأسئلة"],["h","📘 الملازم"],["b","🏦 بنك الفصل"],["p","📄 ورقة A4"]];
+  var tabs=[["q","❓ مولّد الأسئلة"],["h","📘 مولّد الملازم"],["b","🏦 بنك الفصل"],["p","📄 ورقة A4"]];
   var tb='<div class="row" style="flex-wrap:wrap;gap:6px;margin:8px 0">'+tabs.map(function(x){return '<button class="chip'+(t===x[0]?' on':'')+'" onclick="S.gwTab=\''+x[0]+'\';draw()">'+x[1]+'</button>'}).join("")+'</div>';
   var body=t==="q"?qgH(kq):t==="h"?hbH(kh):t==="b"?bankV():gwHomeV();
-  return head+top+tb+body;
+  return head+'<h2 style="margin:6px 0">🤖 بوابة مولّد الذكاء الاصطناعي</h2>'+aiStatusH()+top+tb+body;
+}
+function aiStatusH(){
+  var ok=getUserKey()?"✅ الذكاء مربوط بمفتاحك الخاص":(acctAI()?"✅ الذكاء مربوط تلقائياً بحسابك <b dir=\"ltr\">"+esc(S.email)+"</b> — لا تحتاج أي مفتاح":"");
+  if(ok)return '<div class="card" style="padding:10px 12px;border-inline-start:4px solid #15803d;font-size:13px">'+ok+'</div>';
+  return '<div class="card" style="padding:10px 12px;border-inline-start:4px solid #f59e0b;font-size:13px">⚠️ الذكاء المباشر غير متاح حالياً على هذا الحساب. '+(S._acctDown?"يحتاج المالك لتفعيل Firebase AI Logic مرة واحدة. ":"")+'<button class="b s" style="margin-top:6px;width:100%" onclick="openProvKeyDialog(\'Gemini\')">🔑 ربط بمفتاح Gemini (بديل)</button></div>';
 }
 function micP(){var R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){toast("المتصفح لا يدعم الصوت، اكتب طلبك");return}S.pi=$("pi").value;var r=new R();r.lang="ar-IQ";r.onresult=function(e){S.pi=(S.pi+" "+e.results[0][0].transcript).trim();draw()};r.onerror=function(){toast("تعذر الاستماع، تأكد من إذن المايك")};r.start();toast("تكلم الآن")}
 
@@ -4112,7 +4181,7 @@ async function mkBank(){
   if(!S.bt.trim()||!types.length){toast("ألصق نص الفصل واختر نوعاً واحداً على الأقل");return}
   if(!gate())return;
 
-  if(getUserKey()){
+  if(aiReady()){
     S.busy=true;draw();
     try{
       var prompt='اعتمد حصراً على النص الدراسي التالي لتوليد '+n+' أسئلة متنوعة من الأنواع: ('+types.join("، ")+').\nتعليمات الأستاذ الخاصة: '+(S.bi||"لا توجد")+'\n\nالنص:\n'+S.bt.slice(0,12000)+'\n\nأعد النتيجة بصيغة مصفوفة JSON من النصوص فقط هكذا: ["السؤال الأول مع خياراته وجوابه","السؤال الثاني..."]';
@@ -4151,7 +4220,7 @@ async function genAIPlan(){
     ["الأربعاء","مراجعة شاملة للفصل","خرائط ذهنية","اختبار قصير"],
     ["الخميس","إثراء وتقويم ختامي","نشاط طلابي","تقييم نهائي"]
   ];
-  if(!getUserKey()){
+  if(!aiReady()){
     S.planRows=defaultRows;S.pv=1;draw();return;
   }
   S.busy=true;draw();
@@ -4181,7 +4250,7 @@ function exportGradesWord(){
   var rows = S.gr.map(function(g){
     return '<tr><td style="padding:8px">'+esc(g[0])+'</td><td style="padding:8px;text-align:center">'+esc(g[1])+'</td></tr>';
   }).join('');
-  var tbl = '<h2 style="text-align:center">سجل الدرجات - مسبار AI</h2><table border="1" style="width:100%;border-collapse:collapse"><tr><th>اسم الطالب</th><th>الدرجة</th></tr>' + rows + '</table>';
+  var tbl = '<h2 style="text-align:center">سجل الدرجات - مسبار المدرسة</h2><table border="1" style="width:100%;border-collapse:collapse"><tr><th>اسم الطالب</th><th>الدرجة</th></tr>' + rows + '</table>';
   downloadWordFile('دفتر_الدرجات', tbl, true);
 }
 function grV(){
@@ -4203,7 +4272,7 @@ function cam(){
   var f=document.createElement("input");f.type="file";f.accept="image/*";f.setAttribute("capture","environment");
   f.onchange=function(){
     var file=f.files[0];if(!file)return;
-    if(!getUserKey()){toast("اكتب الأسماء والدرجات في المربع أعلاه أو عبر الإملاء الصوتي 🎙️");return}
+    if(!aiReady()){toast("اكتب الأسماء والدرجات في المربع أعلاه أو عبر الإملاء الصوتي 🎙️");return}
     var r=new FileReader();r.onload=async function(){
       S.busy=true;draw();
       try{
@@ -4850,7 +4919,7 @@ function handleIncomingCall(callId, d){
   CallTones.ring();
   try{
     if(document.hidden && window.Notification && Notification.permission === 'granted'){
-      new Notification('مسبار AI', { body: (d.callerName || 'مكالمة واردة') + ' يتصل بك' });
+      new Notification('مسبار المدرسة', { body: (d.callerName || 'مكالمة واردة') + ' يتصل بك' });
     }
   }catch(e){}
   window.fbUpdateDoc(ref, { status: 'ringing' }).catch(function(){});
@@ -5133,7 +5202,7 @@ async function tl(k){
   S.tx=$("tt").value;if(!S.tx.trim()){toast("اكتب نصاً أولاً");return}
   if(!gate())return;
   var n=S.tx.trim().split(/\s+/).length;
-  if(!getUserKey()){
+  if(!aiReady()){
     var clean=S.tx.trim().replace(/\s+/g," ");
     S.out = k=="استلال"
       ? "نتيجة فحص الاستلال ("+n+" كلمة):\n• نسبة الأصالة التقديرية: 92%\n• النص مترابط لغوياً ويُنصح بتوثيق المراجع العلمية عند الاقتباس."
@@ -5158,11 +5227,11 @@ async function tl(k){
 /* ==================== الذكاء الاصطناعي داخل التطبيق (ChatGPT · Gemini · Claude) ====================
    كل مستخدم يربط مفتاحه الخاص (يُحفظ على جهازه فقط). المحادثة تتم داخل التطبيق بدون فتح برامج خارجية. */
 var AI_PROVS = {
-  Gemini:  { ico: "🔵", sub: "Google · مجاني", k: "g", hint: "AIza...", link: "https://aistudio.google.com/apikey", models: ["gemini-2.5-flash", "gemini-2.0-flash"] },
+  Gemini:  { ico: "🔵", sub: "Google · بحساب Gmail مباشرة", k: "g", hint: "AIza...", link: "https://aistudio.google.com/apikey", models: ["gemini-2.5-flash", "gemini-2.0-flash"] },
   ChatGPT: { ico: "🟢", sub: "OpenAI", k: "o", hint: "sk-...", link: "https://platform.openai.com/api-keys", models: ["gpt-5-mini", "gpt-4o-mini"] },
   Claude:  { ico: "🟠", sub: "Anthropic", k: "a", hint: "sk-ant-...", link: "https://console.anthropic.com/settings/keys", models: ["claude-haiku-5-5", "claude-sonnet-5-5"] }
 };
-var AI_SYS = "أنت مسبار AI، مساعد تعليمي وأكاديمي ذكي للأساتذة والطلاب. أجب بوضوح ودقة وباللغة التي يُسأل بها.";
+var AI_SYS = "أنت مسبار المدرسة، مساعد تعليمي وأكاديمي ذكي للأساتذة والطلاب. أجب بوضوح ودقة وباللغة التي يُسأل بها.";
 
 function provKey(p){
   if(p === "Gemini") return getUserKey();
@@ -5175,7 +5244,7 @@ function setProvKey(p, k){
 }
 function firstReadyProv(){
   var order = ["Gemini", "ChatGPT", "Claude"];
-  for(var i = 0; i < order.length; i++){ if(provKey(order[i])) return order[i]; }
+  for(var i = 0; i < order.length; i++){ if(i===0?aiReady():provKey(order[i])) return order[i]; }
   return "";
 }
 function chatOf(p){ S.aiChats = S.aiChats || {}; if(!S.aiChats[p]) S.aiChats[p] = []; return S.aiChats[p]; }
@@ -5342,14 +5411,14 @@ function aiV(){
   var left = Math.max(S.free - S.used, 0);
   if(!AI_PROVS[S.prov]) S.prov = "Gemini";
   if(!S._provChosen){ var rp = firstReadyProv(); if(rp) S.prov = rp; else S.prov = "Gemini"; }
-  var P = AI_PROVS[S.prov], ready = !!provKey(S.prov), hist = chatOf(S.prov);
+  var P = AI_PROVS[S.prov], ready = S.prov === "Gemini" ? aiReady() : !!provKey(S.prov), hist = chatOf(S.prov);
   S.ai = hist;
   var tabs = Object.keys(AI_PROVS).map(function(id){
-    var q = AI_PROVS[id], ok = !!provKey(id);
+    var q = AI_PROVS[id], ok = id === "Gemini" ? aiReady() : !!provKey(id);
     return '<div class="ai-prov-card ' + (S.prov === id ? 'on' : '') + '" onclick="S.prov=\'' + id + '\';S._provChosen=true;draw()">' +
       '<div style="font-size:24px">' + q.ico + '</div><b>' + id + '</b>' +
       '<div class="mu" style="font-size:11px">' + q.sub + '</div>' +
-      '<div style="font-size:11px;font-weight:700;margin-top:3px;color:' + (ok ? '#15803d' : 'var(--mu)') + '">' + (ok ? 'جاهز ✓' : 'يحتاج مفتاحاً') + '</div></div>';
+      '<div style="font-size:11px;font-weight:700;margin-top:3px;color:' + (ok ? '#15803d' : 'var(--mu)') + '">' + (ok ? ((id === "Gemini" && !getUserKey()) ? 'متصل بحسابك ✓' : 'جاهز ✓') : 'يحتاج مفتاحاً') + '</div></div>';
   }).join("");
   var body;
   if(!ready){
@@ -5382,7 +5451,7 @@ function aiV(){
 async function sendAI(){
   var el=$("aiIn"),v=el?el.value.trim():"";
   if(!v||S.busy)return;
-  var p=S.prov;if(!provKey(p)){openProvKeyDialog(p);return}
+  var p=S.prov;if(!(p==="Gemini"?aiReady():provKey(p))){openProvKeyDialog(p);return}
   var src=S.aiSrc||"ai";
   if(src==="mat"&&!corpus().length){toast("ما عندك ملازم محفوظة للبحث فيها — ضيف ملزمة أو جرّب الذكاء");return}
   if(!gate())return;
@@ -5461,7 +5530,7 @@ var OMR = {
 
 function startBatchAIOmr(){
   if(!gate("للتصحيح الآلي اللامحدود، يرجى الاشتراك بالباقة المدفوعة.")) return;
-  if(!getUserKey()){ refundTry(); toast("يرجى ربط حساب Gemini من تبويب الذكاء الاصطناعي للقيام بالتصحيح."); return; }
+  if(!aiReady()){ refundTry(); toast("يرجى ربط حساب Gemini من تبويب الذكاء الاصطناعي للقيام بالتصحيح."); return; }
   
   if(!OMR.ansModel){
     ask("اكتب الإجابة النموذجية والدرجة القصوى (مثال: الحل النموذجي هو كذا.. من 10):", function(ans){
@@ -5496,7 +5565,7 @@ function openOmrCamera(){
               var prompt = "أنت أستاذ جامعي تصحح دفتر امتحاني بصيغة PDF. الإجابة النموذجية هي: [" + OMR.ansModel + "]. اقرأ الدفتر الامتحاني بدقة. 1. استخرج اسم الطالب بوضوح. 2. قيّم الإجابة وأعطه درجة نهائية (رقم فقط). 3. اكتب تعليقاً يبرر الدرجة. أعد النتيجة بصيغة JSON فقط: {\"name\":\"اسم الطالب\",\"score\":الدرجة,\"feedback\":\"التعليق\"}";
               
               var body = { contents: [{ role: "user", parts: [ { text: prompt }, { inlineData: { mimeType: "application/pdf", data: base64Data } } ] }], generationConfig: { temperature: 0.65, responseMimeType: "application/json" } };
-              var res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+(S._gm&&S._gm[0]||"gemini-2.5-flash")+":generateContent?key=" + encodeURIComponent(getUserKey()), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+              var res = await gGenRaw(body);
               var data = await res.json();
               
               if(res.ok && data.candidates && data.candidates[0].content){
@@ -5570,7 +5639,7 @@ async function submitOmrStudent(){
     });
     
     var body = { contents: [{ role: "user", parts: parts }], generationConfig: { temperature: 0.65, responseMimeType: "application/json" } };
-    var res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+(S._gm&&S._gm[0]||"gemini-2.5-flash")+":generateContent?key=" + encodeURIComponent(getUserKey()), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    var res = await gGenRaw(body);
     var data = await res.json();
     
     if(res.ok && data.candidates && data.candidates[0].content){
@@ -5620,7 +5689,7 @@ async function genSlides(){
   var customTxt = $("slideText") ? $("slideText").value.trim() : (S.slText||"");
   
   if(isText && !customTxt){ toast("يرجى لصق النص المطلوب استخراج العرض منه."); return; }
-  if(!getUserKey()){ openAutoKeyConnect(); return; }
+  if(!aiReady()){ openAutoKeyConnect(); return; }
   
   S.busy = true; draw();
   try{
@@ -5775,7 +5844,7 @@ async function genAiQuizBank(){
   if(!mat){ toast("اكتب موضوع المادة أو الصق نص الدرس أولاً"); return; }
   if(!gate()) return;
 
-  if(!getUserKey()){
+  if(!aiReady()){
     // توليد ذكي محلي فوري إذا لم يربط المفتاح بعد
     var localBank = [];
     for(var i=1; i<=totalGen; i++){
@@ -6563,7 +6632,7 @@ function stdCode(name,pre){var kp=keyParts();if(!kp)return "";var s=kp.sec+"|std
 function rosterDocId(){var kp=keyParts();if(!kp)return "x";var a=cyr(kp.sec+"|roster",5),b=cyr(kp.sec+"|roster",9);return kp.id+"_"+a[0].toString(36)+a[1].toString(36)+b[0].toString(36)+b[1].toString(36)}
 function waNum(v){var d=String(v||"").replace(/\D/g,"");if(d.length<7)return "";d=d.replace(/^00/,"");if(d.indexOf("964")===0)return d;return "964"+d.replace(/^0+/,"")}
 function sendCodeWA(c){var x=(S.rsPub||[]).filter(function(y){return y.c===c})[0],ph=(S.rsPh||{})[c],ins=(S.myInsts||[]).filter(function(i){return i.id===S.curInstId})[0];if(!x||!ph)return;
-  var m="السلام عليكم ورحمة الله،\nتم تسجيل الطالب/ة *"+x.n+"* رسمياً في «"+(ins?ins.name:"المؤسسة")+"».\n🔑 كود متابعة ولي الأمر: *"+x.p+"*\nأدخله في بوابة أولياء الأمور بتطبيق مسبار AI لمتابعة الدرجات والغيابات:\n"+location.origin+location.pathname;
+  var m="السلام عليكم ورحمة الله،\nتم تسجيل الطالب/ة *"+x.n+"* رسمياً في «"+(ins?ins.name:"المؤسسة")+"».\n🔑 كود متابعة ولي الأمر: *"+x.p+"*\nأدخله في بوابة أولياء الأمور بتطبيق مسبار المدرسة لمتابعة الدرجات والغيابات:\n"+location.origin+location.pathname;
   window.open("https://wa.me/"+ph+"?text="+encodeURIComponent(m),"_blank")}
 function rsDel(c){var x=(S.rsPub||[]).filter(function(y){return y.c===c})[0],ins=(S.myInsts||[]).filter(function(i){return i.id===S.curInstId})[0];if(!x||!ins)return;
   ask("للتأكيد اكتب: حذف — سيُحذف «"+x.n+"» وتتعطل أكواده",function(v){if(v!=="حذف")return;
@@ -6572,7 +6641,7 @@ function rsParse(t){var seen={},out=[];String(t||"").split("\n").forEach(functio
 function shrinkImg(f,cb){var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){var s=Math.min(1,1600/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=im.width*s;c.height=im.height*s;c.getContext("2d").drawImage(im,0,0,c.width,c.height);cb(c.toDataURL("image/jpeg",0.85))};im.onerror=function(){cb(null)};im.src=r.result};r.readAsDataURL(f)}
 async function rsOcr(inp){
   var fs=Array.prototype.slice.call(inp.files||[]);if(!fs.length)return;
-  if(!getUserKey()){toast("اربط Gemini أولاً (زر 🔑) لقراءة الصور");inp.value="";return}
+  if(!aiReady()){toast("اربط Gemini أولاً (زر 🔑) لقراءة الصور");inp.value="";return}
   S.busy=true;draw();var add=[];
   var P='استخرج أسماء الطلاب من هذه الصورة (قائمة رسمية). أعد JSON فقط: [{"n":"الاسم الكامل كما هو مكتوب","g":"الصف أو الشعبة إن ظهرت وإلا فارغ"}]. تجاهل الأرقام التسلسلية والعناوين والتواقيع. لا تصحّح الأسماء ولا تخترع اسماً غير موجود.';
   for(var i=0;i<fs.length;i++){
@@ -6621,7 +6690,7 @@ function rosterAdminH(cur){
   return '<div class="card" style="border-inline-start:4px solid #0891b2"><h2>👥 سجل الطلاب الرسمي ('+pub.length+')</h2>'+
     '<div class="mu" style="line-height:1.7">صوّر قائمة الأسماء الرسمية أو الصقها؛ يستخرجها الذكاء، وتراجعها أنت، ثم يولّد مسبار لكل طالب كود دخول وكود ولي أمر.</div>'+
     '<div class="grid" style="margin:8px 0"><label class="b" style="text-align:center;cursor:pointer;margin:0">📎 رفع ملفات أو تصوير<input type="file" accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,image/*" multiple style="display:none" onchange="rsImport(this)"></label>'+
-    (getUserKey()?'':'<button class="b s" onclick="openProvKeyDialog(\'Gemini\')">🔑 ربط الذكاء للقراءة</button>')+'</div>'+
+    (aiReady()?'':'<button class="b s" onclick="openProvKeyDialog(\'Gemini\')">🔑 ربط الذكاء للقراءة</button>')+'</div>'+
     '<textarea rows="7" placeholder="الاسم | الصف | رقم ولي الأمر (اختياري) — سطر لكل طالب" oninput="S.rsDraft=this.value">'+esc(S.rsDraft||"")+'</textarea>'+
     rsOptsH(rc)+chk("t","👨‍🏫 أتمتة مع الأساتذة: يستوردون القائمة الرسمية بمفتاح المؤسسة")+chk("p","👨‍👩‍👦 أتمتة مع الأهالي: تفعيل كود كل ولي أمر فوراً برسالة تسجيل")+
     '<button class="b" style="width:100%;background:#0891b2;margin-top:6px" '+(S.busy?'disabled':'')+' onclick="publishRoster()">'+(S.busy?'⏳ ...':'✅ اعتماد وتوليد الأكواد'+(n?' ('+n+')':''))+'</button>'+
@@ -6637,7 +6706,7 @@ var RS_BAD=/^(اسم|الاسم|الصف|الشعبة|الشعبه|التسلس�
 function rsIsName(s){s=String(s||"").trim();var w=s.split(/\s+/);return w.length>=2&&w.length<=7&&s.length>=6&&/^[\u0621-\u064A\u0671-\u06D3\u064B-\u0652\s.\-]+$/.test(s)&&!w.some(function(x){return RS_BAD.test(x)})}
 function rsTextNames(txt){var out=[],seen={};String(txt||"").split(/\r?\n/).forEach(function(l){var r=l.match(/[\u0621-\u064A\u0671-\u06D3][\u0621-\u064A\u0671-\u06D3\u064B-\u0652\s]*/g);if(!r)return;var b=r.map(function(x){return x.trim()}).sort(function(a,c){return c.length-a.length})[0];if(b&&rsIsName(b)&&!seen[normNm(b)]){seen[normNm(b)]=1;out.push(b)}});return out}
 async function rsOcrData(du){
-  if(!getUserKey())throw new Error("اربط Gemini (زر 🔑) لقراءة الصور");
+  if(!aiReady())throw new Error("اربط Gemini (زر 🔑) لقراءة الصور");
   var P='استخرج أسماء الطلاب من هذه الصورة (قائمة رسمية). أعد JSON فقط: [{"n":"الاسم الكامل كما هو مكتوب","g":"الصف أو الشعبة إن ظهرت وإلا فارغ"}]. تجاهل الأرقام التسلسلية والعناوين والتواقيع. لا تصحّح الأسماء ولا تخترع اسماً غير موجود.';
   var raw=await callUserGemini(P,"أنت نظام OCR دقيق لقوائم أسماء الطلاب العربية.",du,true),out=[];
   JSON.parse(String(raw||"[]").replace(/```json|```/g,"").trim()).forEach(function(x){if(x&&x.n)out.push(x.n+(x.g?" | "+x.g:""));else if(typeof x==="string")out.push(x)});return out}
@@ -6843,7 +6912,7 @@ async function matAsk(src){
   S.quiz=null;
   if(src==="mat"){var r=matSearch(q,{t:m.title,x:m.text});S.out=r.length?"📄 نتائج داخل الملزمة:\n\n"+r.map(function(x,i){return (i+1)+") "+x.c.slice(0,420)}).join("\n\n"):"📄 ما لقيت «"+q+"» داخل هذي الملزمة. جرّب 🧠 الذكاء أو 🌐 الإنترنت.";draw();return}
   if(!gate())return;
-  if(!(getUserKey()||provKey("ChatGPT")||provKey("Claude"))){refundTry();openAutoKeyConnect();return}
+  if(!(aiReady()||provKey("ChatGPT")||provKey("Claude"))){refundTry();openAutoKeyConnect();return}
   S.busy=true;S.out=src==="web"?"🔎 أبحث في الإنترنت…":"⏳ يفكر…";draw();
   var upd=function(t){S.out=t;var e=$("stuOut");if(e)e.textContent=t};
   try{
@@ -6858,7 +6927,7 @@ async function runStuAI(kind){
   if(!gate())return;
   var m=S.openMat;S.quiz=null;
   var quick=kind==="تلخيص"?"⚡ ملخص فوري:\n"+quickSummary(m.text)+"\n\n":"";
-  if(!(getUserKey()||provKey("ChatGPT")||provKey("Claude"))){
+  if(!(aiReady()||provKey("ChatGPT")||provKey("Claude"))){
     S.out=quick?quick+"💡 اربط الذكاء من تبويب «الذكاء والنص» لملخص أعمق.":kind+" لـ «"+m.title+"»:\n\n"+m.text+"\n\n💡 للمناقشة الموسعة افتح ChatGPT أو Gemini أو Claude من تبويب «الذكاء والنص».";
     draw();return;
   }
@@ -6883,7 +6952,7 @@ async function startStuQuiz(){
     {q:"ما الفكرة الأساسية في درس «"+m.title+"»؟",opts:["المفهوم العلمي المذكور في نص الملزمة","موضوع خارج المنهج","تطبيق رياضي بحت","تعريف تاريخي فقط"],ans:0},
     {q:"أفضل طريقة لمراجعة «"+m.title+"» قبل الامتحان هي:",opts:["تجاهل الأمثلة","فهم المفاهيم وحل الأسئلة التطبيقية","قراءة العنوان فقط","حفظ الأرقام دون فهم"],ans:1}
   ];
-  if(!getUserKey()){S.quiz=fallback;draw();return}
+  if(!aiReady()){S.quiz=fallback;draw();return}
   S.busy=true;draw();
   try{
     var prompt='أنشئ اختباراً تفاعلياً من 5 أسئلة اختيار من متعدد بناءً على النص التالي. أعد النتيجة بصيغة JSON فقط هكذا: [{"q":"نص السؤال","opts":["خيار 1","خيار 2","خيار 3","خيار 4"],"ans":0}] حيث ans هو رقم الخيار الصحيح (0 إلى 3).\n\nالنص:\n'+m.text.slice(0,10000);
@@ -6993,7 +7062,7 @@ function leavePortal(){S.sysRole=null;S.loginRole=null;S.role=null;try{localStor
 function portalLoginV(p){
   $("app").className="";
   var n={pro:"الأستاذ",stu:"الطالب",parent:"أولياء الأمور",admin:"المدير / رئيس القسم"}[p]||"";
-  $("app").innerHTML='<div class="lgfull"><div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">بوابة '+n+'</p></div><main>'+
+  $("app").innerHTML='<div class="lgfull"><div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار المدرسة</h1><p class="mu">بوابة '+n+'</p></div><main>'+
     (inAppBrowser()?'<div class="card" style="border-inline-start:4px solid #f59e0b;line-height:1.8"><b>⚠️ افتح الرابط في المتصفح</b><br>Google لا يسمح بتسجيل الدخول من داخل تلغرام أو واتساب أو إنستغرام. انسخ الرابط وافتحه في Chrome أو Safari.<button class="b s" style="width:100%;margin-top:8px" onclick="copyAppLink()">📋 نسخ رابط التطبيق</button></div>':'')+
     '<div class="card"><div class="mu" style="line-height:1.8;margin-bottom:10px">'+((p==="pro"||p==="stu")?'سجّل الدخول بحساب <b>Gmail</b> (…@gmail.com). ستُحفظ ملفاتك في <b>Google Drive الخاص بك</b>، وسيطلب منك Google السماح بذلك مرة واحدة فقط. حسابات الجامعة غير مدعومة حالياً.':'سجّل الدخول بحساب Google الخاص ببوابة <b>'+n+'</b>. تقدر تستعمل حساباً مختلفاً لكل بوابة على نفس الجهاز.')+'</div><button class="b" style="width:100%;min-height:64px;font-size:18px" onclick="fbLogin()">🔐 تسجيل الدخول بحساب Google</button></div>'+
     '<button class="b s" style="width:100%;margin-top:10px" onclick="leavePortal()">↩ رجوع لاختيار البوابة</button></main></div>';
@@ -7009,7 +7078,7 @@ function loginV(){
     ["stu","p4","الطالب","الكلاسات والاختبارات والمراجعة",svg('<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M19 17v4H6"/>')],
     ["parent","p2","أولياء الأمور","الدرجات والغيابات والتبليغات بكود الطالب",svg('<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.3"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><path d="M15 15c3-.6 6 1 6 4.5"/>')]
   ].filter(function(c){return c[0]==="pro"||c[0]==="stu"});
-  $("app").innerHTML='<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار AI</h1><p class="mu">المنظومة التعليمية المتكاملة</p></div><main>'+
+  $("app").innerHTML='<div class="hero"><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button><h1>مسبار المدرسة</h1><p class="mu">المنظومة التعليمية المتكاملة</p></div><main>'+
   '<h2 style="text-align:center;margin-top:0">اختر بوابتك</h2>'+
   cards.map(function(c){return '<div class="portal '+c[1]+'" role="button" tabindex="0" onclick="pickPortal(\''+c[0]+'\')"><div class="ic">'+c[4]+'</div><div><b>'+c[2]+'</b><span>'+c[3]+'</span>'+((S.portalUsers||{})[PORTAL_APP[c[0]]]?'<span dir="auto" style="display:block;font-weight:700;margin-top:4px;font-size:12px">✅ مسجّل: '+esc(S.portalUsers[PORTAL_APP[c[0]]])+'</span>':'')+'</div></div>'}).join("")+
   '<div class="mu" style="text-align:center;margin-top:14px;font-size:11px">v'+APP_VERSION+' · تحديث تلقائي</div></main>';
@@ -7039,7 +7108,7 @@ function restoreAppStateFromSession(){
   }catch(e){}
 }
 
-function draw(){
+function _draw(){
   saveAppStateToSession();
   var _eh=document.getElementById("edHost");if(_eh&&!(S.pp&&S.pp.sheet&&S.gw&&S.gw.view=="ed_q"))_eh.remove();
 
@@ -7112,6 +7181,17 @@ function draw(){
 }
 
 
+/* ===== v2.77: منع الوميض: لا حركة دخول عند إعادة رسم نفس الشاشة + دمج الرسمات المتتالية القادمة من Firebase ===== */
+var _lastDrawSig="",_dsT=0;
+function draw(){
+  clearTimeout(_dsT);_dsT=0;
+  var sig=getNavStateKey()+"|"+S.sysRole+"|"+(S.uid?1:0)+"|"+(S.authReady?1:0);
+  var same=sig===_lastDrawSig;_lastDrawSig=sig;
+  _draw();
+  var a=$("app");if(a){if(same)a.classList.add("noanim");else a.classList.remove("noanim")}
+}
+function drawSoon(){clearTimeout(_dsT);_dsT=setTimeout(function(){_dsT=0;draw()},90)}
+
 /* ==================== الدليل البصري الذكي لمستخدمي الآيفون (iOS PWA Prompt) ==================== */
 function checkIOSInstallPrompt(){
   var isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
@@ -7149,8 +7229,10 @@ for(var _v of ["13.2.0","12.18.0"]){
   }catch(e){console.warn("firebase "+_v+" failed",e)}
 }
 if(!FB){throw new Error("Firebase SDK failed to load")}
+var FBAI=null;
+try{FBAI=await Promise.race([import(_b+"firebase-ai.js"),new Promise(function(_,r){setTimeout(function(){r(new Error("timeout"))},6000)})])}catch(e){console.warn("firebase-ai unavailable",e)}
 var {initializeApp}=FB[0];
-var {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,reauthenticateWithPopup,onAuthStateChanged,signOut}=FB[1];
+var {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,reauthenticateWithPopup,onAuthStateChanged,signOut,setPersistence,indexedDBLocalPersistence,browserLocalPersistence}=FB[1];
 var {getFirestore,initializeFirestore,doc,setDoc,getDoc,updateDoc,deleteDoc,collection,onSnapshot,query,where,runTransaction,arrayUnion}=FB[2];
 
 var OWNER="alisalmankareem2@gmail.com";
@@ -7166,7 +7248,38 @@ var CFG={
 /* v2.58: لكل بوابة حساب Google مستقل على نفس الجهاز (بوابة الأستاذ/الطالب على التطبيق الأساسي كي لا تضيع جلسات الزبائن الحالية) */
 var PORTALS=["pro_stu","parent","admin"],APPS={},AUTHS={},DBS={};
 PORTALS.forEach(function(p){var a=p==="pro_stu"?initializeApp(CFG):initializeApp(CFG,p);APPS[p]=a;AUTHS[p]=getAuth(a);DBS[p]=initializeFirestore(a,{experimentalAutoDetectLongPolling:true})});
+/* الدخول يبقى محفوظاً حتى يضغط المستخدم «خروج» */
+PORTALS.forEach(function(p){try{setPersistence(AUTHS[p],indexedDBLocalPersistence).catch(function(){try{setPersistence(AUTHS[p],browserLocalPersistence).catch(function(){})}catch(e){}})}catch(e){}});
 var curPortal="pro_stu",app=APPS.pro_stu,auth=AUTHS.pro_stu,db=DBS.pro_stu,unsubs=[],remotePlans=[];
+/* ===== v2.78: ذكاء Gemini مباشر بحساب Gmail (Firebase AI Logic) بدون أي مفتاح من المستخدم ===== */
+function aiE(c,m,st){var e=new Error(m);e.code=c;if(st)e.status=st;return e}
+function aiNorm(e){
+  var m=String((e&&e.message)||e),c=String((e&&e.code)||""),t=m+" "+c;
+  if(/has not been used|is disabled|not enabled|SERVICE_DISABLED|API_KEY_SERVICE_BLOCKED|firebasevertexai|firebaseml|PERMISSION_DENIED|\b403\b|requires-app-check|app-check/i.test(t))return aiE("ai-setup","الذكاء المباشر غير مفعّل بعد في مشروع Firebase (يفعّله مالك التطبيق مرة واحدة)",403);
+  if(/\b429\b|quota|RESOURCE_EXHAUSTED|rate.?limit/i.test(t))return aiE("ai-quota","وصل الذكاء المجاني لحدّه الآن، أعد المحاولة بعد دقيقة",429);
+  if(/network|failed to fetch|offline|timeout/i.test(t))return aiE("ai-net","تحقق من اتصال الإنترنت ثم أعد المحاولة");
+  return aiE("ai-fail",m.slice(0,160));
+}
+window.fbAiRun=async function(o){
+  if(!FBAI||!FBAI.getAI||!FBAI.GoogleAIBackend)throw aiE("ai-setup","خدمة الذكاء المباشر غير متاحة على هذا المتصفح");
+  var ai=FBAI.getAI(app,{backend:new FBAI.GoogleAIBackend()}),names=["gemini-2.5-flash","gemini-2.0-flash"],last=null,tools=[];
+  if(o.url)tools.push({urlContext:{}});
+  if(o.web)tools.push({googleSearch:{}});
+  var variants=(tools.length&&!o.json)?[tools,[]]:[[]];
+  for(var ni=0;ni<names.length;ni++){
+    for(var vi=0;vi<variants.length;vi++){
+      try{
+        var gc={temperature:0.65};if(o.json)gc.responseMimeType="application/json";
+        var cfg={model:names[ni],generationConfig:gc};if(o.sys)cfg.systemInstruction=o.sys;if(variants[vi].length)cfg.tools=variants[vi];
+        var mdl=FBAI.getGenerativeModel(ai,cfg),req={contents:o.contents};
+        if(o.onText&&!o.json){var st=await mdl.generateContentStream(req),acc="";for await(var ch of st.stream){acc+=ch.text();o.onText(acc)}if(acc)return {txt:acc}}
+        else{var r=await mdl.generateContent(req),tx=r.response.text();if(tx)return {txt:tx}}
+        last=aiE("ai-fail","رد فارغ");
+      }catch(e){last=aiNorm(e);if(last.code==="ai-setup"||last.code==="ai-quota"||last.code==="ai-net")throw last}
+    }
+  }
+  throw last||aiE("ai-fail","تعذر الاتصال بالذكاء");
+};
 var fail=function(e){toast(e&&e.code=="permission-denied"?"لا تملك الصلاحية":"خطأ: "+((e&&e.code)||e))};
 var err=function(e){console.warn(e&&e.code?e.code:e)};
 
@@ -7222,7 +7335,7 @@ window.fbStartLiveQuiz = function(pin, data){
            var ansData = doc.data();
            S.liveQuizAnswers[doc.id] = ansData;
         });
-        if(S.proPortal === 'live' && S.liveQuizTab === 'quiz') draw();
+        if(S.proPortal === 'live' && S.liveQuizTab === 'quiz') drawSoon();
      }));
      S.liveQuizUnsub = unsubs[unsubsIdx];
   });
@@ -7279,9 +7392,9 @@ window.fbPutCardItemId=function(code,id,item){return setDoc(doc(collection(db,"p
 window.fbCardItemExists=function(code,id){return getDoc(doc(collection(db,"parent_cards",code,"items"),id)).then(function(x){return x.exists()})};
 window.fbSendReport=function(inst,rep){return setDoc(doc(collection(db,"inst",inst,"reports"),Date.now()+"_"+(S.uid||"anon")),rep)};
 window.fbCreateInst=function(id,d){return setDoc(doc(db,"inst",id),d)};
-window.fbWatchMyInsts=function(){if(_wi)_wi();_wi=onSnapshot(query(collection(db,"inst"),where("adminUid","==",S.uid)),function(s){var a=[];s.forEach(function(d){var x=d.data();x.id=d.id;a.push(x)});S.myInsts=a;if(S.sysRole==="admin")draw()},function(e){toast("تعذر قراءة المؤسسات: "+e.message)})};
-window.fbWatchInstReports=function(id){if(_wr)_wr();_wr=onSnapshot(collection(db,"inst",id,"reports"),function(s){var r=[];s.forEach(function(d){r.push(d.data())});S.adminReports=r.sort(function(a,b){return (b.at||0)-(a.at||0)});if(S.sysRole==="admin")draw()},function(e){toast("تعذر قراءة التقارير: "+e.message)})};
-window.fbWatchCard=function(code){if(_wc)_wc();_wc=onSnapshot(collection(db,"parent_cards",code,"items"),function(s){var r=[];s.forEach(function(d){r.push(d.data())});S.cardItems=r.sort(function(a,b){return (b.at||0)-(a.at||0)});if(S.sysRole==="parent")draw()},function(e){S.cardItems=[];toast("تعذر القراءة: "+e.message)})};
+window.fbWatchMyInsts=function(){if(_wi)_wi();_wi=onSnapshot(query(collection(db,"inst"),where("adminUid","==",S.uid)),function(s){var a=[];s.forEach(function(d){var x=d.data();x.id=d.id;a.push(x)});S.myInsts=a;if(S.sysRole==="admin")drawSoon()},function(e){toast("تعذر قراءة المؤسسات: "+e.message)})};
+window.fbWatchInstReports=function(id){if(_wr)_wr();_wr=onSnapshot(collection(db,"inst",id,"reports"),function(s){var r=[];s.forEach(function(d){r.push(d.data())});S.adminReports=r.sort(function(a,b){return (b.at||0)-(a.at||0)});if(S.sysRole==="admin")drawSoon()},function(e){toast("تعذر قراءة التقارير: "+e.message)})};
+window.fbWatchCard=function(code){if(_wc)_wc();_wc=onSnapshot(collection(db,"parent_cards",code,"items"),function(s){var r=[];s.forEach(function(d){r.push(d.data())});S.cardItems=r.sort(function(a,b){return (b.at||0)-(a.at||0)});if(S.sysRole==="parent")drawSoon()},function(e){S.cardItems=[];toast("تعذر القراءة: "+e.message)})};
 
 window.fbPubRoster=function(inst,list,auto,phones){var t=Date.now(),rid=window.rosterDocId();return Promise.all(list.map(function(x){return Promise.all([setDoc(doc(db,"student_codes",x.c),{inst:inst,n:x.n,g:x.g||"",p:x.p||"",sec:x.sec?1:0,at:t},{merge:true}),setDoc(doc(db,"student_names",nameDocId(inst,x.n)),{inst:inst,n:x.n,g:x.g||"",c:x.c,p:x.p||"",at:t})])})).then(function(){return setDoc(doc(db,"rosters",rid),{inst:inst,list:list,auto:auto,at:t})}).then(function(){return updateDoc(doc(db,"inst",inst),{auto:auto,rosterN:list.length,rosterAt:t})}).then(function(){return Object.keys(phones||{}).length?setDoc(doc(db,"inst",inst,"private","phones"),{m:phones},{merge:true}):0})};
 window.fbWatchRoster=function(inst,cb){var u=onSnapshot(doc(db,"rosters",window.rosterDocId()),function(s){cb(s.exists()?(s.data().list||[]):[],null,s.exists()?s.data():{})},function(e){cb(null,e)});unsubs.push(u);return u};
@@ -7299,10 +7412,10 @@ window.fbRegTeacher=function(extra){var kp=keyParts();if(!S.uid||!kp)return Prom
 window.fbUnregTeacher=function(inst){if(!S.uid)return Promise.resolve();return deleteDoc(doc(db,"inst",inst,"teachers",S.uid)).catch(err)};
 window.fbRemoveTeacher=function(inst,uid){return deleteDoc(doc(db,"inst",inst,"teachers",uid))};
 var _wt=null;
-window.fbWatchInstTeachers=function(id){if(_wt)_wt();_wt=onSnapshot(collection(db,"inst",id,"teachers"),function(s){var r=[];s.forEach(function(d){var x=d.data();x.id=d.id;r.push(x)});S.instTeachers=r.sort(function(a,b){return (b.at||0)-(a.at||0)});if(S.sysRole==="admin")draw()},function(e){S.instTeachers=[]})};
+window.fbWatchInstTeachers=function(id){if(_wt)_wt();_wt=onSnapshot(collection(db,"inst",id,"teachers"),function(s){var r=[];s.forEach(function(d){var x=d.data();x.id=d.id;r.push(x)});S.instTeachers=r.sort(function(a,b){return (b.at||0)-(a.at||0)});if(S.sysRole==="admin")drawSoon()},function(e){S.instTeachers=[]})};
 /* ===== v2.65: فئات + اعتماد أساتذة + واجبات + ردود + متابعة ===== */
 var _wg=null,_wtd=null,_wh=null,_wtr=null,_wir=null,_chU=[];
-var _rd=function(){if(S.authReady)draw()};
+var _rd=function(){if(S.authReady)drawSoon()};
 window.fbWatchGroups=function(inst){if(_wg)_wg();_wg=onSnapshot(collection(db,"inst",inst,"groups"),function(s){var r=[];s.forEach(function(d){var x=d.data();x.id=d.id;r.push(x)});S.instGroups=r.sort(function(a,b){return (a.at||0)-(b.at||0)});_rd()},function(){S.instGroups=[]})};
 window.fbSaveGroup=function(inst,id,d){var ref=id?doc(db,"inst",inst,"groups",id):doc(collection(db,"inst",inst,"groups"));return setDoc(ref,d,{merge:true})};
 window.fbDelGroup=function(inst,id){return deleteDoc(doc(db,"inst",inst,"groups",id))};
@@ -7416,7 +7529,7 @@ window.fbConnectDrive=function(cb){
   reauthenticateWithPopup(auth.currentUser,p).then(function(res){
     captureDriveToken(res);
     toast("✅ تم ربط Google Drive بحسابك");
-    draw();
+    drawSoon();
     if(cb)cb();
   }).catch(function(e){
     if(e.code!="auth/popup-closed-by-user")toast("تعذر ربط Drive: "+e.code);
@@ -7436,8 +7549,8 @@ window.fbLogout=function(){
   S.username="";S.customName="";S.profLoaded=false;S.profileOpen=false;S._cr=null;S.foundUsers=[];
   signOut(auth).then(function(){
     try{if(oldUid)sessionStorage.removeItem("misbar_dtoken_"+oldUid)}catch(e){}
-    toast("تم تسجيل الخروج بنجاح");draw();
-  }).catch(function(){draw()});
+    toast("تم تسجيل الخروج بنجاح");drawSoon();
+  }).catch(function(){drawSoon()});
 };
 
 function onAuth(u){
@@ -7450,13 +7563,13 @@ function onAuth(u){
     S.subv=0;S.tab=0;S.openMat=null;S.uid=null;S.email="";S.role=null;S.isOwner=false;S.userAiKey="";
     S.driveToken="";S.driveFolderId="";S.driveFileId="";
     S.gw=null;S.pp=null;S.bk=null;
-    draw();return;
+    drawSoon();return;
   }
   if((S.sysRole==="pro"||S.sysRole==="stu")&&!gmailOk(u.email)&&(u.email||"").toLowerCase()!==OWNER.toLowerCase()){
     toast("هذه البوابة تدعم حسابات Gmail فقط (…@gmail.com). حسابات الجامعة غير مدعومة حالياً.");
     S.driveToken="";S.uid=null;S.email="";
     signOut(auth).catch(function(){});
-    draw();return;
+    drawSoon();return;
   }
   S.uid=u.uid;S.email=(u.email||"").toLowerCase();S.dispName=u.displayName||"";
   S.isOwner=S.email==OWNER.toLowerCase()&&u.emailVerified;
@@ -7464,7 +7577,7 @@ function onAuth(u){
 
   loadUserDeviceData();
   restoreAppStateFromSession();
-  draw();
+  drawSoon();
   getDoc(doc(db,"users",u.uid)).then(function(uSnap){
     if(uSnap.exists()){
       var ud=uSnap.data();
@@ -7484,7 +7597,7 @@ function onAuth(u){
         S.userAiKey=ud.userAiKey;
         try{localStorage.setItem("misbar_gkey_"+u.uid,ud.userAiKey)}catch(e){}
       }
-      draw();
+      drawSoon();
     }
     S.profLoaded=true;
     window.fbSyncUserProfile();
@@ -7503,16 +7616,16 @@ function onAuth(u){
     a.sort(function(x,y){return (x.o||0)-(y.o||0)});
     if(!s.empty||!S.isOwner)S.plans=a;
     if(s.empty&&S.isOwner&&!S.seeded){S.seeded=1;setTimeout(function(){window.savePlans()},600)}
-    draw();
+    drawSoon();
   },err));
 
   unsubs.push(onSnapshot(doc(db, "config", "app"), function(s){
-    if(s.exists()){ var d = s.data(); if(typeof d.freeLimit === "number"){ S.free = d.freeLimit; } if(d.pay){ S.pay = d.pay; try{localStorage.setItem("misbar_pay",JSON.stringify(d.pay))}catch(e){} } draw(); }
+    if(s.exists()){ var d = s.data(); if(typeof d.freeLimit === "number"){ S.free = d.freeLimit; } if(d.pay){ S.pay = d.pay; try{localStorage.setItem("misbar_pay",JSON.stringify(d.pay))}catch(e){} } drawSoon(); }
   }, err));
 
   if(S.isOwner){
     unsubs.push(onSnapshot(collection(db,"users"),function(s){
-      var a=[];s.forEach(function(d){a.push(d.data())});S.allUsers=a;S.usersErr="";draw();
+      var a=[];s.forEach(function(d){a.push(d.data())});S.allUsers=a;S.usersErr="";drawSoon();
     },function(e){S.usersErr=(e&&e.code)||"err"}));
   }
 
@@ -7558,7 +7671,7 @@ function onAuth(u){
              if(window.fbUpdateChatFields) window.fbUpdateChatFields(chatId, { readBy: room.readBy });
            }
         }
-        draw();
+        drawSoon();
         setTimeout(function(){ var wb=$("waBody"); if(wb) wb.scrollTop=wb.scrollHeight; }, 30);
       }
     },function(e){ watchedChatId=null; chatFail(e); });
@@ -7601,7 +7714,7 @@ function onAuth(u){
         }
         
         toast("💬 "+senderTitle+": "+prevTxt);
-        showBrowserNotification("مسبار AI - " + senderTitle, prevTxt);
+        showBrowserNotification("مسبار المدرسة - " + senderTitle, prevTxt);
       });
     }
     chatsFirst=false;
@@ -7613,7 +7726,7 @@ function onAuth(u){
     var localOnly=S.cv.filter(function(c){ return c.id && c.id!=="local_notes" && !ids[c.id]; });
     localOnly.forEach(function(c){ if(c.members && c.members.indexOf(S.email)>-1 && window.fbSaveChatRoom) window.fbSaveChatRoom(c); });
     S.cv=notes.concat(remote,localOnly);
-    draw();
+    drawSoon();
   },function(e){ chatFail(e); }));
 
   
@@ -7650,7 +7763,7 @@ window.fbDeleteRoomMessage=function(chatId, msgId){
     window.fbSaveChatRoom(chatObj).then(function(){
       return setDoc(doc(db,"chats",chatObj.id,"messages",msgObj.id),clean);
     }).catch(function(e){
-      msgObj._fail=true;draw();chatFail(e);
+      msgObj._fail=true;drawSoon();chatFail(e);
     });
   };
   window.fbSendFeedback=function(item){
@@ -7663,7 +7776,7 @@ window.fbDeleteRoomMessage=function(chatId, msgId){
     var a=[];s.forEach(function(d){a.push(d.data())});
     if(a.length){
       a.sort(function(x,y){return (y.at||0)-(x.at||0)});
-      S.posts=a;draw();
+      S.posts=a;drawSoon();
     }
   },function(){}));
 
@@ -7672,22 +7785,22 @@ window.fbDeleteRoomMessage=function(chatId, msgId){
       var a=[];s.forEach(function(d){a.push(d.data())});
       a.sort(function(x,y){return (y.at||0)-(x.at||0)});
       if(a.length) S.feedbacks=a;
-      draw();
+      drawSoon();
     },function(){}));
     unsubs.push(onSnapshot(collection(db,"requests"),function(s){
       var a=[];s.forEach(function(d){var x=d.data();x.id=Number(d.id);a.push(x)});
-      a.sort(function(x,y){return y.d-x.d});S.req=a;draw();
+      a.sort(function(x,y){return y.d-x.d});S.req=a;drawSoon();
     },err));
     unsubs.push(onSnapshot(collection(db,"subscriptions"),function(s){
       var a=[];s.forEach(function(d){var x=d.data();x.id=d.id;x.uid=x.uid||d.id;a.push(x)});
-      S.subs=a;draw();
+      S.subs=a;drawSoon();
     },err));
   }else{
     unsubs.push(onSnapshot(query(collection(db,"requests"),where("uid","==",u.uid)),function(s){
       var a=[];s.forEach(function(d){var x=d.data();x.id=Number(d.id);a.push(x)});
-      a.sort(function(x,y){return y.d-x.d});S.req=a;draw();
+      a.sort(function(x,y){return y.d-x.d});S.req=a;drawSoon();
     },err));
-    var sa=[],sb=[],mix=function(){S.subs=sa.concat(sb);draw()};
+    var sa=[],sb=[],mix=function(){S.subs=sa.concat(sb);drawSoon()};
     unsubs.push(onSnapshot(doc(db,"subscriptions",u.uid),function(s){
       sa=s.exists()?[{id:u.uid,uid:u.uid,e:S.email,n:s.data().n,s:s.data().s,end:s.data().end,a:s.data().a}]:[];mix();
     },err));
@@ -7695,14 +7808,14 @@ window.fbDeleteRoomMessage=function(chatId, msgId){
       sb=[];s.forEach(function(d){if(d.id!==u.uid){var x=d.data();x.id=d.id;x.e=S.email;sb.push(x)}});mix();
     },err));
   }
-  draw();
+  drawSoon();
 }
 var _unAuth=null;
 function bindAuth(){if(_unAuth){try{_unAuth()}catch(e){}}_unAuth=onAuthStateChanged(auth,onAuth)}
 window.fbUsePortal=function(p){
   var k=PORTAL_APP[p]||p;
   if(!APPS[k])return;
-  if(k===curPortal&&_unAuth){if(S.authReady)draw();return}
+  if(k===curPortal&&_unAuth){if(S.authReady)drawSoon();return}
   unsubs.forEach(function(f){try{f()}catch(e){}});unsubs=[];
   [typeof _wi!=="undefined"&&_wi,typeof _wr!=="undefined"&&_wr,typeof _wc!=="undefined"&&_wc].forEach(function(f){try{if(f)f()}catch(e){}});
   curPortal=k;app=APPS[k];auth=AUTHS[k];db=DBS[k];
@@ -7710,11 +7823,11 @@ window.fbUsePortal=function(p){
   bindAuth();
 };
 S.portalUsers={};
-PORTALS.forEach(function(p){onAuthStateChanged(AUTHS[p],function(u){S.portalUsers[p]=u?(u.email||""):"";if(S.authReady&&!S.sysRole)draw()})});
+PORTALS.forEach(function(p){onAuthStateChanged(AUTHS[p],function(u){S.portalUsers[p]=u?(u.email||""):"";if(S.authReady&&!S.sysRole)drawSoon()})});
 (function(){var sp="";try{sp=localStorage.getItem("misbar_portal")||""}catch(e){}
   var PK=["admin","pro","stu","parent"];
-  var go=function(){if(S.authReady)return;
-    if(PK.indexOf(sp)>-1){S.sysRole=S.loginRole=sp;window.fbUsePortal(sp)}else{S.authReady=true;draw()}};
+  var _goDone=0,go=function(){if(_goDone)return;_goDone=1;
+    if(PK.indexOf(sp)>-1){S.sysRole=S.loginRole=sp;window.fbUsePortal(sp)}else{S.authReady=true;drawSoon();bindAuth()}};
   Promise.all(PORTALS.map(function(p){return AUTHS[p].authStateReady()})).then(go).catch(go);
   setTimeout(go,4000);
 })();
