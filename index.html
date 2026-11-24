@@ -313,7 +313,7 @@ window.misbarHardReset=function(){
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.78.0";
+var APP_VERSION = "2.79.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -876,8 +876,7 @@ function profileScr(){
   var nm = S.dispName || (S.email ? S.email.split("@")[0] : "");
   var photo = "";
   var me = findUserByEmail(S.email); if(me && me.photo) photo = me.photo;
-  var h = '<header><button class="b s" onclick="S.profileOpen=false;draw()">←</button><h1>حسابي</h1>' +
-    '<button class="b d" onclick="fbLogout()">خروج</button></header>' +
+  var h = '<header><button class="b s" onclick="S.profileOpen=false;draw()">←</button><h1>حسابي</h1></header>' +
     '<main>' +
     '<div style="text-align:center;margin:6px 0 14px">' +
       '<div style="transform:scale(1.7);display:inline-block;margin:14px 0 8px">' + avatarHtml(nm, photo) + '</div>' +
@@ -904,6 +903,7 @@ function profileScr(){
       '<button class="'+(S.driveToken?'b s':'b cl-pulse')+'" onclick="handleDriveSyncClick()">' + (S.driveToken ? '☁️ مزامنة Drive' : '☁️ ربط Google Drive لحفظ ملفاتك') + '</button>' +
       (stat() && S.role != 'own' ? '<button class="b s" onclick="S.profileOpen=false;S.subv=1;draw()">' + stat() + '</button>' : '') +
     '</div></div>' +
+    '<div class="card"><button class="b d" style="width:100%" onclick="fbLogout()">🚪 تسجيل الخروج</button></div>' +
     '<div class="mu" style="text-align:center;margin-top:8px;font-size:11px">إصدار v' + APP_VERSION + '</div>' +
     '</main>';
   $("app").className = S.role == "pro" ? "pro" : "";
@@ -1150,8 +1150,8 @@ function head(t){
     : '';
   return '<header><button class="hat" aria-label="مسبار" onclick="hat()">🎓</button>'+av+'<h1>'+t+'</h1>'+
   (S.role?'<button class="b s" title="تبديل بين الأستاذ والطالب" onclick="setRole(null)">🔄</button>':'')+
-  '<button class="b s" title="تبديل البوابة بدون تسجيل خروج" onclick="leavePortal()">🔀</button>'+
-  '<button class="b d" title="تسجيل الخروج من هذه البوابة" onclick="fbLogout()">خروج</button></header>';
+  '<button class="b s" title="الشاشة الرئيسية (بدون تسجيل خروج)" aria-label="الشاشة الرئيسية" style="padding:3px 6px;font-size:10px;line-height:1.25;max-width:64px;min-width:56px;height:auto;text-align:center" onclick="leavePortal()"><span style="font-size:17px;display:block;line-height:1.1">🏠</span>الشاشة الرئيسية</button>'+
+  (S.role=='own'?'<button class="b d" title="تسجيل الخروج" onclick="fbLogout()">خروج</button>':'')+'</header>';
 }
 
 /* بطاقة الحساب أعلى الصفحة: الاسم واليوزر نيم + Drive + الاشتراك */
@@ -7057,8 +7057,11 @@ function ownV(){
 
 function inAppBrowser(){return /FBAN|FBAV|Instagram|Telegram|WhatsApp|MicroMessenger|TikTok|Snapchat|Line\/|; wv\)/i.test(navigator.userAgent||"")}
 function copyAppLink(){var u=location.origin+location.pathname;try{navigator.clipboard.writeText(u);toast("✅ نُسخ الرابط، افتحه في Chrome أو Safari")}catch(e){prompt("انسخ الرابط:",u)}}
-function pickPortal(p){S.sysRole=p;S.loginRole=p;try{localStorage.setItem("misbar_portal",p)}catch(e){}if(window.fbUsePortal)window.fbUsePortal(p);else draw()}
-function leavePortal(){S.sysRole=null;S.loginRole=null;S.role=null;try{localStorage.removeItem("misbar_portal")}catch(e){}draw()}
+function pickPortal(p){S.sysRole=p;S.loginRole=p;try{localStorage.setItem("misbar_portal",p)}catch(e){}
+  /* المستخدم مسجّل دخول أصلاً: ندخله مباشرة بدون أي طلب تسجيل */
+  if(S.uid&&S.authReady&&(p==="pro"||p==="stu")&&window.fbCurPortal&&window.fbCurPortal()==="pro_stu"){draw();return}
+  if(window.fbUsePortal)window.fbUsePortal(p);else draw()}
+function leavePortal(){S.sysRole=null;S.loginRole=null;S.role=null;S.profileOpen=false;S.subv=0;S.tab=0;try{localStorage.removeItem("misbar_portal")}catch(e){}draw()}
 function portalLoginV(p){
   $("app").className="";
   var n={pro:"الأستاذ",stu:"الطالب",parent:"أولياء الأمور",admin:"المدير / رئيس القسم"}[p]||"";
@@ -7812,6 +7815,7 @@ window.fbDeleteRoomMessage=function(chatId, msgId){
 }
 var _unAuth=null;
 function bindAuth(){if(_unAuth){try{_unAuth()}catch(e){}}_unAuth=onAuthStateChanged(auth,onAuth)}
+window.fbCurPortal=function(){return curPortal};
 window.fbUsePortal=function(p){
   var k=PORTAL_APP[p]||p;
   if(!APPS[k])return;
