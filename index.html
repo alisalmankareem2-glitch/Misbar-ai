@@ -275,6 +275,105 @@ details.ed-sec[open] summary{border-bottom:1px solid var(--ln);margin-bottom:8px
 .sheet .q-blk{break-inside:avoid;page-break-inside:avoid}
 .sheet .ans{margin:4px 0;padding:4px 8px;border-inline-start:3px solid #16a34a;background:#f0fdf4;font-size:.92em}
 @media print{.ed-pv-off{display:block!important}.ed-ov,.ed-sheet,.ed-bar,.ed-tot{display:none!important}}
+
+/* ===== v2.85: الوضع الداكن — كل الكتابة واضحة على الخلفيات الملوّنة ===== */
+@media (prefers-color-scheme:dark){
+:root:not([data-theme="light"]) [style*="background:#eff6ff" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *),
+:root:not([data-theme="light"]) [style*="background: #eff6ff" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *),
+:root:not([data-theme="light"]) [style*="background:#dbeafe" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *),
+:root:not([data-theme="light"]) [style*="background: #dbeafe" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *){background:rgba(59,130,246,.18)!important;color:var(--tx)!important}
+:root:not([data-theme="light"]) [style*="background:#ecfdf5" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *),
+:root:not([data-theme="light"]) [style*="background: #ecfdf5" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *),
+:root:not([data-theme="light"]) [style*="background:#dcfce7" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *),
+:root:not([data-theme="light"]) [style*="background: #dcfce7" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *),
+:root:not([data-theme="light"]) [style*="background:#f0fdf4" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *),
+:root:not([data-theme="light"]) [style*="background: #f0fdf4" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *){background:rgba(34,197,94,.16)!important;color:var(--tx)!important}
+:root:not([data-theme="light"]) [style*="background:#fef3c7" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *),
+:root:not([data-theme="light"]) [style*="background: #fef3c7" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *),
+:root:not([data-theme="light"]) [style*="background:#fff8eb" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *),
+:root:not([data-theme="light"]) [style*="background: #fff8eb" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *){background:rgba(245,158,11,.18)!important;color:var(--tx)!important}
+:root:not([data-theme="light"]) [style*="background:#fee2e2" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *),
+:root:not([data-theme="light"]) [style*="background: #fee2e2" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *),
+:root:not([data-theme="light"]) [style*="background:#fef2f2" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *),
+:root:not([data-theme="light"]) [style*="background: #fef2f2" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *){background:rgba(239,68,68,.18)!important;color:var(--tx)!important}
+:root:not([data-theme="light"]) [style*="background:#f3e8ff" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *),
+:root:not([data-theme="light"]) [style*="background: #f3e8ff" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *),
+:root:not([data-theme="light"]) [style*="background:#faf5ff" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *),
+:root:not([data-theme="light"]) [style*="background: #faf5ff" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *){background:rgba(168,85,247,.18)!important;color:var(--tx)!important}
+:root:not([data-theme="light"]) [style*="background:#f8fafc" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *),
+:root:not([data-theme="light"]) [style*="background: #f8fafc" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *){background:var(--bg)!important;color:var(--tx)!important}
+:root:not([data-theme="light"]) [style*="color:#b45309" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *){color:#fbbf24!important}
+:root:not([data-theme="light"]) [style*="color:#92400e" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *){color:#fcd34d!important}
+:root:not([data-theme="light"]) [style*="color:#b91c1c" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *){color:#fca5a5!important}
+:root:not([data-theme="light"]) [style*="color:#991b1b" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *){color:#fca5a5!important}
+:root:not([data-theme="light"]) [style*="color:#15803d" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *){color:#86efac!important}
+:root:not([data-theme="light"]) [style*="color:#166534" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *){color:#86efac!important}
+:root:not([data-theme="light"]) [style*="color:#1d4ed8" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *){color:#93c5fd!important}
+:root:not([data-theme="light"]) [style*="color:#2563eb" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *){color:#93c5fd!important}
+:root:not([data-theme="light"]) [style*="color:#1e40af" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *){color:#93c5fd!important}
+:root:not([data-theme="light"]) [style*="color:#7e22ce" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *){color:#d8b4fe!important}
+:root:not([data-theme="light"]) [style*="color:#6b21a8" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *){color:#d8b4fe!important}
+:root:not([data-theme="light"]) [style*="color:#0e7490" i]:not(.sheet *):not(.bk-page *):not(.pv-page *):not([data-paper] *):not([data-paper]):not(.splash *){color:#67e8f9!important}
+}
+
+/* ===== v2.85: لمسة تصميم أنيقة وسهلة (بدون تغيير بالعمل) ===== */
+:root{--sh1:0 1px 2px rgba(15,23,42,.05),0 6px 18px rgba(15,23,42,.06)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--sh1:0 1px 2px rgba(0,0,0,.35),0 8px 22px rgba(0,0,0,.28)}}
+header{box-shadow:0 1px 0 color-mix(in srgb,var(--ln) 60%,transparent)}
+header h1{font-size:17px;font-weight:800}
+.card{box-shadow:var(--sh1)}
+button.b{font-weight:700}
+.chip{border-radius:999px;padding:7px 13px;transition:background .15s,border-color .15s,box-shadow .15s}
+.chip.on{box-shadow:0 3px 10px color-mix(in srgb,var(--ac) 32%,transparent)}
+input,select,textarea{border-radius:12px;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 22%,transparent)}
+nav{box-shadow:0 -8px 26px rgba(15,23,42,.08);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);background:color-mix(in srgb,var(--sf) 90%,transparent)}
+nav button{font-weight:700;transition:color .15s}
+nav button.on::before{content:"";position:absolute;top:0;inset-inline:32%;height:3px;border-radius:0 0 4px 4px;background:var(--ac)}
+/* --- المحرر: تبويبات وأيقونات وبطاقات الأسئلة --- */
+.ed-seg{background:var(--bg);padding:4px;border-radius:16px;border:1px solid var(--ln);flex-wrap:wrap}
+.ed-seg button{border:0;background:transparent;border-radius:12px;padding:9px 8px;transition:background .15s,color .15s}
+.ed-seg button.on{background:var(--ac);color:#fff;box-shadow:0 4px 12px color-mix(in srgb,var(--ac) 35%,transparent)}
+.ed-ib{width:38px;height:38px;border-radius:12px;background:var(--acs);color:var(--ac2,var(--ac));transition:transform .12s,background .15s}
+.ed-ib:active{transform:scale(.92)}
+.ed-qh{gap:8px;padding-bottom:8px;margin-bottom:8px;border-bottom:1px dashed var(--ln)}
+.ed-qh .ed-ib{width:36px;height:36px;border-radius:11px;background:transparent;border:1px solid var(--ln);color:var(--mu)}
+.ed-qh .ed-ib:hover{border-color:var(--ac);color:var(--ac2,var(--ac))}
+.ed-num{border-radius:10px;min-width:34px;text-align:center;box-shadow:0 3px 10px color-mix(in srgb,var(--ac) 30%,transparent)}
+.ed-marks{border-radius:11px!important;font-weight:700}
+.ed-q{border-radius:18px;box-shadow:var(--sh1)}
+.ed-ta{border-radius:14px;transition:border-color .15s,box-shadow .15s}
+.ed-ta:focus{border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 20%,transparent);outline:none}
+.ed-add{border-radius:12px;transition:border-color .15s,color .15s}
+.ed-add:hover{border-color:var(--ac);color:var(--ac2,var(--ac))}
+.ed-tot{border-radius:14px;box-shadow:var(--sh1)}
+.ed-bar{padding-bottom:10px}
+.ed-sheet{border-radius:24px 24px 0 0}
+.ed-row{border-radius:14px;transition:background .12s}
+.ed-row:active{background:var(--bg)}
+.ed-ico{border-radius:14px}
+details.ed-sec{border-radius:18px;box-shadow:var(--sh1)}
+/* --- أقسام قابلة للطي: إعدادات الورقة السريعة وخيارات كل سؤال --- */
+details.ed-tools{padding:0 12px}
+.ed-tools>summary,.ed-qo>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;font:800 13px Cairo,sans-serif;color:var(--tx);padding:11px 2px}
+.ed-qo>summary{margin-top:8px;padding:9px 10px;border-radius:12px;background:var(--bg);font-size:12.5px;color:var(--mu)}
+.ed-tools>summary::-webkit-details-marker,.ed-qo>summary::-webkit-details-marker{display:none}
+.ed-tools>summary small,.ed-qo>summary small{margin-inline-start:auto;font-weight:500;opacity:.7;font-size:11px}
+.ed-tools>summary::after,.ed-qo>summary::after{content:"▾";font-size:12px;opacity:.7;transition:transform .2s}
+.ed-tools[open]>summary::after,.ed-qo[open]>summary::after{transform:rotate(180deg)}
+.ed-tools[open]>summary{border-bottom:1px solid var(--ln);margin-bottom:8px}
+.ed-qo[open]>summary{margin-bottom:4px}
+
+/* ===== v2.86: تتمة الوضع الداكن ووضوح الألوان (CSS فقط، بدون تغيير بالعمل) ===== */
+@media (prefers-color-scheme:dark){
+:root:not([data-theme="light"]) .badge{background:color-mix(in srgb,var(--ac2,#8fb0ff) 18%,transparent);color:var(--ac2,#8fb0ff);border-color:color-mix(in srgb,var(--ac2,#8fb0ff) 32%,transparent)}
+:root:not([data-theme="light"]) .ed-row.dg b{color:#fca5a5}
+:root:not([data-theme="light"]) .ed-row.dg .ed-ico{background:rgba(239,68,68,.18);color:#fca5a5}
+:root:not([data-theme="light"]) .ed-tot.bad{background:rgba(245,158,11,.16);color:#fcd34d;border:1px solid rgba(245,158,11,.32)}
+:root:not([data-theme="light"]) .quiz-opt.ok{background:rgba(34,197,94,.18);color:#bbf7d0}
+:root:not([data-theme="light"]) .quiz-opt.bad{background:rgba(239,68,68,.18);color:#fecaca}
+}
+.portal.p4{background:linear-gradient(135deg,#c2410c,#d97706)}
 </style>
 </head>
 <body>
@@ -321,7 +420,7 @@ window.misbarHardReset=function(){
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.84.0";
+var APP_VERSION = "2.86.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -1884,7 +1983,7 @@ function markPrevH(q){
   else if(mp==="center")line='<div style="text-align:center;font-weight:700">'+m+'</div><div>'+t+' '+b+'</div>';
   else if(mp==="end")line='<div>'+t+' '+b+' <b>'+m+'</b></div>';
   else line='<div>'+t+' <b>'+m+'</b> '+b+'</div>';
-  return '<div class="mu" style="margin-top:10px">معاينة مكان الدرجة</div><div dir="'+(rt?'rtl':'ltr')+'" style="border:1px dashed var(--ln);border-radius:10px;padding:8px;background:#fff;color:#000">'+line+'</div>';
+  return '<div class="mu" style="margin-top:10px">معاينة مكان الدرجة</div><div dir="'+(rt?'rtl':'ltr')+'" data-paper="1" style="border:1px dashed var(--ln);border-radius:10px;padding:8px;background:#fff;color:#000">'+line+'</div>';
 }
 function edLayAll(i){var p=S.pp,q=p.q[i];edMark(true);p.q.forEach(function(x){x.al=q.al;x.bw=q.bw;x.ba=q.ba;x.mp=q.mp;x.mf=q.mf;x.mc=q.mc;x.hm=q.hm});edAuto();toast("طُبّق التنسيق على كل الأسئلة");updSheet()}
 function tbAdd(){var p=S.pp;edMark(true);p.tb=p.tb||[];p.tb.push({t:"نص جديد",x:30,y:40,w:40,h:8,fs:14,b:1,bd:1,al:"center"});edAuto();updSheet()}
@@ -1912,7 +2011,7 @@ function edQPrevH(i){
   try{t.innerHTML=paperH()}finally{q.hid=oh;p.view=ov}
   w=t.firstElementChild;b=t.querySelectorAll(".q-blk")[k];
   if(!b||!w)return '<div class="mu">تعذّرت المعاينة</div>';
-  return '<div dir="'+(w.getAttribute("dir")||"rtl")+'" style="'+(w.getAttribute("style")||"")+';background:#fff;color:#000;padding:14px;border-radius:10px;overflow:auto;max-height:46vh">'+b.outerHTML+'</div>';
+  return '<div data-paper="1" dir="'+(w.getAttribute("dir")||"rtl")+'" style="'+(w.getAttribute("style")||"")+';background:#fff;color:#000;padding:14px;border-radius:10px;overflow:auto;max-height:46vh">'+b.outerHTML+'</div>';
 }
 function edQPrevCtl(i,q){
   var chp=function(a,on,fn){return '<button class="chip'+(on?' on':'')+'" onclick="'+fn+'">'+a+'</button>'};
@@ -2024,13 +2123,13 @@ function ppEdScr(){
   if(tb==="qs"){
     var vi=0,r=edTotInfo();
     body='<div id="edTot" class="ed-tot noprint'+(r.ok?"":" bad")+'">'+r.html+'</div>'+
-    '<div class="ed-q noprint"><div class="ed-qm" style="margin:0 0 6px"><span class="ql">يظهر في الورقة:</span>'+
+    '<details class="ed-q ed-tools noprint"'+(S.qsTools?' open':'')+' ontoggle="S.qsTools=this.open"><summary>⚙️ إعدادات الورقة السريعة <small>الزمن · التاريخ · الدرجة · الخط</small></summary><div class="ed-qm" style="margin:0 0 6px"><span class="ql">يظهر في الورقة:</span>'+
       [["الزمن",!o.noTime,"o.noTime",true],["التاريخ",!!o.showDate,"o.showDate",!o.showDate],["الدرجة الكلية",!o.noTotal,"o.noTotal",true],["درجات الأسئلة",!o.noQM,"o.noQM",true],["الخط تحت الترويسة",!o.noHL,"o.noHL",true]].map(function(x){
         var nv=x[2]==="o.showDate"?!o.showDate:!!x[1];
         return '<button class="chip'+(x[1]?' on':'')+'" onclick="psd(\''+x[2]+'\','+nv+')">'+(x[1]?'✓ ':'')+x[0]+'</button>'}).join("")+'</div>'+
       (o.noHL?'':'<div class="ed-qm"><span class="ql">شكل الخط تحت الترويسة:</span>'+hlChips(o)+'</div>')+
       '<div class="ed-qm"><span class="ql">شكل الدرجة (للكل):</span>'+MF_LIST.map(function(x){return '<button class="chip'+((o.mf||"d")===x[0]?' on':'')+'" onclick="edMfAll(\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+
-      (o.mf==="c"?'<input style="margin-top:6px" value="'+esc(o.mc||"")+'" placeholder="اكتب ما يظهر مكان الدرجة، مثال: الدرجة {m} أو Mark {m}  ({m} = رقم الدرجة)" oninput="ps(\'o.mc\',this.value)">':'')+'</div>'+
+      (o.mf==="c"?'<input style="margin-top:6px" value="'+esc(o.mc||"")+'" placeholder="اكتب ما يظهر مكان الدرجة، مثال: الدرجة {m} أو Mark {m}  ({m} = رقم الدرجة)" oninput="ps(\'o.mc\',this.value)">':'')+'</details>'+
     p.q.map(function(q,i){
       var chip=q.hid?"—":(q.num?esc(q.num):convDigits(String(++vi),o.digits));
       var chips=[];
@@ -2040,11 +2139,13 @@ function ppEdScr(){
           '<input class="ed-marks" type="number" inputmode="decimal" step="0.5" placeholder="الدرجة" value="'+esc(q.m)+'" oninput="pq('+i+',\'m\',this.value);edTot()">'+
           '<button class="ed-ib" onclick="edQPrev('+i+')" aria-label="معاينة السؤال كما في الورقة">'+mIc(q.hid?"eyeoff":"eye")+'</button>'+
           '<button class="ed-ib" onclick="edQSheet('+i+')" aria-label="خيارات السؤال">'+mIc("dots")+'</button></div>'+
+        '<textarea class="ed-ta" id="qt_'+i+'" dir="'+ppAutoDir(q.t)+'" rows="2" placeholder="اكتب نص السؤال…" onfocus="edFocus(this)" oninput="pq('+i+',\'t\',this.value);edGrow(this)">'+esc(q.t)+'</textarea>'+
+        ((q.s||q.showS)?'<textarea class="ed-ta" id="qs_'+i+'" dir="'+ppAutoDir(q.s)+'" rows="2" style="margin-top:6px" placeholder="الفروع أو الخيارات — سطر لكل فرع" onfocus="edFocus(this)" oninput="pq('+i+',\'s\',this.value);edGrow(this)">'+esc(q.s)+'</textarea>':'<button class="ed-add" onclick="edShowS('+i+')">+ فروع أو خيارات</button>')+
+        '<details class="ed-qo"'+((S._qo&&S._qo['+i+'])?' open':'')+' ontoggle="S._qo=S._qo||{};S._qo['+i+']=this.open"><summary>⚙️ خيارات السؤال <small>الدرجة · الخط · المحاذاة</small></summary>'+
         '<div class="ed-qm"><button class="chip'+(!q.hm?' on':'')+'" onclick="edSetQ('+i+',\'hm\','+(!q.hm)+')">'+(q.hm?'الدرجة مخفية':'الدرجة ظاهرة')+'</button>'+(q.hm?'':[["","بجانب الرقم"],["right","يمين"],["center","وسط"],["left","يسار"],["end","نهاية"]].map(function(x){return '<button class="chip'+((q.mp||"")===x[0]?' on':'')+'" onclick="edSetQ('+i+',\'mp\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'<select onchange="edSetQ('+i+',\'mf\',this.value)"><option value="">شكل: عام</option>'+MF_LIST.map(function(x){return '<option value="'+x[0]+'"'+(q.mf===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join("")+'</select>')+((!q.hm&&q.mf==="c")?'<input style="flex:1;min-width:150px;margin:0;padding:5px 8px;font-size:12px" value="'+esc(q.mc||"")+'" placeholder="اكتب ما يظهر مكان الدرجة، مثال: الدرجة {m}" oninput="pq('+i+',\'mc\',this.value)">':'')+'</div>'+
         '<div class="ed-qm"><span class="ql">حجم الخط:</span><select style="width:auto;margin:0;padding:5px 8px;font-size:12px" onchange="pfs('+i+',this.value)"><option value="">تلقائي</option>'+fsOpts(q.fs)+'</select></div>'+
         '<div class="ed-qm"><span class="ql">السؤال:</span>'+[["","تلقائي"],["right","يمين"],["center","وسط"],["left","يسار"]].map(function(x){return '<button class="chip'+((q.al||"")===x[0]?' on':'')+'" onclick="edSetQ('+i+',\'al\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+
-        '<textarea class="ed-ta" id="qt_'+i+'" dir="'+ppAutoDir(q.t)+'" rows="2" placeholder="اكتب نص السؤال…" onfocus="edFocus(this)" oninput="pq('+i+',\'t\',this.value);edGrow(this)">'+esc(q.t)+'</textarea>'+
-        ((q.s||q.showS)?'<textarea class="ed-ta" id="qs_'+i+'" dir="'+ppAutoDir(q.s)+'" rows="2" style="margin-top:6px" placeholder="الفروع أو الخيارات — سطر لكل فرع" onfocus="edFocus(this)" oninput="pq('+i+',\'s\',this.value);edGrow(this)">'+esc(q.s)+'</textarea>':'<button class="ed-add" onclick="edShowS('+i+')">+ فروع أو خيارات</button>')+
+        '</details>'+
         (q.img?'<img src="'+q.img+'" alt="" style="max-height:90px;border-radius:8px;margin-top:6px">':'')+
         (chips.length?'<div class="ed-chips">'+chips.map(function(c){return '<span class="ed-chip">'+c+'</span>'}).join("")+'</div>':'')+
       '</div>';
@@ -3954,7 +4055,7 @@ function proPortalsV(){
   };
   return '<h2>ماذا تريد أن تعمل؟</h2>' +
     card("doc","الأسئلة والملازم","اكتب امتحاناً أو ملزمة وطبعها A4 ("+docsCount+" مستند)","S.proPortal='papers';draw()") +
-    card("spark","مولّد الذكاء الاصطناعي","مولّد أسئلة ومولّد ملازم من مصادرك (PDF · Word · روابط)","S.proPortal='sch';S.gwTab='q';draw()") +
+    card("spark","مولّد الذكاء الاصطناعي","مولّد أسئلة ومولّد ملازم من ملفاتك أو روابطك","S.proPortal='sch';S.gwTab='q';draw()") +
     card("chart","دفتر الدرجات","سجّل الدرجات واحسب المعدلات ("+grCount+" طالب)","S.proPortal='grades';draw()") +
     card("live","الامتحان المباشر","امتحان للطلاب بكود ومؤقت وحماية من الغش","S.proPortal='live';draw()",1) +
     card("cal","الخطط الدراسية","خطة يومية أو أسبوعية أو شهرية جاهزة للطباعة","S.proPortal='plans';draw()");
