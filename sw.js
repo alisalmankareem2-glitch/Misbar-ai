@@ -1,5 +1,5 @@
 /* Service Worker - مسبار المدرسة: يجلب النسخة الجديدة أولاً من الإنترنت، ويعمل بدون إنترنت من آخر نسخة محفوظة */
-const CACHE_NAME = 'misbar-ai-v2.86.0';
+const CACHE_NAME = 'misbar-ai-v2.87.0';
 const CORE_ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-512-maskable.png', './apple-touch-icon.png', './favicon-32.png'];
 
 self.addEventListener('install', (event) => {

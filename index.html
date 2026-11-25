@@ -420,7 +420,7 @@ window.misbarHardReset=function(){
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.86.0";
+var APP_VERSION = "2.87.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -1060,7 +1060,7 @@ var AUD=[{k:"parent",i:"👨‍👩‍👦",n:"أولياء الأمور"},{k:"a
 function AUDN(a){var x=AUD.filter(function(y){return y.k===a})[0];return x?x.i+" "+x.n:a}
 function curAud(){if(S.sysRole==="admin")return "admin";if(S.sysRole==="parent")return "parent";if(S.role==="pro"||S.role==="stu")return S.role;return null}
 function planFor(p,a){var x=p.a&&p.a.length?p.a:["pro","stu"];return x.indexOf(a)>-1}
-function subActive(a){var n=Date.now();return S.subs.filter(function(s){return s.e==S.email&&s.end>n&&(!s.s||s.s<=n)&&planFor(s,a)})[0]}
+function subActive(a){var n=Date.now();return S.subs.filter(function(s){return s.e==S.email&&s.end>n&&!s.paused&&(!s.s||s.s<=n)&&planFor(s,a)})[0]}
 function hasAud(a){return !!(S.isOwner||subActive(a))}
 function payMode(a){if(!S.pay){try{S.pay=JSON.parse(localStorage.getItem("misbar_pay")||"{}")}catch(e){S.pay={}}}var m=S.pay[a];return m||(a==="pro"||a==="stu"?"trial":"free")}
 function setPayMode(a,v){S.pay=S.pay||{};S.pay[a]=v;try{localStorage.setItem("misbar_pay",JSON.stringify(S.pay))}catch(e){}if(window.fbSaveAppConfig)window.fbSaveAppConfig({pay:S.pay});toast("✅ حُفظ")}
@@ -1068,7 +1068,7 @@ function togAud(i,a){var p=S.plans[i],x=(p.a&&p.a.length?p.a:["pro","stu"]).slic
 function audChipsH(x,i){return '<label>الفئات التي تفتحها الباقة</label><div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:8px">'+AUD.map(function(a){return '<button class="chip'+(planFor(x,a.k)?' on':'')+'" onclick="togAud('+i+',\''+a.k+'\')">'+a.i+' '+a.n+'</button>'}).join("")+'</div>'}
 function payCfgH(){return '<div class="card" style="border-inline-start:4px solid #f59e0b"><b>💳 نظام الدفع لكل فئة</b><div class="mu" style="margin:4px 0 8px;line-height:1.7">لكل فئة اختر: مجانية، أو تجربة محدودة ثم اشتراك، أو مقفلة حتى الاشتراك. كل فئة ترى فقط الباقات المخصصة لها، ولا تدفع عن واجهة ما تستخدمها.</div>'+AUD.map(function(a){var m=payMode(a.k),o=[["free","مجانية"]].concat(a.k==="pro"||a.k==="stu"?[["trial","تجربة ثم اشتراك"]]:[]).concat([["lock","مقفلة حتى الاشتراك"]]);return '<label>'+a.i+' '+a.n+'</label><select onchange="setPayMode(\''+a.k+'\',this.value)">'+o.map(function(x){return '<option value="'+x[0]+'"'+(m===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join("")+'</select>'}).join("")+'</div>'}
 function subDocId(r){return r.a&&r.a.length?r.uid+"_"+r.a.slice().sort().join("-"):r.uid}
-function isSub(){var a=curAud(),n=Date.now();return a?hasAud(a):(S.isOwner||S.subs.some(function(s){return s.e==S.email&&s.end>n&&(!s.s||s.s<=n)}))}
+function isSub(){var a=curAud(),n=Date.now();return a?hasAud(a):(S.isOwner||S.subs.some(function(s){return s.e==S.email&&s.end>n&&!s.paused&&(!s.s||s.s<=n)}))}
 function stat(){return S.email?(isSub()?"💳 مشترك":"💳 اشترك"):""}
 function usedSync(){var k="misbar_used_"+String(S.email||"anon").toLowerCase();if(S._usedKey!==k){S._usedKey=k;try{S.used=Math.max(S.used||0,parseInt(localStorage.getItem(k)||"0")||0)}catch(e){}}return k}
 function usedSave(){try{localStorage.setItem(usedSync(),String(S.used))}catch(e){}}
@@ -7244,7 +7244,7 @@ function subScr(lock){
   var pl=S.plans.map(function(p,i){return p.hide||(aud&&!planFor(p,aud))?'':'<div class="card" onclick="S.pick='+i+';draw()" style="cursor:pointer;border:2px solid '+(S.pick===i?'var(--ac)':'var(--ln)')+'"><div class="row"><b class="grow">'+esc(p.n)+'</b><span>'+(S.pick===i?'✅':'⚪')+'</span></div><div>'+Number(p.p).toLocaleString("ar-IQ")+' د.ع · '+p.v+' '+p.u+'</div>'+(p.f?'<div class="mu">'+esc(p.f)+'</div>':'')+'</div>'}).join("");
   $("app").className=S.role=="pro"?"pro":"";
   $("app").innerHTML='<header><h1>'+(lock?'🔒 يتطلب اشتراكاً':'الاشتراكات')+'</h1>'+(lock?(false?'<button class="b s" onclick="setRole(null)">🔄 تبديل</button>':'')+'<button class="b d" onclick="S.sysRole=null;S.loginRole=null;fbLogout()">خروج</button>':'<button class="b s" onclick="S.subv=0;draw()">رجوع</button>')+'</header><main>'+(lock?'<div class="card" style="border-inline-start:4px solid #f59e0b;line-height:1.8">واجهة <b>'+esc(AUDN(aud))+'</b> متاحة بالاشتراك فقط. اختر باقتك وأرسل الطلب، وبعد تفعيل المالك تفتح لك مباشرة.</div>':'')+
-    '<div class="card">'+(cur?'✅ اشتراكك: '+esc(cur.n)+' · ينتهي '+fd(cur.end):'حسابك مجاني حالياً')+'</div>'+
+    '<div class="card">'+(cur?'✅ اشتراكك: '+esc(cur.n)+' · ينتهي '+fd(cur.end)+(cur.free?' · 🎁 يشمل '+cur.free+' يوم مجاني':''):(S.subs.filter(function(x){return x.e==S.email&&x.paused})[0]?'⏸ اشتراكك موقوف مؤقتاً من الإدارة، وتُضاف مدة التوقف عند الاستئناف.':'حسابك مجاني حالياً'))+'</div>'+
     '<h2>اختر باقة وأرسل طلباً</h2>'+(pl||'<div class="card mu">لا توجد باقات متاحة</div>')+
     (sel&&!sel.hide?'<div class="card"><b>تفاصيل: '+esc(sel.n)+'</b><div>السعر: '+Number(sel.p).toLocaleString("ar-IQ")+' د.ع</div><div>المدة: '+dd(sel)+' يوماً من تاريخ التفعيل</div><div class="mu">بعد إرسال الطلب يتواصل معك المالك لتأكيد الدفع ثم يفعّل اشتراكك.</div></div>':'')+
     '<button class="b" style="width:100%" onclick="sendReq()">إرسال طلب الاشتراك</button>'+
@@ -7290,8 +7290,62 @@ function saveTurnCfg(){
   window.fbSaveTurnConfig(obj).then(function(){ toast('✅ تم الحفظ'); if(el) el.value = ''; return loadTurnConfig(true); }).then(function(){ draw(); }).catch(function(e){ toast('تعذر الحفظ: ' + ((e && e.code) || e)); });
 }
 
+/* ===== v2.87: إدارة المشتركين (للمالك): إيقاف / استئناف / تفعيل / تغيير الفئة / أيام مجانية / حذف ===== */
+function subState(x){var n=Date.now();if(x.paused)return "paused";if(x.s&&x.s>n)return "sched";return x.end>n?"active":"ended"}
+function subSafe(id){return String(id).replace(/[^\w-]/g,"")}
+function subPlan(x){return S.plans.filter(function(p){return (x.pid&&pid(p)===x.pid)||p.n==x.n})[0]}
+function subFail(e){toast("تعذر التنفيذ: "+((e&&(e.code||e.message))||e))}
+function subTg(k,o){S.subGrp=S.subGrp||{};S.subGrp[k]=o?1:0}
+function subGet(id){return S.subs.filter(function(x){return (x.id||x.uid)==id})[0]}
+function subDo(id,act,arg){
+  var x=subGet(id);if(!x||!window.fbSubUpdate)return;var n=Date.now(),patch=null,msg="";
+  if(act==="pause"){patch={paused:true,hold:n};msg="أُوقف الاشتراك مؤقتاً"}
+  else if(act==="resume"){var add=x.hold?Math.max(0,n-x.hold):0;patch={paused:false,hold:0,end:x.end+add};msg="استُؤنف الاشتراك وأُضيفت مدة التوقف ("+Math.round(add/864e5)+" يوم)"}
+  else if(act==="activate"){var p=subPlan(x),d=p?dd(p):30;patch={paused:false,hold:0,s:n,end:n+d*864e5};if(p&&p.a&&p.a.length)patch.a=p.a;msg="فُعّل الاشتراك لمدة "+d+" يوم"}
+  else if(act==="free"){var days=Math.round(Number(arg));if(!(days>0&&days<=3650)){toast("اكتب عدد أيام صحيح (1 - 3650)");return}
+    var live=x.paused||x.end>n,base=live?x.end:n;patch={end:base+days*864e5,free:(Number(x.free)||0)+days};if(!live)patch.s=n;msg="🎁 أُضيف "+days+" يوم مجاني — ينتهي "+fd(patch.end)}
+  else if(act==="plan"){var p2=S.plans.filter(function(q){return pid(q)===arg})[0];if(!p2){toast("اختر الفئة");return}
+    var now0=x.paused?(x.hold||n):n,st=(x.s&&x.s<=now0&&x.end>now0)?x.s:now0,ne=st+dd(p2)*864e5;if(ne<=now0){st=now0;ne=now0+dd(p2)*864e5}
+    patch={n:String(p2.n),pid:pid(p2),a:(p2.a&&p2.a.length)?p2.a:["pro","stu"],s:st,end:ne};msg="نُقل إلى فئة «"+p2.n+"» — ينتهي "+fd(ne)}
+  else if(act==="del"){confirmModal("حذف اشتراك "+(x.e||"")+" نهائياً؟ سيفقد المشترك ميزاته فوراً.",function(){window.fbSubDelete(id).then(function(){toast("🗑 حُذف الاشتراك")}).catch(subFail)});return}
+  if(!patch)return;
+  window.fbSubUpdate(id,patch).then(function(){toast("✅ "+msg)}).catch(subFail);
+}
+function subFreeGo(id){var e=document.getElementById("sdf_"+subSafe(id));subDo(id,"free",e?e.value:0)}
+function subPlanGo(id){var e=document.getElementById("spl_"+subSafe(id));subDo(id,"plan",e?e.value:"")}
+function subFreeFill(id,v){var e=document.getElementById("sdf_"+subSafe(id));if(e)e.value=v}
+function subCardH(x){
+  var st=subState(x),n=Date.now(),sf=subSafe(x.id||x.uid),days=Math.max(0,Math.ceil((x.end-n)/864e5)),idq="\\'"+esc(x.id||x.uid)+"\\'";
+  var B={active:["✅ فعّال","#16a34a"],paused:["⏸ موقوف","#d97706"],ended:["⛔ منتهي","#dc2626"],sched:["⏳ مجدول","#2563eb"]}[st];
+  var main=st==="paused"?'<button class="b" onclick="subDo('+idq+',\'resume\')">▶ استئناف</button>':
+    (st==="active"||st==="sched")?'<button class="b s" onclick="subDo('+idq+',\'pause\')">⏸ إيقاف مؤقت</button>':
+    '<button class="b" onclick="subDo('+idq+',\'activate\')">✅ تفعيل من جديد</button>';
+  var pl=subPlan(x),opts=S.plans.map(function(p){return '<option value="'+pid(p)+'"'+(pl&&pid(pl)===pid(p)?' selected':'')+'>'+esc(p.n)+' ('+p.v+' '+p.u+')</option>'}).join("");
+  return '<div class="card" style="padding:10px 12px">'+
+    '<div class="row"><b class="grow" dir="ltr" style="text-align:start;word-break:break-all;font-size:13px">'+esc(x.e||"—")+'</b><span class="badge" style="background:'+B[1]+'22;color:'+B[1]+';border-color:'+B[1]+'55">'+B[0]+'</span></div>'+
+    '<div class="mu" style="font-size:12px;margin:3px 0 8px;line-height:1.7">'+(x.n?esc(x.n)+' · ':'')+(x.s?'من '+fd(x.s)+' ':'')+'إلى '+fd(x.end)+(st==="active"||st==="paused"?' · باقي '+days+' يوم':'')+(x.free?' · 🎁 '+x.free+' يوم مجاني':'')+'</div>'+
+    '<div class="row" style="flex-wrap:wrap;gap:6px">'+main+'<button class="b d" onclick="subDo('+idq+',\'del\')">🗑 حذف</button></div>'+
+    '<details class="cv"><summary>⚙️ تغيير الفئة / فترة مجانية</summary>'+
+      '<label>نقل المشترك إلى فئة (باقة) أخرى</label><div class="row" style="gap:6px"><select id="spl_'+sf+'" style="margin:0">'+opts+'</select><button class="b" onclick="subPlanGo('+idq+')">تغيير</button></div>'+
+      '<label style="margin-top:10px">🎁 فترة مجانية إضافية (كم يوم؟)</label><div class="row" style="gap:6px"><input id="sdf_'+sf+'" type="number" min="1" max="3650" inputmode="numeric" value="7" style="margin:0"><button class="b" onclick="subFreeGo('+idq+')">أضف</button></div>'+
+      '<div class="row" style="flex-wrap:wrap;gap:6px;margin-top:6px">'+[3,7,14,30,60].map(function(v){return '<button class="chip" onclick="subFreeFill('+idq+','+v+')">'+v+' يوم</button>'}).join("")+'</div>'+
+    '</details></div>';
+}
+function subsMgrV(){
+  var all=S.subs.slice(),q=(S.subQ||"").toLowerCase().trim(),F=S.subF||"all";
+  var cnt={all:all.length,active:0,paused:0,ended:0};all.forEach(function(x){var t=subState(x);if(t==="paused")cnt.paused++;else if(t==="ended")cnt.ended++;else cnt.active++});
+  var chips=[["all","الكل"],["active","فعّال"],["paused","موقوف"],["ended","منتهي"]].map(function(f){return '<button class="chip'+(F===f[0]?' on':'')+'" onclick="S.subF=\''+f[0]+'\';draw()">'+f[1]+' ('+cnt[f[0]]+')</button>'}).join("");
+  var list=all.filter(function(x){var t=subState(x);var okF=F==="all"||(F==="active"&&(t==="active"||t==="sched"))||F===t;return okF&&(!q||String(x.e||"").toLowerCase().indexOf(q)>-1||String(x.n||"").toLowerCase().indexOf(q)>-1)});
+  var groups={},order=[];S.plans.forEach(function(p){order.push(p.n)});
+  list.forEach(function(x){var k=x.n||"بدون باقة";if(!groups[k]){groups[k]=[];if(order.indexOf(k)<0)order.push(k)}groups[k].push(x)});
+  var body=order.filter(function(k){return groups[k]&&groups[k].length}).map(function(k){
+    var g=groups[k].sort(function(a,b){return b.end-a.end}),ac=g.filter(function(x){var t=subState(x);return t==="active"||t==="sched"}).length,open=!(S.subGrp&&S.subGrp[k]===0);
+    return '<details class="cv" '+(open?'open':'')+' ontoggle="subTg(\''+esc(k).replace(/'/g,"")+'\',this.open)" style="margin:8px 0"><summary>📦 '+esc(k)+' <span class="mu">— '+g.length+' مشترك · '+ac+' فعّال</span></summary><div style="margin-top:8px">'+g.map(subCardH).join("")+'</div></details>'}).join("");
+  return '<h2>👥 إدارة المشتركين ('+all.length+')</h2><div class="card"><div class="mu" style="line-height:1.8;margin-bottom:8px">كل المشتركين مقسّمين حسب الباقة (الأسبوعي، الشهري…). افتح مشتركاً لإيقافه أو استئنافه أو تفعيله أو نقله لفئة أخرى أو منحه أياماً مجانية أو حذفه.</div><div class="row" style="flex-wrap:wrap;gap:6px">'+chips+'</div><input dir="ltr" placeholder="ابحث بالإيميل أو اسم الباقة" value="'+esc(S.subQ||"")+'" onchange="S.subQ=this.value;draw()"></div>'+
+    (body||'<div class="card mu">لا يوجد مشتركون مطابقون.</div>');
+}
 function ownV(){
-  var activeSubs=S.subs.filter(function(s){return s.end>Date.now()}).length;
+  var activeSubs=S.subs.filter(function(s){return s.end>Date.now()&&!s.paused}).length;
   var fbs=S.feedbacks||[];
   return '<button class="b" style="width:100%;margin-bottom:10px" onclick="savePlans()">💾 حفظ الباقات ونشرها للمستخدمين</button>'+
   '<div class="grid"><div class="card"><b>'+S.allUsers.length+'</b><div class="mu">مستخدم مسجل</div></div><div class="card"><b>'+activeSubs+'</b><div class="mu">اشتراك فعال</div></div></div>'+
@@ -7299,6 +7353,7 @@ function ownV(){
   (fbs.length?fbs.map(function(fb){
     return '<div class="card"><div class="row"><b>'+esc(fb.name)+'</b><span class="mu grow" dir="ltr">'+esc(fb.email)+'</span><span class="mu">'+fd(fb.at)+'</span></div><div style="margin-top:4px">'+esc(fb.text)+'</div></div>';
   }).join(""):'<div class="card mu">لا توجد مقترحات مرسلة بعد.</div>')+
+  subsMgrV()+
   reqV()+
   plansV()+
   turnCardV()+
@@ -8072,7 +8127,7 @@ window.fbDeleteRoomMessage=function(chatId, msgId){
     },err));
     var sa=[],sb=[],mix=function(){S.subs=sa.concat(sb);drawSoon()};
     unsubs.push(onSnapshot(doc(db,"subscriptions",u.uid),function(s){
-      sa=s.exists()?[{id:u.uid,uid:u.uid,e:S.email,n:s.data().n,s:s.data().s,end:s.data().end,a:s.data().a}]:[];mix();
+      sa=s.exists()?[{id:u.uid,uid:u.uid,e:S.email,n:s.data().n,s:s.data().s,end:s.data().end,a:s.data().a,paused:!!s.data().paused,free:s.data().free||0}]:[];mix();
     },err));
     unsubs.push(onSnapshot(query(collection(db,"subscriptions"),where("uid","==",u.uid)),function(s){
       sb=[];s.forEach(function(d){if(d.id!==u.uid){var x=d.data();x.id=d.id;x.e=S.email;sb.push(x)}});mix();
@@ -8110,6 +8165,8 @@ window.sendReq=function(){
   setDoc(doc(db,"requests",String(id)),{uid:S.uid,e:S.email,pid:pid(p),n:String(p.n),p:Number(p.p)||0,v:Number(p.v)||1,u:p.u,a:p.a||["pro","stu"],d:id,st:"new"})
     .then(function(){S.pick=null;toast("أُرسل طلبك للمالك")}).catch(fail);
 };
+window.fbSubUpdate=function(id,patch){return setDoc(doc(db,"subscriptions",id),patch,{merge:true})};
+window.fbSubDelete=function(id){return deleteDoc(doc(db,"subscriptions",id))};
 window.reqSt=function(id,st){updateDoc(doc(db,"requests",String(id)),{st:st}).catch(fail)};
 function subOf(id){return S.subs.filter(function(s){return (s.id||s.uid)==id})[0]}
 window.actv=function(id){
