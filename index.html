@@ -17,7 +17,7 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1524;--sf:#18203a;--tx:#eef1fb;--mu:#98a2bd;--ln:#2a3354;--acs:#1e2b57}}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font-family:Cairo,Tahoma,sans-serif;min-height:100vh;padding-bottom:76px}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:Cairo,Tahoma,sans-serif;min-height:100vh;display:flex;flex-direction:column}
 .pro{--ac:#15803d;--acs:#dcf5e5}
 @media (prefers-color-scheme:dark){.pro{--acs:#173826}}
 header{display:flex;align-items:center;gap:6px;padding:11px 13px;background:var(--sf);border-bottom:1px solid var(--ln);position:sticky;top:env(safe-area-inset-top,0px);z-index:10}
@@ -97,10 +97,12 @@ nav button.on{color:var(--ac)}nav i{display:block;font-style:normal;font-size:19
 .pos-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0;max-height:220px;overflow-y:auto}
 
 /* Portals, 3-AI Cards & WhatsApp/Telegram Chat Styles */
-.portal-card{background:var(--sf);border:1.5px solid var(--ln);border-radius:16px;padding:16px;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:.15s;box-shadow:0 2px 8px rgba(0,0,0,.03)}
-.portal-card:active{transform:scale(.98)}
-.portal-ico{width:52px;height:52px;border-radius:14px;background:var(--acs);color:var(--ac);font-size:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.ai-prov-card{background:var(--sf);border:2px solid var(--ln);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer;transition:.15s}
+.portal-card{background:var(--sf);border:1.5px solid var(--ln);border-radius:20px;padding:20px;margin-bottom:16px;cursor:pointer;display:flex;align-items:center;gap:16px;transition:.2s;box-shadow:0 4px 12px rgba(0,0,0,.05);position:relative;overflow:hidden}
+.portal-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,var(--ac),var(--acs));opacity:0;transition:.3s}
+.portal-card:active{transform:scale(.97)}
+.portal-card:hover::before{opacity:1}
+.portal-ico{width:56px;height:56px;border-radius:18px;background:linear-gradient(135deg,var(--acs),var(--ac));color:#fff;font-size:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:inset 0 2px 4px rgba(0,0,0,.1);transition:.3s}
+.ai-prov-card{background:var(--sf);border:2px solid var(--ln);border-radius:16px;padding:16px 12px;text-align:center;cursor:pointer;transition:.2s}
 .ai-prov-card.on{border-color:var(--ac);background:var(--acs)}
 .wa-room{position:fixed;inset:0;z-index:22;display:flex;flex-direction:column;background:#efeae2;overflow:hidden;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .wa-head{background:#075e54;color:#fff;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:3}
@@ -154,7 +156,7 @@ body { background: #f0f2f5; }
 .card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
 button.b { transition: all 0.2s ease; font-weight: 700; letter-spacing: 0.2px; }
 button.b:not(:disabled):active { transform: scale(0.96); }
-main { animation: fadeIn 0.4s ease-out; }
+main { animation: fadeIn 0.4s ease-out; flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
 #app.noanim main{animation:none}
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -420,7 +422,7 @@ window.misbarHardReset=function(){
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.87.0";
+var APP_VERSION = "2.88.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -1287,6 +1289,8 @@ function topBarH(){
   var pb=(S.tab==0 || (S.role=="pro"&&S.tab==3)) ? profileBarH() : '';
   if(!pb)return pb;
   try{var inst=S.sysRole==="pro"?((keyParts()||{}).id):(S.sysRole==="stu"?((getStuLink()||{}).inst):"");pb+=noticesFor(S.sysRole==="pro"?"pro":"stu",inst||"")}catch(e){}
+  // Drive banner moved to account circle for pro role
+  if(S.sysRole!=="pro"||S.tab!=3)pb+=driveBannerH();
   return pb;
 }
 
@@ -1689,9 +1693,13 @@ function paperH(){
     h+='<div style="font-size:.9em">'+tdg(subjShow(f,typeof o!=="undefined"?o:null))+(f.stage?' — '+tdg(f.stage):'')+ppRoundYearH(f,o,dg,tdg)+'</div>';
     h+='</div>';
   }
-  if(!(o.noTime&&o.noTotal&&!o.showDate))h+='<div style="display:flex;justify-content:space-between;border-top:1.5px solid '+c+';border-bottom:1.5px solid '+c+';padding:3px 8px;margin:6px 0;font-weight:600">'+
+  // Date in header line (top of page)
+  if(o.dateInHeader && o.showDate){
+    h+='<div style="text-align:center;padding:4px 0;margin:4px 0;font-size:.85em;color:'+c+';background:var(--acs);border-radius:6px">'+(rtl?'التاريخ: ':'Date: ')+dg(esc(ppDateTxt(f)))+'</div>';
+  }
+  if(!(o.noTime&&o.noTotal&&!o.showDate && !o.dateInHeader))h+='<div style="display:flex;justify-content:space-between;border-top:1.5px solid '+c+';border-bottom:1.5px solid '+c+';padding:3px 8px;margin:6px 0;font-weight:600">'+
 (o.noTime?'':'<span>'+(rtl?'الزمن: ':'Time: ')+tdg(f.dur)+'</span>')+
-(o.showDate?'<span>'+(rtl?'التاريخ: ':'Date: ')+dg(esc(ppDateTxt(f)))+'</span>':'')+
+((o.showDate && !o.dateInHeader)?'<span>'+(rtl?'التاريخ: ':'Date: ')+dg(esc(ppDateTxt(f)))+'</span>':'')+
 (o.noTotal?'':'<span>'+(rtl?'الدرجة: ':'Total Marks: ')+dg(esc(f.grade))+'</span>')+
 '</div>';
   if(o.name)h+='<div style="margin:6px 0;font-size:.95em">'+(rtl?'اسم الطالب: ........................................ الشعبة: ............':'Student Name: ........................................ Class: ............')+'</div>';
@@ -1985,7 +1993,7 @@ function markPrevH(q){
   else line='<div>'+t+' <b>'+m+'</b> '+b+'</div>';
   return '<div class="mu" style="margin-top:10px">معاينة مكان الدرجة</div><div dir="'+(rt?'rtl':'ltr')+'" data-paper="1" style="border:1px dashed var(--ln);border-radius:10px;padding:8px;background:#fff;color:#000">'+line+'</div>';
 }
-function edLayAll(i){var p=S.pp,q=p.q[i];edMark(true);p.q.forEach(function(x){x.al=q.al;x.bw=q.bw;x.ba=q.ba;x.mp=q.mp;x.mf=q.mf;x.mc=q.mc;x.hm=q.hm});edAuto();toast("طُبّق التنسيق على كل الأسئلة");updSheet()}
+function edLayAll(i){var p=S.pp,q=p.q[i];edMark(true);p.q.forEach(function(x){x.al=q.al;x.bw=q.bw;x.ba=q.ba;x.mp=q.mp;x.mf=q.mf;x.mc=q.mc;x.hm=q.hm});edAuto();toast("✓ طُبّق التنسيق على كل الأسئلة");S._layAllDone=true;updSheet();setTimeout(function(){S._layAllDone=false;draw()},1200)}
 function tbAdd(){var p=S.pp;edMark(true);p.tb=p.tb||[];p.tb.push({t:"نص جديد",x:30,y:40,w:40,h:8,fs:14,b:1,bd:1,al:"center"});edAuto();updSheet()}
 function tbSet(i,k,v){edMark();S.pp.tb[i][k]=v;edAuto();updSheet()}
 function tbNudge(i,k,d,lo,hi){var b=S.pp.tb[i];b[k]=Math.max(lo,Math.min(hi,(Number(b[k])||0)+d));edAuto();updSheet()}
@@ -2061,7 +2069,7 @@ function edSheetBody(sh){
       h='<div class="mu" style="font-size:12px">اختياري — يشمل ترقيم السؤال وفروعه</div><div class="ed-sw">'+ED_COLS.map(function(c){return '<button style="background:'+c+'" class="'+(q.col===c?"on":"")+'" onclick="edSetQ('+i+',\'col\',\''+c+'\')" aria-label="'+c+'"></button>'}).join("")+'</div>'+
         '<div class="row" style="gap:8px"><input type="color" value="'+(q.col||"#000000")+'" oninput="pq('+i+',\'col\',this.value)" style="width:56px;height:40px;padding:2px;margin:0"><button class="b s" onclick="edSetQ('+i+',\'col\',\'\')">استعادة لون القالب</button></div>';
     }else if(sub==="lay"){
-h='<label>مكان الدرجة في الورقة</label>'+'<div class="row" style="flex-wrap:wrap;gap:6px;margin:4px 0 12px">'+[["","بجانب رقم السؤال"],["end","في نهاية السؤال"],["right","أقصى اليمين"],["center","الوسط"],["left","أقصى اليسار"]].map(function(x){return '<button class="chip'+((q.mp||"")===x[0]?' on':'')+'" onclick="pqs('+i+',\'mp\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+'<label>محاذاة نص السؤال</label>'+'<div class="row" style="flex-wrap:wrap;gap:6px;margin:4px 0 12px">'+[["","افتراضي"],["right","يمين"],["center","وسط"],["left","يسار"]].map(function(x){return '<button class="chip'+((q.al||"")===x[0]?' on':'')+'" onclick="pqs('+i+',\'al\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+'<label>عرض السؤال في الصفحة</label>'+'<div class="row" style="flex-wrap:wrap;gap:6px;margin:4px 0 12px">'+[["","كامل"],["75","75%"],["50","50%"],["33","33%"]].map(function(x){return '<button class="chip'+((String(q.bw||"")||"")===x[0]?' on':'')+'" onclick="pqs('+i+',\'bw\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+'<label>موضع السؤال (إذا كان العرض أقل من كامل)</label>'+'<div class="row" style="flex-wrap:wrap;gap:6px;margin:4px 0 12px">'+[["right","يمين"],["center","وسط"],["left","يسار"]].map(function(x){return '<button class="chip'+((q.ba||"")===x[0]?' on':'')+'" onclick="pqs('+i+',\'ba\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+'<button class="b s" style="width:100%" onclick="edLayAll('+i+')">تطبيق هذا التنسيق على كل الأسئلة</button>';
+h='<label>مكان الدرجة في الورقة</label>'+'<div class="row" style="flex-wrap:wrap;gap:6px;margin:4px 0 12px">'+[["","بجانب رقم السؤال"],["end","في نهاية السؤال"],["right","أقصى اليمين"],["center","الوسط"],["left","أقصى اليسار"]].map(function(x){return '<button class="chip'+((q.mp||"")===x[0]?' on':'')+'" onclick="pqs('+i+',\'mp\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+'<label>محاذاة نص السؤال</label>'+'<div class="row" style="flex-wrap:wrap;gap:6px;margin:4px 0 12px">'+[["","افتراضي"],["right","يمين"],["center","وسط"],["left","يسار"]].map(function(x){return '<button class="chip'+((q.al||"")===x[0]?' on':'')+'" onclick="pqs('+i+',\'al\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+'<label>عرض السؤال في الصفحة</label>'+'<div class="row" style="flex-wrap:wrap;gap:6px;margin:4px 0 12px">'+[["","كامل"],["75","75%"],["50","50%"],["33","33%"]].map(function(x){return '<button class="chip'+((String(q.bw||"")||"")===x[0]?' on':'')+'" onclick="pqs('+i+',\'bw\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+'<label>موضع السؤال (إذا كان العرض أقل من كامل)</label>'+'<div class="row" style="flex-wrap:wrap;gap:6px;margin:4px 0 12px">'+[["right","يمين"],["center","وسط"],["left","يسار"]].map(function(x){return '<button class="chip'+((q.ba||"")===x[0]?' on':'')+'" onclick="pqs('+i+',\'ba\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+'<button class="b s" style="width:100%" onclick="edLayAll('+i+')">'+(S._layAllDone?'✓ تم التطبيق على كل الأسئلة':'تطبيق هذا التنسيق على كل الأسئلة')+'</button>';
 }else if(sub==="marks"){
       h='<label>درجة السؤال (أرقام صحيحة أو عشرية)</label><input type="number" inputmode="decimal" step="0.5" value="'+esc(q.m)+'" oninput="pq('+i+',\'m\',this.value);edTot()" style="font-size:18px">'+
         '<div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px">'+[1,2,3,5,10,15,20].map(function(n){return '<button class="chip" onclick="edSetQ('+i+',\'m\',\''+n+'\')">'+n+'</button>'}).join("")+'</div>'+
@@ -2164,6 +2172,7 @@ function ppEdScr(){
       ppInp("f.stage","المرحلة والصف",fo.stage)+
       '<div class="grid">'+'<div>'+ppEyeLbl("الكورس أو الدور","o.noRound",!o.noRound)+'<select style="'+(o.noRound?"opacity:.5":"")+'" onchange="ps(\'f.round\',this.value)">'+["الكورس الأول","الكورس الثاني","الدور الأول","الدور الثاني","First Course","Second Course"].map(function(x){return opt1(x,fo.round)}).join("")+'</select></div><div>'+ppEyeLbl("السنة الدراسية","o.noYear",!o.noYear)+'<input value="'+esc(fo.year)+'" style="'+(o.noYear?"opacity:.5":"")+'" oninput="ps(\'f.year\',this.value)"></div></div>'+
       '<div class="grid">'+'<div><div>'+ppInpEye("f.dur","المدة (الزمن)",fo.dur,"","o.noTime",!o.noTime,false)+'</div></div><div><div>'+ppInpEye("f.grade","الدرجة الكلية",fo.grade,"number","o.noTotal",!o.noTotal,false)+'</div></div></div>'+ppInpEye("f.date","التاريخ (فارغ = تاريخ اليوم)",fo.date||"","date","o.showDate",!!o.showDate,true)+
+      '<label class="opt" style="margin-top:8px"><input type="checkbox" '+(o.dateInHeader?'checked':'')+' onchange="ps(\'o.dateInHeader\',this.checked?1:0)"><span>📌 عرض التاريخ في الهيدر (أعلى الصفحة) بدلاً من الشريط</span></label>'+
       ppInp("f.teacher","اسم المعلم / المدرس",fo.teacher)+
       '<label>صفة المعلم في الورقة</label><div class="row" style="flex-wrap:wrap;margin-bottom:8px">'+["مدرس المادة","مدرسة المادة","معلم","معلمة","Subject Teacher","مسمى مخصص"].map(function(x){return '<button type="button" class="chip '+(fo.tt==x?"on":"")+'" onclick="ps(\'f.tt\',\''+x+'\')">'+x+'</button>'}).join("")+'</div>'+
       (fo.tt=="مسمى مخصص"?ppInp("f.ttCustom","اكتب الصفة المخصصة",fo.ttCustom):"")+
@@ -7347,7 +7356,9 @@ function subsMgrV(){
 function ownV(){
   var activeSubs=S.subs.filter(function(s){return s.end>Date.now()&&!s.paused}).length;
   var fbs=S.feedbacks||[];
-  return '<button class="b" style="width:100%;margin-bottom:10px" onclick="savePlans()">💾 حفظ الباقات ونشرها للمستخدمين</button>'+
+  var driveHtml = driveBannerH();
+  return driveHtml +
+  '<button class="b" style="width:100%;margin-bottom:10px" onclick="savePlans()">💾 حفظ الباقات ونشرها للمستخدمين</button>'+
   '<div class="grid"><div class="card"><b>'+S.allUsers.length+'</b><div class="mu">مستخدم مسجل</div></div><div class="card"><b>'+activeSubs+'</b><div class="mu">اشتراك فعال</div></div></div>'+
   '<h2>📩 آراء ومقترحات المستخدمين لتطوير البرنامج ('+fbs.length+')</h2>'+
   (fbs.length?fbs.map(function(fb){
