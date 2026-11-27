@@ -466,7 +466,7 @@ window.misbarHardReset=function(){
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.91.0";
+var APP_VERSION = "2.92.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -1570,6 +1570,33 @@ function fsOpts(cur){var c=Number(cur),a=FS_LIST.slice();if(c&&a.indexOf(c)<0){a
 function ppSizeSel(path,label,val){return '<div><label>'+label+'</label><select onchange="ps(\''+path+'\',this.value)">'+fsOpts(val)+'</select></div>'}
 function ppNum(path,label,val,mn,mx){return '<div><label>'+label+'</label><input type="number" inputmode="numeric" min="'+mn+'" max="'+mx+'" step="1" value="'+esc(val)+'" oninput="ps(\''+path+'\',this.value)" onblur="var n=Math.max('+mn+',Math.min('+mx+',Math.round(Number(this.value)||'+mn+')));this.value=n;ps(\''+path+'\',n)"></div>'}
 function pfs(i,v){edMark(true);var q=S.pp.q[i];v=Math.round(Number(v));if(!v)delete q.fs;else q.fs=Math.max(1,Math.min(50,v));edAuto();updSheet();if(S.pp.sheet&&S.pp.sheet.sub==="qprev")edQPrevRef(i)}
+/* ===== v2.92: موضع التاريخ الحر + خانات الدرجة + مخصص لكل الخيارات + إظهار/إخفاء كل عناصر الترويسة ===== */
+var DPOS=[["top","أعلى الصفحة (افتراضي)"],["tr","أعلى — يمين"],["tc","أعلى — وسط"],["tl","أعلى — يسار"],["umin","تحت الوزارة والمدرسة"],["utit","تحت عنوان الامتحان"],["br","تحت الترويسة — يمين"],["bc","تحت الترويسة — وسط"],["bl","تحت الترويسة — يسار"],["bar","داخل شريط الزمن والدرجة"]];
+var ROUND_LIST=["الكورس الأول","الكورس الثاني","الفصل الأول","الفصل الثاني","الدور الأول","الدور الثاني","الشهر الأول","الشهر الثاني","الشهر الثالث","الشهر الرابع","First Course","Second Course","First Semester","Second Semester","First Month","Second Month","Third Month"];
+var MIN_PRE=["وزارة التربية","المديرية العامة للتربية / وزارة التربية","وزارة التعليم العالي والبحث العلمي","Ministry of Education"];
+var TIT_PRE=["امتحان شهري","امتحان نصف السنة","امتحان نهائي","اختبار قصير","امتحان يومي","Monthly Exam","Final Exam"];
+function hdrMS(f,o,tdg){var a=o.hMin?'':tdg(f.ministry),b=(f.school&&!o.hSch)?'<b>'+tdg(f.school)+'</b>':'';return a+(a&&b?'<br>':'')+b}
+function hdrSS(f,o,tdg){var a=o.hSub?'':tdg(subjShow(f,o)),b=(f.stage&&!o.hStg)?tdg(f.stage):'';return a+(a&&b?' — ':'')+b}
+function gboxH(o,c,max,W){
+  var sh=o.gbShape||"circle",col=o.gbColor==="color",wd=sh==="oval"?Math.round(W*1.35):W,hh=sh==="oval"?Math.round(W*0.7):W,rad=sh==="square"?"10px":"50%";
+  var bg=col?(/^#[0-9a-f]{6}$/i.test(c)?c+"22":"#e8eefc"):"transparent",fs=Math.max(9,Math.round(W*0.23));
+  return '<div class="gbox" style="width:'+wd+'px;height:'+hh+'px;border:2px solid '+c+';border-radius:'+rad+';background:'+bg+';display:flex;flex-direction:column;justify-content:flex-end;align-items:center;box-sizing:border-box;padding-bottom:'+Math.round(hh*0.1)+'px;line-height:1;font-weight:800;direction:ltr;font-size:'+fs+'px;color:#000"><div style="width:76%;border-top:1.6px solid '+c+';margin-bottom:3px"></div><span>'+max+'</span></div>';
+}
+function ppInpH(path,label,val,flag){return ppInpEye(path,label,val,"",flag,!S.pp.o[flag.slice(2)],false)}
+function ppPreset(path,label,val,list,flag){
+  var o=S.pp.o,shown=flag?!o[flag.slice(2)]:true;
+  return (flag?ppEyeLbl(label,flag,shown):'<label>'+label+'</label>')+
+    '<div class="row" style="flex-wrap:wrap;gap:6px;margin:2px 0 6px">'+list.map(function(t){return '<button type="button" class="chip'+(val===t?' on':'')+'" onclick="ps(\''+path+'\',\''+esc(t)+'\');draw()">'+esc(t)+'</button>'}).join("")+'</div>'+
+    '<input value="'+esc(val)+'" placeholder="أو اكتب ما تريد (مخصص)" style="'+(shown?'':'opacity:.5')+'" oninput="ps(\''+path+'\',this.value)">';
+}
+function ppRoundSel(fo,o){
+  var inL=ROUND_LIST.indexOf(fo.round)>-1,cust=!!S._rcust||(!!fo.round&&!inL);
+  return ppEyeLbl("الكورس أو الدور","o.noRound",!o.noRound)+'<select style="'+(o.noRound?"opacity:.5":"")+'" onchange="rndSel(this.value)">'+
+    ROUND_LIST.map(function(x){return opt1(x,cust?"":fo.round)}).join("")+'<option value="__c"'+(cust?' selected':'')+'>✏️ مخصص (اكتب ما تريد)</option></select>'+
+    (cust?'<input style="margin-top:6px" placeholder="اكتب اسم الكورس أو الامتحان" value="'+esc(inL?"":fo.round)+'" oninput="ps(\'f.round\',this.value)">':'');
+}
+function rndSel(v){if(v==="__c"){S._rcust=1;if(ROUND_LIST.indexOf(S.pp.f.round)>-1)ps("f.round","")}else{S._rcust=0;ps("f.round",v)}draw()}
+function ppSelD(path,label,opts,val){return '<label>'+label+'</label><select onchange="ps(\''+path+'\',this.value);draw()">'+opts.map(function(x){return opt1(x,val)}).join("")+'</select>'}
 function ppRoundYearH(f,o,dg,tdg){var a=[];if(!o.noRound&&f.round)a.push(tdg(f.round));if(!o.noYear&&f.year)a.push(dg(esc(f.year)));return a.length?'<br>'+a.join(' · '):''}
 function ppEyeLbl(label,flag,shown){return '<label style="display:flex;align-items:center;gap:6px">'+label+'<button type="button" class="ed-ib" style="width:30px;height:30px;margin-inline-start:auto'+(shown?'':';opacity:.55')+'" onclick="psd(\''+flag+'\','+(shown?'true':'false')+')" aria-label="إظهار أو إخفاء في الورقة">'+mIc(shown?"eye":"eyeoff",18)+'</button><small class="mu" style="font-weight:400">'+(shown?'ظاهر':'مخفي')+'</small></label>'}
 function psd(path,v){var y=window.scrollY;ps(path,v);draw();window.scrollTo(0,y)}
@@ -1709,6 +1736,7 @@ function paperH(){
   var tdg=function(t){return convDigits(esc(t),o.txtDigits)};
   var lab=function(i){
     var n=dg(i+1);
+    if(o.qn=="custom")return tdg(o.qnC||"")+n;
     var arNums = ["الأول","الثاني","الثالث","الرابع","الخامس","السادس","السابع","الثامن","التاسع","العاشر"];
     if(o.qn=="السؤال"){
        return (i<10) ? "السؤال "+arNums[i]+" :" : "السؤال "+n+" :";
@@ -1724,6 +1752,7 @@ function paperH(){
   var mk=function(j){
     var A=["أ","ب","ج","د","هـ","و","ز","ح"];
     var E="abcdefgh";
+    if(o.sub=="custom"){var _t=String(o.subC||"{L})"),_L=rtl?A[j%8]:E.charAt(j%8);return esc(_t).replace(/\{L\}/g,_L).replace(/\{n\}/g,dg(j+1))}
     if(o.sub=="أ،")return A[j%8]+"،";
     if(o.sub=="أ/")return A[j%8]+"/";
     if(o.sub=="أ)")return A[j%8]+")";
@@ -1741,32 +1770,38 @@ function paperH(){
     else bdr="border:3px double "+c+";";
   }
   var ttLabel=f.tt=="مسمى مخصص"?(f.ttCustom||""):f.tt;
+  var dLbl=o.lblD?esc(o.lblD)+': ':(rtl?'التاريخ: ':'Date: '),dTxt=o.showDate?dLbl+dg(esc(ppDateTxt(f))):'',dpos=o.dpos||"top";
+  var _zone=({top:(rtl?'l':'r'),tr:'r',tc:'c',tl:'l'})[dpos];
+  var dMin=(dTxt&&dpos==='umin')?'<div class="hd-date" style="margin-top:3px;font-weight:700">'+dTxt+'</div>':'',dTit=(dTxt&&dpos==='utit')?'<div class="hd-date" style="margin-top:3px;font-weight:700">'+dTxt+'</div>':'';
   var h='<div class="sheet" dir="'+(rtl?'rtl':'ltr')+'" style="position:relative;font-family:'+esc(o.font)+',Tahoma,serif;font-size:'+o.size+'px;'+bdr+(o.bw?'filter:grayscale(1);':'')+'">';
-  var _dTop=!!(o.showDate&&o.dpos!=="bar"),_ex=String(o.topTxt||"").trim();
-  if(_dTop||_ex)h+='<div class="top-line" style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;font-size:.82em;font-weight:700;margin-bottom:4px"><span style="white-space:pre-line">'+(_ex?tdg(_ex):'')+'</span><span style="white-space:nowrap">'+(_dTop?(rtl?'التاريخ: ':'Date: ')+dg(esc(ppDateTxt(f))):'')+'</span></div>';
-  if(o.bism)h+='<div style="text-align:center;font-weight:700;margin-bottom:4px">بسم الله الرحمن الرحيم</div>';
+  var _ex=String(o.topTxt||"").trim();
+  if(o.gb){var _gs=o.gbPos||(rtl?'l':'r');h+='<div class="gbox-wrap" style="float:'+(_gs==='l'?'left':'right')+';margin:0 '+(_gs==='l'?'0 6px 10px':'10px 6px 0')+'">'+gboxH(o,c,dg(esc(o.gbMax||f.grade||"100")),70)+'</div>'}
+  if(_ex||(dTxt&&_zone)){var _st=rtl?'r':'l',_xz=(_zone===_st)?(_st==='r'?'l':'r'):_st,_cell=function(z){var t='';if(dTxt&&_zone===z)t+=dTxt;if(_ex&&_xz===z)t+=(t?'<br>':'')+tdg(_ex);return '<div style="flex:1;text-align:'+(z==='l'?'left':(z==='r'?'right':'center'))+';white-space:pre-line" dir="auto">'+t+'</div>'};
+    h+='<div class="top-line" style="display:flex;direction:ltr;align-items:flex-start;gap:10px;font-size:.82em;font-weight:700;margin-bottom:4px">'+_cell('l')+_cell('c')+_cell('r')+'</div>'}
+  if(o.bism)h+='<div style="text-align:center;font-weight:700;margin-bottom:4px">'+(o.bismT?tdg(o.bismT):'بسم الله الرحمن الرحيم')+'</div>';
   var hAl = o.headerAlign || "split";
   if (hAl === "split") {
     h+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0">'+
-      '<div style="flex:1;font-size:.9em">'+tdg(f.ministry)+(f.school?'<br><b>'+tdg(f.school)+'</b>':'')+'</div>'+
+      '<div style="flex:1;font-size:.9em">'+hdrMS(f,o,tdg)+dMin+'</div>'+
       '<div style="text-align:center">'+(o.logo?'<img src="'+o.logo+'" alt="" style="max-height:66px">':'')+'</div>'+
-      '<div style="flex:1;text-align:end"><b style="color:'+c+';font-size:1.05em">'+tdg(f.title)+'</b><div style="font-size:.9em">'+tdg(subjShow(f,typeof o!=="undefined"?o:null))+(f.stage?' — '+tdg(f.stage):'')+ppRoundYearH(f,o,dg,tdg)+'</div></div>'+
+      '<div style="flex:1;text-align:end">'+(o.hTit?'':'<b style="color:'+c+';font-size:1.05em">'+tdg(f.title)+'</b>')+'<div style="font-size:.9em">'+hdrSS(f,o,tdg)+ppRoundYearH(f,o,dg,tdg)+'</div>'+dTit+'</div>'+
     '</div>';
   } else {
     var taCss = hAl === "right" ? "right" : (hAl === "left" ? "left" : "center");
     h+='<div style="text-align:'+taCss+';margin:6px 0">';
     if(o.logo) h+='<div style="margin-bottom:6px"><img src="'+o.logo+'" alt="" style="max-height:66px"></div>';
-    h+='<div style="font-size:.9em;margin-bottom:4px">'+tdg(f.ministry)+(f.school?'<br><b>'+tdg(f.school)+'</b>':'')+'</div>';
-    h+='<div style="margin-bottom:4px"><b style="color:'+c+';font-size:1.05em">'+tdg(f.title)+'</b></div>';
-    h+='<div style="font-size:.9em">'+tdg(subjShow(f,typeof o!=="undefined"?o:null))+(f.stage?' — '+tdg(f.stage):'')+ppRoundYearH(f,o,dg,tdg)+'</div>';
+    h+='<div style="font-size:.9em;margin-bottom:4px">'+hdrMS(f,o,tdg)+dMin+'</div>';
+    if(!o.hTit)h+='<div style="margin-bottom:4px"><b style="color:'+c+';font-size:1.05em">'+tdg(f.title)+'</b></div>';
+    h+='<div style="font-size:.9em">'+hdrSS(f,o,tdg)+ppRoundYearH(f,o,dg,tdg)+'</div>'+dTit;
     h+='</div>';
   }
+  if(dTxt&&(dpos==='br'||dpos==='bc'||dpos==='bl'))h+='<div class="hd-date" style="text-align:'+({br:'right',bc:'center',bl:'left'})[dpos]+';font-weight:700;font-size:.9em;margin:2px 0">'+dTxt+'</div>';
   if(!(o.noTime&&o.noTotal&&!(o.showDate&&o.dpos==="bar")))h+='<div style="display:flex;justify-content:space-between;border-top:1.5px solid '+c+';border-bottom:1.5px solid '+c+';padding:3px 8px;margin:6px 0;font-weight:600">'+
-(o.noTime?'':'<span>'+(rtl?'الزمن: ':'Time: ')+tdg(f.dur)+'</span>')+
-(o.showDate&&o.dpos==="bar"?'<span>'+(rtl?'التاريخ: ':'Date: ')+dg(esc(ppDateTxt(f)))+'</span>':'')+
-(o.noTotal?'':'<span>'+(rtl?'الدرجة: ':'Total Marks: ')+dg(esc(f.grade))+'</span>')+
+(o.noTime?'':'<span>'+(o.lblT?esc(o.lblT)+': ':(rtl?'الزمن: ':'Time: '))+tdg(f.dur)+'</span>')+
+(o.showDate&&o.dpos==="bar"?'<span>'+dTxt+'</span>':'')+
+(o.noTotal?'':'<span>'+(o.lblG?esc(o.lblG)+': ':(rtl?'الدرجة: ':'Total Marks: '))+dg(esc(f.grade))+'</span>')+
 '</div>';
-  if(o.name)h+='<div style="margin:6px 0;font-size:.95em">'+(rtl?'اسم الطالب: ........................................ الشعبة: ............':'Student Name: ........................................ Class: ............')+'</div>';
+  if(o.name)h+='<div style="margin:6px 0;font-size:.95em">'+(o.lblN?tdg(o.lblN):rtl?'اسم الطالب: ........................................ الشعبة: ............':'Student Name: ........................................ Class: ............')+'</div>';
   if(o.opt>0)h+='<div style="font-weight:700;color:'+c+';margin:4px 0">'+(rtl?'ملاحظة: أجب عن ('+dg(o.opt)+') من الأسئلة الآتية فقط.':'Note: Answer ('+dg(o.opt)+') of the following questions only.')+'</div>';
   if(o.note)h+='<div style="font-weight:600;background:#f8fafc;border-inline-start:3px solid '+c+';padding:3px 8px;margin:4px 0;font-size:.92em">'+tdg(o.note)+'</div>';
 
@@ -1786,7 +1821,9 @@ var _qr=(typeof ppAutoDir==="function"&&q.t)?(ppAutoDir(q.t)==="rtl"):rtl,mpos=q
 var mHtml=(mpos&&mpos!=="end"&&mBox)?(mpos==="center"?'<div style="text-align:center;font-weight:700;color:'+qc+'">'+mBox+'</div>':'<span style="float:'+mpos+';font-weight:700;color:'+qc+';margin-inline:6px">'+mBox+'</span>'):'';
 var qst='margin:7px 0'+(q.fs?';font-size:'+Math.max(1,Math.min(50,Number(q.fs)||0))+'px':'')+(q.np?';break-before:page;page-break-before:always':'')+(q.al?';text-align:'+q.al:'');
 if(q.bw&&Number(q.bw)<100)qst+=';width:'+Number(q.bw)+'%;'+(q.ba==="left"?'margin-right:auto':(q.ba==="right"?'margin-left:auto':'margin-left:auto;margin-right:auto'));
-h+='<div class="q-blk" style="'+qst+'">'+(mpos==="center"?mHtml:'')+'<div>'+(mpos&&mpos!=="center"?mHtml:'')+'<b style="color:'+qc+'">'+title+inlM+'</b> '+tdg(q.t).replace(/\n/g,'<br>')+(mpos==="end"&&mBox?' <b style="color:'+qc+'">'+mBox+'</b>':'')+'</div>';
+var _qb=(q.qb==="on"||(o.qb&&q.qb!=="off"))&&q.m,_qw=o.gbShape==="oval"?60:50;
+if(_qb)qst+=';position:relative;min-height:'+(Math.round(_qw*(o.gbShape==="oval"?0.7:1))+10)+'px;padding-inline-end:'+(_qw+14)+'px';
+h+='<div class="q-blk" style="'+qst+'">'+(_qb?'<div class="qbox" style="position:absolute;inset-inline-end:0;top:4px">'+gboxH(o,qc,dg(esc(q.m)),_qw)+'</div>':'')+(mpos==="center"?mHtml:'')+'<div>'+(mpos&&mpos!=="center"?mHtml:'')+'<b style="color:'+qc+'">'+title+inlM+'</b> '+tdg(q.t).replace(/\n/g,'<br>')+(mpos==="end"&&mBox?' <b style="color:'+qc+'">'+mBox+'</b>':'')+'</div>';
 if(q.img)h+='<div style="margin:6px 0;text-align:center"><img src="'+q.img+'" alt="" style="max-width:85%;max-height:180px;border-radius:6px"></div>';
     var ss=String(q.s||"").split("\n").filter(function(x){return x.trim()});
     if(Number(q.pick)>0&&ss.length)h+='<div style="font-weight:700;color:'+qc+';font-size:.92em;padding-inline-start:20px">'+(rtl?'أجب عن ('+dg(esc(q.pick))+') من الفروع الآتية:':'Answer ('+dg(esc(q.pick))+') of the following:')+'</div>';
@@ -1806,12 +1843,12 @@ if(q.img)h+='<div style="margin:6px 0;text-align:center"><img src="'+q.img+'" al
   if(o.sig){
     var fAl = o.footerAlign || "split";
     if (fAl === "split") {
-      h+='<div style="display:flex;justify-content:space-between;margin-top:12px;font-weight:600"><span>'+(ttLabel?tdg(ttLabel)+': ':'')+tdg(f.teacher)+'</span><span>'+(f.principal?(rtl?'مدير المدرسة: ':'Principal: ')+tdg(f.principal):'')+'</span></div>';
+      h+='<div style="display:flex;justify-content:space-between;margin-top:12px;font-weight:600"><span>'+(o.hTea?'':(ttLabel?tdg(ttLabel)+': ':'')+tdg(f.teacher))+'</span><span>'+((f.principal&&!o.hPri)?(rtl?'مدير المدرسة: ':'Principal: ')+tdg(f.principal):'')+'</span></div>';
     } else {
       var taCss = fAl === "right" ? "right" : (fAl === "left" ? "left" : "center");
       h+='<div style="text-align:'+taCss+';margin-top:12px;font-weight:600">';
-      h+='<div>'+(ttLabel?tdg(ttLabel)+': ':'')+tdg(f.teacher)+'</div>';
-      if(f.principal) h+='<div style="margin-top:4px">'+(rtl?'مدير المدرسة: ':'Principal: ')+tdg(f.principal)+'</div>';
+      if(!o.hTea)h+='<div>'+(ttLabel?tdg(ttLabel)+': ':'')+tdg(f.teacher)+'</div>';
+      if(f.principal&&!o.hPri) h+='<div style="margin-top:4px">'+(rtl?'مدير المدرسة: ':'Principal: ')+tdg(f.principal)+'</div>';
       h+='</div>';
     }
   }
@@ -2209,8 +2246,8 @@ function ppEdScr(){
     var vi=0,r=edTotInfo();
     body='<div id="edTot" class="ed-tot noprint'+(r.ok?"":" bad")+'">'+r.html+'</div>'+
     '<details class="ed-q ed-tools noprint"'+(S.qsTools?' open':'')+' ontoggle="S.qsTools=this.open"><summary>⚙️ إعدادات الورقة السريعة <small>الزمن · التاريخ · الدرجة · الخط</small></summary><div class="ed-qm" style="margin:0 0 6px"><span class="ql">يظهر في الورقة:</span>'+
-      [["الزمن",!o.noTime,"o.noTime",true],["التاريخ",!!o.showDate,"o.showDate",!o.showDate],["الدرجة الكلية",!o.noTotal,"o.noTotal",true],["درجات الأسئلة",!o.noQM,"o.noQM",true],["الخط تحت الترويسة",!o.noHL,"o.noHL",true]].map(function(x){
-        var nv=x[2]==="o.showDate"?!o.showDate:!!x[1];
+      [["الزمن",!o.noTime,"o.noTime",true],["مربع الدرجة",!!o.gb,"o.gb",true],["مربعات الأسئلة",!!o.qb,"o.qb",true],["التاريخ",!!o.showDate,"o.showDate",!o.showDate],["الدرجة الكلية",!o.noTotal,"o.noTotal",true],["درجات الأسئلة",!o.noQM,"o.noQM",true],["الخط تحت الترويسة",!o.noHL,"o.noHL",true]].map(function(x){
+        var nv=(x[2]==="o.showDate"||x[2]==="o.gb"||x[2]==="o.qb")?!x[1]:!!x[1];
         return '<button class="chip'+(x[1]?' on':'')+'" onclick="psd(\''+x[2]+'\','+nv+')">'+(x[1]?'✓ ':'')+x[0]+'</button>'}).join("")+'</div>'+
       (o.noHL?'':'<div class="ed-qm"><span class="ql">شكل الخط تحت الترويسة:</span>'+hlChips(o)+'</div>')+
       '<div class="ed-qm"><span class="ql">شكل الدرجة (للكل):</span>'+MF_LIST.map(function(x){return '<button class="chip'+((o.mf||"d")===x[0]?' on':'')+'" onclick="edMfAll(\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+
@@ -2230,6 +2267,7 @@ function ppEdScr(){
         '<div class="ed-qm"><button class="chip'+(!q.hm?' on':'')+'" onclick="edSetQ('+i+',\'hm\','+(!q.hm)+')">'+(q.hm?'الدرجة مخفية':'الدرجة ظاهرة')+'</button>'+(q.hm?'':[["","تلقائي"],["inline","بجانب الرقم"],["right","يمين"],["center","وسط"],["left","يسار"],["end","نهاية"]].map(function(x){return '<button class="chip'+((q.mp||"")===x[0]?' on':'')+'" onclick="edSetQ('+i+',\'mp\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'<select onchange="edSetQ('+i+',\'mf\',this.value)"><option value="">شكل: عام</option>'+MF_LIST.map(function(x){return '<option value="'+x[0]+'"'+(q.mf===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join("")+'</select>')+((!q.hm&&q.mf==="c")?'<input style="flex:1;min-width:150px;margin:0;padding:5px 8px;font-size:12px" value="'+esc(q.mc||"")+'" placeholder="اكتب ما يظهر مكان الدرجة، مثال: الدرجة {m}" oninput="pq('+i+',\'mc\',this.value)">':'')+'</div>'+
         '<div class="ed-qm"><span class="ql">حجم الخط:</span><select style="width:auto;margin:0;padding:5px 8px;font-size:12px" onchange="pfs('+i+',this.value)"><option value="">تلقائي</option>'+fsOpts(q.fs)+'</select></div>'+
         '<div class="ed-qm"><span class="ql">السؤال:</span>'+[["","تلقائي"],["right","يمين"],["center","وسط"],["left","يسار"]].map(function(x){return '<button class="chip'+((q.al||"")===x[0]?' on':'')+'" onclick="edSetQ('+i+',\'al\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+
+        '<div class="ed-qm"><span class="ql">مربع الدرجة:</span>'+[["","حسب الإعداد"],["on","ظاهر"],["off","مخفي"]].map(function(x){return '<button class="chip'+((q.qb||"")===x[0]?' on':'')+'" onclick="edSetQ('+i+',\'qb\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+
         '</details>'+
         (q.img?'<img src="'+q.img+'" alt="" style="max-height:90px;border-radius:8px;margin-top:6px">':'')+
         (chips.length?'<div class="ed-chips">'+chips.map(function(c){return '<span class="ed-chip">'+c+'</span>'}).join("")+'</div>':'')+
@@ -2242,19 +2280,20 @@ function ppEdScr(){
     body=
     sec("a","بيانات الورقة",
       ppSel("f.subj","نوع المادة (يضبط لغة الورقة فقط)",SUBJECTS.map(function(s){return s.n}),fo.subj)+
-      ppInp("f.subjName","اسم المادة كما يظهر في الورقة (عربي أو إنجليزي)",fo.subjName!==undefined?fo.subjName:"")+
-      ppInp("f.school","اسم المدرسة",fo.school)+
-      ppInp("f.ministry","المديرية / الوزارة",fo.ministry)+
-      ppInp("f.title","عنوان الامتحان (شهري / نصف السنة / نهائي / مخصص)",fo.title)+
-      ppInp("f.stage","المرحلة والصف",fo.stage)+
-      '<div class="grid">'+'<div>'+ppEyeLbl("الكورس أو الدور","o.noRound",!o.noRound)+'<select style="'+(o.noRound?"opacity:.5":"")+'" onchange="ps(\'f.round\',this.value)">'+["الكورس الأول","الكورس الثاني","الدور الأول","الدور الثاني","First Course","Second Course"].map(function(x){return opt1(x,fo.round)}).join("")+'</select></div><div>'+ppEyeLbl("السنة الدراسية","o.noYear",!o.noYear)+'<input value="'+esc(fo.year)+'" style="'+(o.noYear?"opacity:.5":"")+'" oninput="ps(\'f.year\',this.value)"></div></div>'+
+      ppInpH("f.subjName","اسم المادة كما يظهر في الورقة (عربي أو إنجليزي)",fo.subjName!==undefined?fo.subjName:"","o.hSub")+
+      ppInpH("f.school","اسم المدرسة",fo.school,"o.hSch")+
+      ppPreset("f.ministry","المديرية / الوزارة",fo.ministry,MIN_PRE,"o.hMin")+
+      ppPreset("f.title","عنوان الامتحان",fo.title,TIT_PRE,"o.hTit")+
+      ppInpH("f.stage","المرحلة والصف",fo.stage,"o.hStg")+
+      '<div class="grid">'+'<div>'+ppRoundSel(fo,o)+'</div><div>'+ppEyeLbl("السنة الدراسية","o.noYear",!o.noYear)+'<input value="'+esc(fo.year)+'" style="'+(o.noYear?"opacity:.5":"")+'" oninput="ps(\'f.year\',this.value)"></div></div>'+
       '<div class="grid">'+'<div><div>'+ppInpEye("f.dur","المدة (الزمن)",fo.dur,"","o.noTime",!o.noTime,false)+'</div></div><div><div>'+ppInpEye("f.grade","الدرجة الكلية",fo.grade,"number","o.noTotal",!o.noTotal,false)+'</div></div></div>'+ppInpEye("f.date","التاريخ (فارغ = تاريخ اليوم)",fo.date||"","date","o.showDate",!!o.showDate,true)+
-      '<label>موضع التاريخ</label><div class="row" style="gap:6px;margin:4px 0 10px">'+[["top","أعلى الورقة (مع العنوان)"],["bar","في شريط الزمن والدرجة"]].map(function(x){return '<button type="button" class="chip'+((o.dpos||"top")===x[0]?' on':'')+'" onclick="psd(\'o.dpos\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+
+      '<label>موضع التاريخ (انقله أينما تريد)</label><div class="row" style="flex-wrap:wrap;gap:6px;margin:4px 0 10px">'+DPOS.map(function(x){return '<button type="button" class="chip'+((o.dpos||"top")===x[0]?' on':'')+'" onclick="psd(\'o.dpos\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+
       '<label>إضافات أعلى الصفحة (اختياري — تظهر في السطر العلوي مع التاريخ)</label><textarea rows="2" placeholder="مثال: اليوم: الأحد  ·  الحصة: الثالثة" oninput="ps(\'o.topTxt\',this.value)">'+esc(o.topTxt||"")+'</textarea>'+
-      ppInp("f.teacher","اسم المعلم / المدرس",fo.teacher)+
+      '<label style="margin-top:8px">أسماء الحقول (مخصص — اتركها فارغة للاسم الافتراضي)</label><div class="grid"><input placeholder="الزمن" value="'+esc(o.lblT||"")+'" oninput="ps(\'o.lblT\',this.value)"><input placeholder="الدرجة" value="'+esc(o.lblG||"")+'" oninput="ps(\'o.lblG\',this.value)"><input placeholder="التاريخ" value="'+esc(o.lblD||"")+'" oninput="ps(\'o.lblD\',this.value)"><input placeholder="سطر اسم الطالب والشعبة" value="'+esc(o.lblN||"")+'" oninput="ps(\'o.lblN\',this.value)"></div>'+
+      ppInpH("f.teacher","اسم المعلم / المدرس",fo.teacher,"o.hTea")+
       '<label>صفة المعلم في الورقة</label><div class="row" style="flex-wrap:wrap;margin-bottom:8px">'+["مدرس المادة","مدرسة المادة","معلم","معلمة","Subject Teacher","مسمى مخصص"].map(function(x){return '<button type="button" class="chip '+(fo.tt==x?"on":"")+'" onclick="ps(\'f.tt\',\''+x+'\')">'+x+'</button>'}).join("")+'</div>'+
       (fo.tt=="مسمى مخصص"?ppInp("f.ttCustom","اكتب الصفة المخصصة",fo.ttCustom):"")+
-      ppInp("f.principal","اسم المدير",fo.principal)+
+      ppInpH("f.principal","اسم المدير",fo.principal,"o.hPri")+
       '<label>شعار المدرسة (اختياري)</label><div class="row"><input type="file" accept="image/*" onchange="ppLogo(this)" class="grow">'+(o.logo?'<button class="b d" onclick="S.pp.o.logo=\'\';draw()">حذف</button>':'')+'</div>')+
     sec("b","اللغة والأسئلة الاختيارية",
       '<label>لغة الورقة (تغيّر العناوين والاتجاه والترقيم)</label><div class="row" style="flex-wrap:wrap;margin:6px 0 10px">'+WLANGS.map(function(w){return '<button type="button" class="chip '+(o.wlang==w.id?"on":"")+'" onclick="ps(\'o.wlang\',\''+w.id+'\')">'+w.n+'</button>'}).join("")+'</div>'+
@@ -2262,11 +2301,19 @@ function ppEdScr(){
       ppSel("o.txtDigits","الأرقام داخل النص المكتوب (تغيير العرض فقط)",[["keep","كما كتبتها"],["a","عرض ١٢٣"],["w","عرض 123"]],o.txtDigits)+
       '<label>أجب عن عدد محدد من الأسئلة (0 = الكل)</label>'+stp("o.opt",o.opt,o.opt>0?o.opt+" أسئلة":"الكل")+
       ppInp("o.note","ملاحظة أعلى الأسئلة (مثل: الإجابة على الورقة نفسها)",o.note))+
+    sec("g","خانات الدرجة (دائرة · بيضاوي · مربع)",
+      '<div class="mu" style="font-size:12px;line-height:1.8;margin-bottom:8px">خانة فيها فراغ في الأعلى لكتابة درجة الطالب، ثم خط، وتحتها الدرجة الكاملة. الخانات تظهر خارج مساحة كتابة الإجابة ويمكنك إظهارها أو إخفاءها.</div>'+
+      '<label>الشكل</label><div class="row" style="gap:6px;margin:4px 0 10px">'+[["circle","⚪ دائرة"],["oval","⬭ بيضاوي"],["square","▢ مربع"]].map(function(x){return '<button type="button" class="chip'+((o.gbShape||"circle")===x[0]?' on':'')+'" onclick="psd(\'o.gbShape\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+
+      '<label>اللون</label><div class="row" style="gap:6px;margin:4px 0 10px">'+[["plain","غير ملوّن"],["color","ملوّن"]].map(function(x){return '<button type="button" class="chip'+((o.gbColor||"plain")===x[0]?' on':'')+'" onclick="psd(\'o.gbColor\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+
+      '<label>خانة الدرجة الكلية في الترويسة</label><div class="row" style="gap:6px;margin:4px 0 6px"><button type="button" class="chip'+(o.gb?' on':'')+'" onclick="psd(\'o.gb\','+(!o.gb)+')">'+(o.gb?'✓ ظاهرة':'مخفية')+'</button>'+[["","تلقائي"],["r","يمين"],["l","يسار"]].map(function(x){return '<button type="button" class="chip'+((o.gbPos||"")===x[0]?' on':'')+'" onclick="psd(\'o.gbPos\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+
+      ppInp("o.gbMax","الرقم الذي يظهر أسفل الخانة (فارغ = الدرجة الكلية، أو اكتب أي رقم/نص)",o.gbMax||"")+
+      '<label style="margin-top:8px">خانة درجة بجانب كل سؤال (بقيمة السؤال، خارج مساحة الكتابة)</label><div class="row" style="gap:6px;margin:4px 0"><button type="button" class="chip'+(o.qb?' on':'')+'" onclick="psd(\'o.qb\','+(!o.qb)+')">'+(o.qb?'✓ ظاهرة للأسئلة':'مخفية')+'</button></div>'+
+      '<div class="mu" style="font-size:12px;margin-top:4px">يمكنك أيضاً تغيير ظهورها لكل سؤال من «خيارات السؤال».</div>')+
     sec("c","الطباعة والترقيم (A4)",
       
       '<label style="display:flex;align-items:center;gap:6px">الخط تحت ترويسة الورقة (قبل الأسئلة)<button type="button" class="ed-ib" style="width:30px;height:30px;margin-inline-start:auto'+(o.noHL?';opacity:.55':'')+'" onclick="psd(\'o.noHL\','+(o.noHL?'false':'true')+')" aria-label="إظهار أو إخفاء الخط">'+mIc(o.noHL?"eyeoff":"eye",18)+'</button><small class="mu" style="font-weight:400">'+(o.noHL?'مخفي':'ظاهر')+'</small></label>'+(o.noHL?'':'<div class="row" style="flex-wrap:wrap;gap:6px;margin:4px 0 10px">'+hlChips(o)+'</div>')+'<div class="mu" style="font-size:12px;margin:4px 0 8px">الزمن والتاريخ والدرجة الكلية: استعمل أيقونة العين بجانب كل حقل في «بيانات الورقة».</div>'+
       ppChk("o.name","سطر اسم الطالب والشعبة",o.name)+
-      ppChk("o.bism","بسم الله الرحمن الرحيم",o.bism)+
+      ppChk("o.bism","بسم الله الرحمن الرحيم",o.bism)+ppInp("o.bismT","تغيير نص البسملة (مخصص — فارغ = الافتراضي)",o.bismT||"")+
       ppChk("o.border","إطار حول الصفحة",o.border)+
       ppChk("o.sep","خط فاصل بين الأسئلة",o.sep)+
       ppChk("o.cont","عبارة «يتبع...» أسفل الصفحة",o.cont)+
@@ -2275,8 +2322,8 @@ function ppEdScr(){
       ppChk("o.sig","توقيع المعلم والمدير",o.sig)+
       '<div class="grid">'+ppSel("o.font","نوع الخط",["Cairo","Amiri","Tahoma","Times New Roman","Arial"],o.font)+ppSizeSel("o.size","حجم الخط (اختر رقماً)",o.size)+'</div>'+
       '<div class="grid">'+
-        ppSel("o.qn","نمط ترقيم الأسئلة",[["س","س1 / س2"],["س:","س1: / س2:"],["السؤال","السؤال الأول / الثاني"],["Q","Q1 :"],["Q/","Q1/"],["QOne","Question One :"],["Question","Question 1 :"]],o.qn)+
-        ppSel("o.sub","نمط الفروع والاختيارات",[["أ،","أ، ب، ج،"],["أ/","أ/ ب/ ج/"],["أ)","أ) ب) ج)"],["1.","1. 2. 3."],["1)","1) 2) 3)"],["1/","1/ 2/ 3/"],["a)","a) b) c)"],["a/","a/ b/ c/"]],o.sub)+
+        ppSelD("o.qn","نمط ترقيم الأسئلة",[["custom","✏️ مخصص (اكتبه بنفسك)"],["س","س1 / س2"],["س:","س1: / س2:"],["السؤال","السؤال الأول / الثاني"],["Q","Q1 :"],["Q/","Q1/"],["QOne","Question One :"],["Question","Question 1 :"]],o.qn)+(o.qn==="custom"?ppInp("o.qnC","اكتب بداية الترقيم (مثال: Question أو سؤال رقم ) — يُضاف الرقم بعدها",o.qnC||""):"")+
+        ppSelD("o.sub","نمط الفروع والاختيارات",[["custom","✏️ مخصص (اكتبه بنفسك)"],["أ،","أ، ب، ج،"],["أ/","أ/ ب/ ج/"],["أ)","أ) ب) ج)"],["1.","1. 2. 3."],["1)","1) 2) 3)"],["1/","1/ 2/ 3/"],["a)","a) b) c)"],["a/","a/ b/ c/"]],o.sub)+(o.sub==="custom"?ppInp("o.subC","اكتب الشكل: {L} = الحرف، {n} = الرقم (مثال: ({L}) أو {n}-)",o.subC||"{L})"):"")+
       '</div>'+
       ppSel("o.headerAlign","محاذاة العناوين العلوية",[["split","موزعة (افتراضي)"],["center","توسيط (بالوسط)"],["right","يمين"],["left","يسار"]],o.headerAlign)+
       ppSel("o.footerAlign","محاذاة توقيع الأستاذ والمدير",[["split","موزعة (افتراضي)"],["center","توسيط (بالوسط)"],["right","يمين"],["left","يسار"]],o.footerAlign)+
