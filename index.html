@@ -420,6 +420,9 @@ html[data-portal="stu"]{--abg:#c2410c}html[data-portal="parent"]{--abg:#0369a1}h
 html[data-portal="stu"] button.b:not(.s):not(.d):not(.cl-pulse),html[data-portal="stu"] .chip.on,html[data-portal="stu"] label.b:not(.s),
 html[data-portal="parent"] button.b:not(.s):not(.d):not(.cl-pulse),html[data-portal="parent"] .chip.on,html[data-portal="parent"] label.b:not(.s),
 html[data-portal="admin"] button.b:not(.s):not(.d):not(.cl-pulse),html[data-portal="admin"] .chip.on,html[data-portal="admin"] label.b:not(.s){background:var(--abg);color:#fff;border-color:transparent}
+
+.pv-wrap .gdrag{cursor:grab}
+.gdrag{display:inline-block}
 </style>
 </head>
 <body>
@@ -466,7 +469,7 @@ window.misbarHardReset=function(){
 /* ============================================================================
    [الأساس ١] رقم الإصدار ونظام التحديث التلقائي الفوري للزبائن (PWA Auto-Update)
    ============================================================================ */
-var APP_VERSION = "2.92.0";
+var APP_VERSION = "2.94.0";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
@@ -1582,6 +1585,57 @@ function gboxH(o,c,max,W){
   var bg=col?(/^#[0-9a-f]{6}$/i.test(c)?c+"22":"#e8eefc"):"transparent",fs=Math.max(9,Math.round(W*0.23));
   return '<div class="gbox" style="width:'+wd+'px;height:'+hh+'px;border:2px solid '+c+';border-radius:'+rad+';background:'+bg+';display:flex;flex-direction:column;justify-content:flex-end;align-items:center;box-sizing:border-box;padding-bottom:'+Math.round(hh*0.1)+'px;line-height:1;font-weight:800;direction:ltr;font-size:'+fs+'px;color:#000"><div style="width:76%;border-top:1.6px solid '+c+';margin-bottom:3px"></div><span>'+max+'</span></div>';
 }
+function gdragH(kind,qi,o,c,max,W,dx,dy){
+  dx=Math.round(Number(dx)||0);dy=Math.round(Number(dy)||0);
+  return '<div class="gdrag" data-gk="'+kind+'" data-qi="'+qi+'" style="display:inline-block;touch-action:none'+((dx||dy)?';transform:translate('+dx+'px,'+dy+'px)':'')+'">'+gboxH(o,c,max,W)+'</div>';
+}
+function gbReset(){var p=S.pp;edMark(true);delete p.o.gbDx;delete p.o.gbDy;p.q.forEach(function(q){delete q.qbDx;delete q.qbDy});edAuto();draw();toast("↺ أُعيدت خانات الدرجة لمواضعها")}
+function qbReset(i){var q=S.pp.q[i];edMark(true);delete q.qbDx;delete q.qbDy;edAuto();draw()}
+function gboxOverlap(g){
+  try{
+    var pg=g.closest(".pv-page");if(!pg)return false;var br=g.firstElementChild.getBoundingClientRect(),pad=1;
+    var w=document.createTreeWalker(pg,NodeFilter.SHOW_TEXT,null),n;
+    while((n=w.nextNode())){
+      if(!n.nodeValue.trim())continue;var pe=n.parentElement;if(!pe||pe.closest(".gdrag")||pe.closest(".pv-fw"))continue;
+      var r=document.createRange();r.selectNodeContents(n);var rs=r.getClientRects();
+      for(var i=0;i<rs.length;i++){var t=rs[i];if(t.width<2||t.height<2)continue;
+        if(t.left<br.right-pad&&t.right>br.left+pad&&t.top<br.bottom-pad&&t.bottom>br.top+pad)return true}
+    }
+  }catch(e){}
+  return false;
+}
+/* سحب خانات الدرجة بالإصبع داخل معاينة A4 */
+(function(){
+  var drag=null;
+  function zoomOf(){var pp=document.querySelector("#sheet .pv-pages"),z=pp&&parseFloat(pp.style.zoom);return z>0?z:1}
+  document.addEventListener("pointerdown",function(e){
+    var g=e.target.closest&&e.target.closest("#sheet .gdrag");if(!g||!S.pp)return;
+    e.preventDefault();
+    var k=g.getAttribute("data-gk"),qi=Number(g.getAttribute("data-qi")),q=k==="q"?S.pp.q[qi]:null,o=S.pp.o;
+    var ox=k==="t"?(Number(o.gbDx)||0):(Number(q&&q.qbDx)||0),oy=k==="t"?(Number(o.gbDy)||0):(Number(q&&q.qbDy)||0);
+    drag={g:g,k:k,qi:qi,sx:e.clientX,sy:e.clientY,ox:ox,oy:oy,z:zoomOf(),moved:false};
+    try{g.setPointerCapture(e.pointerId)}catch(x){}
+    g.style.cursor="grabbing";g.style.zIndex="5";
+  },{passive:false});
+  document.addEventListener("pointermove",function(e){
+    if(!drag)return;
+    var dx=(e.clientX-drag.sx)/drag.z,dy=(e.clientY-drag.sy)/drag.z;
+    if(Math.abs(dx)+Math.abs(dy)>3)drag.moved=true;
+    drag.nx=Math.round(drag.ox+dx);drag.ny=Math.round(drag.oy+dy);
+    drag.g.style.transform="translate("+drag.nx+"px,"+drag.ny+"px)";
+    e.preventDefault();
+  },{passive:false});
+  function end(){
+    if(!drag)return;var d=drag;drag=null;d.g.style.cursor="";
+    if(!d.moved||d.nx===undefined)return;
+    edMark(true);
+    if(d.k==="t"){S.pp.o.gbDx=d.nx;S.pp.o.gbDy=d.ny}else{var q=S.pp.q[d.qi];if(q){q.qbDx=d.nx;q.qbDy=d.ny}}
+    edAuto();
+    var bad=gboxOverlap(d.g);updSheet();
+    if(bad)toast("⚠️ الخانة فوق كتابة — حرّكها لمكان فارغ حتى لا تُمسح الكتابة");
+  }
+  document.addEventListener("pointerup",end);document.addEventListener("pointercancel",end);
+})();
 function ppInpH(path,label,val,flag){return ppInpEye(path,label,val,"",flag,!S.pp.o[flag.slice(2)],false)}
 function ppPreset(path,label,val,list,flag){
   var o=S.pp.o,shown=flag?!o[flag.slice(2)]:true;
@@ -1775,7 +1829,7 @@ function paperH(){
   var dMin=(dTxt&&dpos==='umin')?'<div class="hd-date" style="margin-top:3px;font-weight:700">'+dTxt+'</div>':'',dTit=(dTxt&&dpos==='utit')?'<div class="hd-date" style="margin-top:3px;font-weight:700">'+dTxt+'</div>':'';
   var h='<div class="sheet" dir="'+(rtl?'rtl':'ltr')+'" style="position:relative;font-family:'+esc(o.font)+',Tahoma,serif;font-size:'+o.size+'px;'+bdr+(o.bw?'filter:grayscale(1);':'')+'">';
   var _ex=String(o.topTxt||"").trim();
-  if(o.gb){var _gs=o.gbPos||(rtl?'l':'r');h+='<div class="gbox-wrap" style="float:'+(_gs==='l'?'left':'right')+';margin:0 '+(_gs==='l'?'0 6px 10px':'10px 6px 0')+'">'+gboxH(o,c,dg(esc(o.gbMax||f.grade||"100")),70)+'</div>'}
+  var _hs=h.length,_gbBox=o.gb?gdragH("t",-1,o,c,dg(esc(o.gbMax||f.grade||"100")),70,o.gbDx,o.gbDy):"";
   if(_ex||(dTxt&&_zone)){var _st=rtl?'r':'l',_xz=(_zone===_st)?(_st==='r'?'l':'r'):_st,_cell=function(z){var t='';if(dTxt&&_zone===z)t+=dTxt;if(_ex&&_xz===z)t+=(t?'<br>':'')+tdg(_ex);return '<div style="flex:1;text-align:'+(z==='l'?'left':(z==='r'?'right':'center'))+';white-space:pre-line" dir="auto">'+t+'</div>'};
     h+='<div class="top-line" style="display:flex;direction:ltr;align-items:flex-start;gap:10px;font-size:.82em;font-weight:700;margin-bottom:4px">'+_cell('l')+_cell('c')+_cell('r')+'</div>'}
   if(o.bism)h+='<div style="text-align:center;font-weight:700;margin-bottom:4px">'+(o.bismT?tdg(o.bismT):'بسم الله الرحمن الرحيم')+'</div>';
@@ -1796,12 +1850,21 @@ function paperH(){
     h+='</div>';
   }
   if(dTxt&&(dpos==='br'||dpos==='bc'||dpos==='bl'))h+='<div class="hd-date" style="text-align:'+({br:'right',bc:'center',bl:'left'})[dpos]+';font-weight:700;font-size:.9em;margin:2px 0">'+dTxt+'</div>';
-  if(!(o.noTime&&o.noTotal&&!(o.showDate&&o.dpos==="bar")))h+='<div style="display:flex;justify-content:space-between;border-top:1.5px solid '+c+';border-bottom:1.5px solid '+c+';padding:3px 8px;margin:6px 0;font-weight:600">'+
-(o.noTime?'':'<span>'+(o.lblT?esc(o.lblT)+': ':(rtl?'الزمن: ':'Time: '))+tdg(f.dur)+'</span>')+
-(o.showDate&&o.dpos==="bar"?'<span>'+dTxt+'</span>':'')+
-(o.noTotal?'':'<span>'+(o.lblG?esc(o.lblG)+': ':(rtl?'الدرجة: ':'Total Marks: '))+dg(esc(f.grade))+'</span>')+
-'</div>';
-  if(o.name)h+='<div style="margin:6px 0;font-size:.95em">'+(o.lblN?tdg(o.lblN):rtl?'اسم الطالب: ........................................ الشعبة: ............':'Student Name: ........................................ Class: ............')+'</div>';
+  if(o.gb){var _gp=o.gbPos||(rtl?'l':'r'),_body=h.slice(_hs);h=h.slice(0,_hs);
+    if(_gp==='c')h+='<div class="gbox-wrap" style="text-align:center;margin:2px 0 8px">'+_gbBox+'</div>'+_body;
+    else h+='<div class="hd-wrap" style="display:flex;direction:ltr;gap:12px;align-items:flex-start">'+(_gp==='l'?'<div class="gbox-wrap" style="flex:none">'+_gbBox+'</div>':'')+'<div style="flex:1;min-width:0;direction:'+(rtl?'rtl':'ltr')+'">'+_body+'</div>'+(_gp!=='l'?'<div class="gbox-wrap" style="flex:none">'+_gbBox+'</div>':'')+'</div>'}
+  var _nmT=(o.lblN?tdg(o.lblN):rtl?'اسم الطالب: ........................................ الشعبة: ............':'Student Name: ........................................ Class: ............'),_np=o.name?(o.namePos||"plain"):"";
+  var _showRow=!(o.noTime&&o.noTotal&&!(o.showDate&&o.dpos==="bar"));
+  var _sp=(o.noTime?'':'<span>'+(o.lblT?esc(o.lblT)+': ':(rtl?'الزمن: ':'Time: '))+tdg(f.dur)+'</span>')+
+    (o.showDate&&o.dpos==="bar"?'<span>'+dTxt+'</span>':'')+
+    (o.noTotal?'':'<span>'+(o.lblG?esc(o.lblG)+': ':(rtl?'الدرجة: ':'Total Marks: '))+dg(esc(f.grade))+'</span>');
+  if(_np==="bar"){
+    h+='<div class="hd-bar" style="border-top:1.5px solid '+c+';border-bottom:1.5px solid '+c+';padding:3px 8px;margin:6px 0;font-weight:600">'+(_showRow?'<div style="display:flex;justify-content:space-between">'+_sp+'</div>':'')+'<div style="font-size:.95em;font-weight:500;'+(_showRow?'margin-top:3px;padding-top:3px;border-top:1px dashed '+c+';':'')+'">'+_nmT+'</div></div>';
+  }else{
+    if(_showRow)h+='<div style="display:flex;justify-content:space-between;border-top:1.5px solid '+c+';border-bottom:1.5px solid '+c+';padding:3px 8px;margin:6px 0;font-weight:600">'+_sp+'</div>';
+    if(_np==="ruled")h+='<div class="hd-name" style="border-top:1.5px solid '+c+';border-bottom:1.5px solid '+c+';padding:4px 8px;margin:6px 0;font-size:.95em">'+_nmT+'</div>';
+    else if(o.name)h+='<div style="margin:6px 0;font-size:.95em">'+_nmT+'</div>';
+  }
   if(o.opt>0)h+='<div style="font-weight:700;color:'+c+';margin:4px 0">'+(rtl?'ملاحظة: أجب عن ('+dg(o.opt)+') من الأسئلة الآتية فقط.':'Note: Answer ('+dg(o.opt)+') of the following questions only.')+'</div>';
   if(o.note)h+='<div style="font-weight:600;background:#f8fafc;border-inline-start:3px solid '+c+';padding:3px 8px;margin:4px 0;font-size:.92em">'+tdg(o.note)+'</div>';
 
@@ -1821,9 +1884,11 @@ var _qr=(typeof ppAutoDir==="function"&&q.t)?(ppAutoDir(q.t)==="rtl"):rtl,mpos=q
 var mHtml=(mpos&&mpos!=="end"&&mBox)?(mpos==="center"?'<div style="text-align:center;font-weight:700;color:'+qc+'">'+mBox+'</div>':'<span style="float:'+mpos+';font-weight:700;color:'+qc+';margin-inline:6px">'+mBox+'</span>'):'';
 var qst='margin:7px 0'+(q.fs?';font-size:'+Math.max(1,Math.min(50,Number(q.fs)||0))+'px':'')+(q.np?';break-before:page;page-break-before:always':'')+(q.al?';text-align:'+q.al:'');
 if(q.bw&&Number(q.bw)<100)qst+=';width:'+Number(q.bw)+'%;'+(q.ba==="left"?'margin-right:auto':(q.ba==="right"?'margin-left:auto':'margin-left:auto;margin-right:auto'));
-var _qb=(q.qb==="on"||(o.qb&&q.qb!=="off"))&&q.m,_qw=o.gbShape==="oval"?60:50;
-if(_qb)qst+=';position:relative;min-height:'+(Math.round(_qw*(o.gbShape==="oval"?0.7:1))+10)+'px;padding-inline-end:'+(_qw+14)+'px';
-h+='<div class="q-blk" style="'+qst+'">'+(_qb?'<div class="qbox" style="position:absolute;inset-inline-end:0;top:4px">'+gboxH(o,qc,dg(esc(q.m)),_qw)+'</div>':'')+(mpos==="center"?mHtml:'')+'<div>'+(mpos&&mpos!=="center"?mHtml:'')+'<b style="color:'+qc+'">'+title+inlM+'</b> '+tdg(q.t).replace(/\n/g,'<br>')+(mpos==="end"&&mBox?' <b style="color:'+qc+'">'+mBox+'</b>':'')+'</div>';
+var _qb=(q.qb==="on"||(o.qb&&q.qb!=="off"))&&q.m,_qw=o.gbShape==="oval"?60:50,_qp=q.qbp||o.qbp||"auto",_qbox="",_qEnd="";
+if(_qb){var _qh=Math.round(_qw*(o.gbShape==="oval"?0.7:1)),_bx=gdragH("q",p.q.indexOf(q),o,qc,dg(esc(q.m)),_qw,q.qbDx,q.qbDy);
+  if(_qp==="center")_qEnd='<div class="qbox-end" style="text-align:center;margin-top:6px">'+_bx+'</div>';
+  else{var _sd=_qp==="auto"?(_qr?"left":"right"):_qp;qst+=';position:relative;min-height:'+(_qh+10)+'px;padding-'+_sd+':'+(_qw+14)+'px';_qbox='<div class="qbox" style="position:absolute;'+_sd+':0;top:4px">'+_bx+'</div>'}}
+h+='<div class="q-blk" style="'+qst+'">'+_qbox+(mpos==="center"?mHtml:'')+'<div>'+(mpos&&mpos!=="center"?mHtml:'')+'<b style="color:'+qc+'">'+title+inlM+'</b> '+tdg(q.t).replace(/\n/g,'<br>')+(mpos==="end"&&mBox?' <b style="color:'+qc+'">'+mBox+'</b>':'')+'</div>';
 if(q.img)h+='<div style="margin:6px 0;text-align:center"><img src="'+q.img+'" alt="" style="max-width:85%;max-height:180px;border-radius:6px"></div>';
     var ss=String(q.s||"").split("\n").filter(function(x){return x.trim()});
     if(Number(q.pick)>0&&ss.length)h+='<div style="font-weight:700;color:'+qc+';font-size:.92em;padding-inline-start:20px">'+(rtl?'أجب عن ('+dg(esc(q.pick))+') من الفروع الآتية:':'Answer ('+dg(esc(q.pick))+') of the following:')+'</div>';
@@ -1835,7 +1900,7 @@ if(q.img)h+='<div style="margin:6px 0;text-align:center"><img src="'+q.img+'" al
       }
     }
     if(view==="teacher"&&q.a)h+='<div class="ans"><b>'+(rtl?'الإجابة النموذجية: ':'Model answer: ')+'</b>'+tdg(q.a).replace(/\n/g,'<br>')+'</div>';
-    h+='</div>';
+    h+=_qEnd+'</div>';
   });
 
   h+='<div style="margin-top:'+o.closeSpace+'px">';
@@ -2268,6 +2333,7 @@ function ppEdScr(){
         '<div class="ed-qm"><span class="ql">حجم الخط:</span><select style="width:auto;margin:0;padding:5px 8px;font-size:12px" onchange="pfs('+i+',this.value)"><option value="">تلقائي</option>'+fsOpts(q.fs)+'</select></div>'+
         '<div class="ed-qm"><span class="ql">السؤال:</span>'+[["","تلقائي"],["right","يمين"],["center","وسط"],["left","يسار"]].map(function(x){return '<button class="chip'+((q.al||"")===x[0]?' on':'')+'" onclick="edSetQ('+i+',\'al\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+
         '<div class="ed-qm"><span class="ql">مربع الدرجة:</span>'+[["","حسب الإعداد"],["on","ظاهر"],["off","مخفي"]].map(function(x){return '<button class="chip'+((q.qb||"")===x[0]?' on':'')+'" onclick="edSetQ('+i+',\'qb\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+
+        '<div class="ed-qm"><span class="ql">مكان المربع:</span>'+[["","حسب الإعداد"],["auto","تلقائي"],["right","يمين"],["left","يسار"],["center","وسط"]].map(function(x){return '<button class="chip'+((q.qbp||"")===x[0]?' on':'')+'" onclick="edSetQ('+i+',\'qbp\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+((q.qbDx||q.qbDy)?'<button class="chip" onclick="qbReset('+i+')">↺ المكان الأصلي</button>':'')+'</div>'+
         '</details>'+
         (q.img?'<img src="'+q.img+'" alt="" style="max-height:90px;border-radius:8px;margin-top:6px">':'')+
         (chips.length?'<div class="ed-chips">'+chips.map(function(c){return '<span class="ed-chip">'+c+'</span>'}).join("")+'</div>':'')+
@@ -2305,14 +2371,17 @@ function ppEdScr(){
       '<div class="mu" style="font-size:12px;line-height:1.8;margin-bottom:8px">خانة فيها فراغ في الأعلى لكتابة درجة الطالب، ثم خط، وتحتها الدرجة الكاملة. الخانات تظهر خارج مساحة كتابة الإجابة ويمكنك إظهارها أو إخفاءها.</div>'+
       '<label>الشكل</label><div class="row" style="gap:6px;margin:4px 0 10px">'+[["circle","⚪ دائرة"],["oval","⬭ بيضاوي"],["square","▢ مربع"]].map(function(x){return '<button type="button" class="chip'+((o.gbShape||"circle")===x[0]?' on':'')+'" onclick="psd(\'o.gbShape\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+
       '<label>اللون</label><div class="row" style="gap:6px;margin:4px 0 10px">'+[["plain","غير ملوّن"],["color","ملوّن"]].map(function(x){return '<button type="button" class="chip'+((o.gbColor||"plain")===x[0]?' on':'')+'" onclick="psd(\'o.gbColor\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+
-      '<label>خانة الدرجة الكلية في الترويسة</label><div class="row" style="gap:6px;margin:4px 0 6px"><button type="button" class="chip'+(o.gb?' on':'')+'" onclick="psd(\'o.gb\','+(!o.gb)+')">'+(o.gb?'✓ ظاهرة':'مخفية')+'</button>'+[["","تلقائي"],["r","يمين"],["l","يسار"]].map(function(x){return '<button type="button" class="chip'+((o.gbPos||"")===x[0]?' on':'')+'" onclick="psd(\'o.gbPos\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+
+      '<label>خانة الدرجة الكلية في الترويسة</label><div class="row" style="gap:6px;margin:4px 0 6px"><button type="button" class="chip'+(o.gb?' on':'')+'" onclick="psd(\'o.gb\','+(!o.gb)+')">'+(o.gb?'✓ ظاهرة':'مخفية')+'</button>'+[["","تلقائي"],["r","يمين"],["c","وسط"],["l","يسار"]].map(function(x){return '<button type="button" class="chip'+((o.gbPos||"")===x[0]?' on':'')+'" onclick="psd(\'o.gbPos\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+
       ppInp("o.gbMax","الرقم الذي يظهر أسفل الخانة (فارغ = الدرجة الكلية، أو اكتب أي رقم/نص)",o.gbMax||"")+
       '<label style="margin-top:8px">خانة درجة بجانب كل سؤال (بقيمة السؤال، خارج مساحة الكتابة)</label><div class="row" style="gap:6px;margin:4px 0"><button type="button" class="chip'+(o.qb?' on':'')+'" onclick="psd(\'o.qb\','+(!o.qb)+')">'+(o.qb?'✓ ظاهرة للأسئلة':'مخفية')+'</button></div>'+
-      '<div class="mu" style="font-size:12px;margin-top:4px">يمكنك أيضاً تغيير ظهورها لكل سؤال من «خيارات السؤال».</div>')+
+      '<label style="margin-top:8px">مكان خانة درجة السؤال</label><div class="row" style="flex-wrap:wrap;gap:6px;margin:4px 0">'+[["","تلقائي (مقابل السؤال)"],["right","يمين"],["left","يسار"],["center","وسط (أسفل السؤال)"]].map(function(x){return '<button type="button" class="chip'+((o.qbp||"")===x[0]?' on':'')+'" onclick="psd(\'o.qbp\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+
+      '<div class="mu" style="font-size:12px;margin-top:4px;line-height:1.8">الخانات تحجز لنفسها مكاناً فارغاً فلا تقع فوق الكتابة. ويمكنك أيضاً سحب أي خانة بإصبعك داخل «المعاينة» إلى أي مكان فارغ، وتغيير ظهورها لكل سؤال من «خيارات السؤال».</div>'+
+      '<button type="button" class="b s" style="width:100%;margin-top:8px" onclick="gbReset()">↺ إعادة الخانات لمواضعها الأصلية</button>')+
     sec("c","الطباعة والترقيم (A4)",
       
       '<label style="display:flex;align-items:center;gap:6px">الخط تحت ترويسة الورقة (قبل الأسئلة)<button type="button" class="ed-ib" style="width:30px;height:30px;margin-inline-start:auto'+(o.noHL?';opacity:.55':'')+'" onclick="psd(\'o.noHL\','+(o.noHL?'false':'true')+')" aria-label="إظهار أو إخفاء الخط">'+mIc(o.noHL?"eyeoff":"eye",18)+'</button><small class="mu" style="font-weight:400">'+(o.noHL?'مخفي':'ظاهر')+'</small></label>'+(o.noHL?'':'<div class="row" style="flex-wrap:wrap;gap:6px;margin:4px 0 10px">'+hlChips(o)+'</div>')+'<div class="mu" style="font-size:12px;margin:4px 0 8px">الزمن والتاريخ والدرجة الكلية: استعمل أيقونة العين بجانب كل حقل في «بيانات الورقة».</div>'+
       ppChk("o.name","سطر اسم الطالب والشعبة",o.name)+
+      '<label>موضع سطر اسم الطالب</label><div class="row" style="flex-wrap:wrap;gap:6px;margin:4px 0 10px">'+[["plain","مباشر (بدون خط)"],["ruled","بين خطين مستقلين"],["bar","داخل خط الترويسة (مع الزمن والدرجة)"]].map(function(x){return '<button type="button" class="chip'+((o.namePos||"plain")===x[0]?' on':'')+'" onclick="psd(\'o.namePos\',\''+x[0]+'\')">'+x[1]+'</button>'}).join("")+'</div>'+
       ppChk("o.bism","بسم الله الرحمن الرحيم",o.bism)+ppInp("o.bismT","تغيير نص البسملة (مخصص — فارغ = الافتراضي)",o.bismT||"")+
       ppChk("o.border","إطار حول الصفحة",o.border)+
       ppChk("o.sep","خط فاصل بين الأسئلة",o.sep)+
@@ -2337,7 +2406,7 @@ function ppEdScr(){
   }else{
     var vw=p.view||"student";
     body='<div class="ed-seg noprint">'+[["student","نسخة الطالب"],["teacher","نسخة المعلم"],["key","نموذج الإجابة"]].map(function(x){return '<button class="'+(vw===x[0]?"on":"")+'" onclick="S.pp.view=\''+x[0]+'\';draw()">'+x[1]+'</button>'}).join("")+'</div>'+
-      '<div class="sheet-wrap pv-wrap"><div id="sheet">'+paperPagesH()+'</div></div>'+
+      '<div class="sheet-wrap pv-wrap"><div id="sheet">'+paperPagesH()+'</div></div>'+((o.gb||o.qb)?'<div class="mu noprint" style="font-size:12px;text-align:center;margin:6px 0">💡 اسحب خانة الدرجة بإصبعك إلى أي مكان فارغ في الورقة</div>':'')+
       '<div class="grid noprint" style="margin-top:10px">'+
         '<button class="b" onclick="edPrint(S.pp.view)">'+mIc("print",18)+' طباعة / PDF</button>'+
         '<button class="b s" onclick="edWord(S.pp.view)">'+mIc("word",18)+' Word</button>'+
